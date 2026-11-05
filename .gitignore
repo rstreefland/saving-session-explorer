@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+.env*
+*.local
+
+*.tsbuildinfo
+
+# Private local research and review notes.
+docs/
+
+# Browser test artifacts may contain rendered account information.
+test-results/
+playwright-report/
