@@ -1,4 +1,11 @@
+import { createElement } from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import App from '../App';
+import { demoDataset } from '../domain/demo';
+import { todayInLondon } from '../domain/time';
 import { describe, it, expect, vi } from 'vitest';
+import { dataWarnings } from '../domain/availability';
 import { calculateAll } from '../domain/calculate';
 import type { Session } from '../domain/types';
 import {
@@ -191,7 +198,7 @@ describe('dataset orchestration', () => {
   });
   it('warns on incomplete calendar', async () => {
     setup({ calendar: false });
-    expect((await loadDataset(options, signal())).warnings).toHaveLength(2);
+    expect((await loadDataset(options, signal())).baselineIssues).toEqual(['event-history']);
   });
   it('explains registration and smart meter requirements', async () => {
     setup({ registered: false });
@@ -216,7 +223,7 @@ describe('dataset orchestration', () => {
   });
   it('retains data but blocks baseline estimates without verified holidays', async () => {
     setup({ region: false });
-    expect((await loadDataset(options, signal())).warnings.join()).toContain(
+    expect(dataWarnings(await loadDataset(options, signal())).join()).toContain(
       'Bank holidays could not be verified',
     );
   });
@@ -233,7 +240,7 @@ it('retains import-only results for an unknown GSP', async () => {
   setup({ gsp: '_Z' });
   const data = await loadDataset({ ...options, region: 'auto' }, signal());
   expect(data.holidayRegion).toBeUndefined();
-  expect(data.warnings.join()).toContain('Bank holidays could not be verified');
+  expect(dataWarnings(data).join()).toContain('Bank holidays could not be verified');
 });
 it('allows a manual override even for an unknown GSP', async () => {
   setup({ gsp: '_Z' });
@@ -374,9 +381,9 @@ it('returns all three session types and keeps their event days for baseline excl
   });
   const data = await loadDataset(options, signal());
   expect(data.sessions.map((session) => session.eventType)).toEqual([
-    'WEEKEND_HAPPY_HOUR',
-    'TURN_UP',
     'TURN_DOWN',
+    'TURN_UP',
+    'WEEKEND_HAPPY_HOUR',
   ]);
   expect(data.eventDays).toEqual(
     expect.arrayContaining(['2026-10-15', '2026-10-16', '2026-10-17']),
@@ -445,7 +452,7 @@ it.each(['discovery', 'readings'] as const)(
       joinedEvents: [happyHour, { ...happyHour, eventId: 3, eventType: 'TURN_DOWN' }],
     });
     const data = await loadDataset(options, signal());
-    expect(data.exportStatus).toBe('unavailable');
+    expect(data.baselineIssues).toContain('exports');
     expect(data.exports).toEqual([]); // Unknown exports must never become zero-export data.
     const results = calculateAll(data);
     expect(results.find((r) => r.session.eventId === 2)).toMatchObject({
@@ -454,13 +461,13 @@ it.each(['discovery', 'readings'] as const)(
       state: 'match',
     });
     expect(results.find((r) => r.session.eventId === 3)?.rewarded).toBeNull();
-    expect(data.warnings.join()).toContain('Linked export readings could not be loaded');
+    expect(dataWarnings(data).join()).toContain('Linked export readings could not be loaded');
   },
 );
 it('preserves Happy Hours when the holiday service is unavailable', async () => {
   setup({ holidayFailure: true, joinedEvents: [happyHour] });
   const data = await loadDataset(options, signal());
-  expect(data.warnings.join()).toContain('Bank holidays could not be verified');
+  expect(dataWarnings(data).join()).toContain('Bank holidays could not be verified');
   expect(calculateAll(data)[0]).toMatchObject({ actual: 0.2, rewarded: 0.2, state: 'match' });
 });
 it('reuses meter discovery across ranges and refreshes, but never across private account scopes', async () => {
@@ -496,4 +503,37 @@ it('propagates cancellation of an optional dependency instead of returning parti
     return ordinaryFetch(input, init);
   });
   await expect(loadDataset(options, controller.signal)).rejects.toThrow('Cancelled');
+});
+
+it('the production App reuses discovery when results are refreshed', async () => {
+  const calls = setup({ meters: 2 });
+  localStorage.setItem('session-lens.api-key', 'test-key');
+  localStorage.setItem('session-lens.account-number', 'A-123');
+  render(createElement(App));
+  const user = userEvent.setup();
+  const refresh = await screen.findByRole('button', { name: 'Refresh results' });
+  await waitFor(() => expect(refresh).toBeEnabled());
+  const probes = () => calls.filter((url) => url.includes('order_by=-period'));
+  expect(probes()).toHaveLength(2);
+  await user.click(refresh);
+  await waitFor(() => expect(refresh).toBeEnabled());
+  expect(calls.filter((url) => url.includes('period_from='))).toHaveLength(2);
+  expect(probes()).toHaveLength(2);
+});
+
+it('keeps estimates stable when the range starts before the oldest event in a complete calendar', async () => {
+  const demo = demoDataset();
+  setup({ joinedEvents: demo.sessions, meterReadings: { ABC: demo.imports } });
+  const today = todayInLondon();
+  const narrow = await loadDataset(
+    { ...options, from: today.subtract({ days: 30 }).toString(), to: today.toString() },
+    signal(),
+  );
+  const wide = await loadDataset(
+    { ...options, from: '2025-12-01', to: today.toString() },
+    signal(),
+  );
+  expect(wide.baselineIssues).toEqual([]);
+  expect(calculateAll(narrow)[0].rewarded).not.toBeNull();
+  expect(calculateAll(wide)).toEqual(calculateAll(narrow));
 });

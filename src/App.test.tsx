@@ -328,3 +328,42 @@ describe('Session history', () => {
     );
   });
 });
+
+it('disconnects and aborts a refresh even when saved details cannot be removed', async () => {
+  loadDataset.mockResolvedValueOnce(demoDataset());
+  render(app());
+  const u = await credentials();
+  await u.click(screen.getByRole('button', { name: 'Connect & compare' }));
+  await screen.findByRole('button', { name: 'Refresh results' });
+  loadDataset.mockImplementationOnce(() => new Promise(() => {}));
+  await u.click(screen.getByRole('button', { name: 'Refresh results' }));
+  const signal = loadDataset.mock.lastCall![1];
+  vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+    throw Error();
+  });
+  await u.click(screen.getByRole('button', { name: 'Forget account' }));
+  expect(signal.aborted).toBe(true);
+  expect(screen.getByRole('heading', { name: 'No account loaded' })).toBeInTheDocument();
+  expect(screen.getByLabelText('Octopus API key')).toHaveValue('');
+  expect(screen.getByLabelText('Account number')).toHaveValue('');
+  expect(screen.getByRole('alert')).toHaveTextContent('saved details could not be removed');
+});
+
+it('filters and orders sessions before passing them to the history table', async () => {
+  const data = demoDataset(true);
+  data.sessions.reverse();
+  loadDataset.mockResolvedValueOnce(data);
+  render(app());
+  const u = await credentials();
+  await u.click(screen.getByRole('button', { name: 'Connect & compare' }));
+  await screen.findByRole('button', { name: 'Refresh results' });
+  const dates = Array.from(document.querySelectorAll('.history-row time')).map((time) =>
+    time.getAttribute('datetime'),
+  );
+  expect(dates).toEqual(
+    data.sessions
+      .filter((session) => session.eventType === 'TURN_DOWN')
+      .map((session) => session.startAt)
+      .sort((a, b) => Date.parse(b) - Date.parse(a)),
+  );
+});

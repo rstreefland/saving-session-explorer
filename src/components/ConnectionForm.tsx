@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { KeyRound } from 'lucide-react';
-import { readKey, saveKey, readAccount, saveAccount } from '../domain/storage';
+import { readKey, saveKey, readAccount, saveAccount, forgetAccount } from '../domain/storage';
 export function ConnectionForm({
   onConnect,
   onForget,
@@ -38,15 +38,14 @@ export function ConnectionForm({
     } else if (!busy) setExpanded(true);
   }, [connected, busy, accountNumber, accountHolderName, holidayRegion]);
   function forget() {
+    lastConnection.current = {};
+    setKey('');
+    setAccount('');
+    setError('');
+    setExpanded(true);
+    onForget();
     try {
-      lastConnection.current = {};
-      saveKey('');
-      saveAccount('');
-      setKey('');
-      setAccount('');
-      setError('');
-      setExpanded(true);
-      onForget();
+      forgetAccount();
     } catch (error) {
       setError((error as Error).message);
     }

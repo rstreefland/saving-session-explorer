@@ -19,6 +19,8 @@ export interface Session {
   rewardGivenInPence?: number | null;
   energyUsedInKwh?: number | null;
 }
+export type BaselineIssue = 'holidays' | 'exports' | 'event-history';
+
 export interface Dataset {
   accountNumber?: string;
   accountHolderName?: string | null;
@@ -28,10 +30,11 @@ export interface Dataset {
   sessions: Session[];
   eventDays: string[];
   imports: Reading[];
+  /** null means no linked meter; unavailable linked exports use [] plus an exports issue. */
   exports: Reading[] | null;
-  /** null exports means no linked meter; unavailable linked exports remain an empty array. */
-  exportStatus?: 'not-present' | 'available' | 'unavailable';
   holidays: string[];
+  baselineIssues: BaselineIssue[];
+  /** Informational messages never affect calculation eligibility. */
   warnings: string[];
   fetchedAt: string;
   mpan: string;
@@ -57,6 +60,8 @@ export interface Calculation {
     | 'baseline-readings'
     | 'baseline-history'
     | 'event-history'
+    | 'holidays'
+    | 'exports'
     | 'clock-change'
     | 'unsupported'
     | null;

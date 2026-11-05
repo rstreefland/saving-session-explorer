@@ -1,4 +1,5 @@
 import { Temporal, local, day, milliseconds, iso, referenceTime } from './time';
+import { BASELINE_ISSUES } from './availability';
 import { isHappyHour, reportedShifted } from './session';
 import type { Calculation, Dataset, Reading, Session } from './types';
 export { ZONE, local, day } from './time';
@@ -36,6 +37,52 @@ export function indexReadings(readings: Reading[]) {
   return result;
 }
 
+function isSupportedSession(session: Session): boolean {
+  const start = local(session.startAt);
+  const end = local(session.endAt);
+  const duration = end.epochMilliseconds - start.epochMilliseconds;
+  return (
+    ['TURN_DOWN', 'TURN_UP', 'WEEKEND_HAPPY_HOUR'].includes(session.eventType) &&
+    day(session.startAt) === end.subtract({ milliseconds: 1 }).toPlainDate().toString() &&
+    start.epochMilliseconds % 1_800_000 === 0 &&
+    end.epochMilliseconds % 1_800_000 === 0 &&
+    duration > 0 &&
+    duration <= 86_400_000 &&
+    start.toPlainDate().toString() >= '2024-11-29'
+  );
+}
+
+/** Null means at least one required reading is missing; zero is a valid total. */
+function total(values: (number | null)[]): number | null {
+  if (values.length === 0) return null;
+  let sum = 0;
+  for (const value of values) {
+    if (value === null) return null;
+    sum += value;
+  }
+  return sum;
+}
+
+function comparisonState(
+  session: Session,
+  reason: Calculation['unavailableReason'],
+  difference: number | null,
+  baseline: number | null,
+  actual: number | null,
+): Calculation['state'] {
+  if (reason === 'unsupported') return 'unsupported';
+  if (reason !== null) return 'incomplete';
+  if (difference === null) return 'pending';
+  const deltas = [difference];
+  if (!isHappyHour(session)) {
+    if (baseline !== null && session.baselineConsumptionDeltaKwh !== null)
+      deltas.push(baseline - session.baselineConsumptionDeltaKwh);
+    if (actual !== null && session.consumptionDeltaKwh !== null)
+      deltas.push(actual - session.consumptionDeltaKwh);
+  }
+  return deltas.some((delta) => Math.abs(delta) > TOLERANCE + 1e-9) ? 'difference' : 'match';
+}
+
 export function calculateAll(data: Dataset): Calculation[] {
   const imports = indexReadings(data.imports);
   const exports = data.exports === null ? null : indexReadings(data.exports);
@@ -52,15 +99,9 @@ export function calculateAll(data: Dataset): Calculation[] {
     const happyHour = isHappyHour(session);
     const referenceCount = weekendBaseline(start.toPlainDate(), holidays) ? 4 : 10;
     const days = happyHour ? [] : referenceDays(session, excluded, holidays);
-    const issues: string[] = happyHour ? [] : [...data.warnings];
-    const unsupported =
-      !['TURN_DOWN', 'TURN_UP', 'WEEKEND_HAPPY_HOUR'].includes(session.eventType) ||
-      day(session.startAt) !== end.subtract({ milliseconds: 1 }).toPlainDate().toString() ||
-      start.epochMilliseconds % 1_800_000 !== 0 ||
-      end.epochMilliseconds % 1_800_000 !== 0 ||
-      end.epochMilliseconds <= start.epochMilliseconds ||
-      end.epochMilliseconds - start.epochMilliseconds > 86_400_000 ||
-      start.toPlainDate().toString() < '2024-11-29';
+    const blockers = happyHour ? [] : data.baselineIssues;
+    const issues = blockers.map((issue) => BASELINE_ISSUES[issue]);
+    const unsupported = !isSupportedSession(session);
     if (unsupported)
       issues.push('This event type, date or interval is outside the supported methodology.');
     const slots: Calculation['slots'] = [];
@@ -104,25 +145,28 @@ export function calculateAll(data: Dataset): Calculation[] {
       issues.push(
         `${missingReference} baseline half-hour reading(s) missing, invalid or ambiguous at a clock change.`,
       );
-    const baseline =
-      slots.length && slots.every((s) => s.baseline !== null)
-        ? slots.reduce((n, s) => n + s.baseline!, 0)
-        : null;
-    const actual =
-      slots.length && slots.every((s) => s.actual !== null)
-        ? slots.reduce((n, s) => n + s.actual!, 0)
-        : null;
-    const complete = (happyHour || baseline !== null) && actual !== null && !issues.length;
-    const rewarded = complete
-      ? happyHour
-        ? actual
-        : slots.reduce(
-            (n, s) =>
-              n +
-              Math.max(0, (s.baseline! - s.actual!) * (session.eventType === 'TURN_UP' ? -1 : 1)),
-            0,
-          )
-      : null;
+    const baseline = total(slots.map((slot) => slot.baseline));
+    const actual = total(slots.map((slot) => slot.actual));
+    let unavailableReason: Calculation['unavailableReason'] = null;
+    if (unsupported) unavailableReason = 'unsupported';
+    else if (blockers.length) unavailableReason = blockers[0];
+    else if (missingActual > 0) unavailableReason = 'session-readings';
+    else if (ambiguousClockTime) unavailableReason = 'clock-change';
+    else if (missingReference > 0) unavailableReason = 'baseline-readings';
+    else if (!happyHour && days.length < referenceCount) unavailableReason = 'baseline-history';
+
+    const complete = unavailableReason === null;
+    let rewarded: number | null = null;
+    if (complete) {
+      if (happyHour) rewarded = actual;
+      else {
+        const direction = session.eventType === 'TURN_UP' ? -1 : 1;
+        rewarded = slots.reduce(
+          (sum, slot) => sum + Math.max(0, (slot.baseline! - slot.actual!) * direction),
+          0,
+        );
+      }
+    }
     const reported = reportedShifted(session);
     const difference = rewarded !== null && reported !== null ? rewarded - reported : null;
     return {
@@ -135,36 +179,8 @@ export function calculateAll(data: Dataset): Calculation[] {
       rewarded,
       netSaved: complete && !happyHour ? baseline! - actual! : null,
       difference,
-      unavailableReason: unsupported
-        ? 'unsupported'
-        : missingActual > 0
-          ? 'session-readings'
-          : ambiguousClockTime
-            ? 'clock-change'
-            : missingReference > 0
-              ? 'baseline-readings'
-              : !happyHour && days.length < referenceCount
-                ? 'baseline-history'
-                : issues.length
-                  ? 'event-history'
-                  : null,
-      state: unsupported
-        ? 'unsupported'
-        : !complete
-          ? 'incomplete'
-          : difference === null
-            ? 'pending'
-            : [
-                  difference,
-                  happyHour || session.baselineConsumptionDeltaKwh === null
-                    ? 0
-                    : baseline! - session.baselineConsumptionDeltaKwh,
-                  happyHour || session.consumptionDeltaKwh === null
-                    ? 0
-                    : actual! - session.consumptionDeltaKwh,
-                ].some((delta) => Math.abs(delta) > TOLERANCE + 1e-9)
-              ? 'difference'
-              : 'match',
+      unavailableReason,
+      state: comparisonState(session, unavailableReason, difference, baseline, actual),
     };
   });
 }

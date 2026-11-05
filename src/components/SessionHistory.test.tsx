@@ -29,11 +29,11 @@ it('uses Octopus status descriptions and preserves zero, missing and pending res
     .slice(1)
     .map((row) => within(row).getAllByRole('cell')[1].querySelector('.result-summary')!);
   expect(officialCells.map((cell) => cell.textContent)).toEqual([
-    'Pending•••',
-    'Missing readings•••',
-    'Not achieved0.00 kWh shifted',
-    'Partly achieved0.00 kWh shifted',
     'Achieved0.00 kWh shifted',
+    'Partly achieved0.00 kWh shifted',
+    'Not achieved0.00 kWh shifted',
+    'Missing readings•••',
+    'Pending•••',
   ]);
   expect(within(table).getAllByRole('cell', { name: '0 Octopoints' })).toHaveLength(4);
 });
@@ -106,7 +106,7 @@ it('identifies the official result and reward through their header tooltips', as
 });
 it('does not call missing calendar or baseline history a meter-reading delay', () => {
   const data = demoDataset();
-  data.warnings = ['Unverified event calendar'];
+  data.baselineIssues = ['event-history'];
   const result = calculateAll(data)[0];
   const view = render(
     <SessionHistory results={[result]} type="TURN_DOWN" onTypeChange={vi.fn()} />,
@@ -153,15 +153,13 @@ it('shows neutral small differences only in details and flags genuinely missing 
   );
   expect(screen.getAllByText(/Possible missed reward/).length).toBeGreaterThan(0);
 });
-it('sorts rows newest first, independent of API order', () => {
+it('preserves the row order supplied by the parent', () => {
   const results = calculateAll(demoDataset()).reverse();
   render(<SessionHistory results={results} type="TURN_DOWN" onTypeChange={vi.fn()} />);
   const dates = Array.from(document.querySelectorAll('.history-row time')).map((time) =>
     time.getAttribute('datetime'),
   );
-  expect(dates).toEqual(
-    results.map((r) => r.session.startAt).sort((a, b) => Date.parse(b) - Date.parse(a)),
-  );
+  expect(dates).toEqual(results.map((r) => r.session.startAt));
 });
 it('shows a failed zero result as final rather than awaiting Octopus', () => {
   const result = calculateAll(demoDataset())[1];

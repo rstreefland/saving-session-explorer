@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import type { Calculation, Session } from '../domain/types';
 import { SESSION_TYPES, isHappyHour, reportedShifted, type SessionType } from '../domain/session';
 import { sessionOutcome, type SessionOutcome } from '../domain/outcome';
-import { formatLocal, milliseconds } from '../domain/time';
+import { formatLocal } from '../domain/time';
 import { SessionDetails } from './SessionDetails';
 import { Tooltip } from './Tooltip';
 import { OctopointsValue } from './OctopointsValue';
@@ -61,13 +61,6 @@ export function SessionHistory({
     [expanded, setExpanded] = useState<Set<number>>(() => new Set());
   const happy = type === 'WEEKEND_HAPPY_HOUR';
   const compact = useMediaQuery('(max-width: 800px)');
-  const rows = results
-    .filter((r) => r.session.eventType === type)
-    .sort(
-      (a, b) =>
-        milliseconds(b.session.startAt) - milliseconds(a.session.startAt) ||
-        b.session.eventId - a.session.eventId,
-    );
   const columns = compact ? 4 : happy ? 5 : 6;
   function changeTab(index: number) {
     const next = SESSION_TYPES[(index + SESSION_TYPES.length) % SESSION_TYPES.length].value;
@@ -152,7 +145,7 @@ export function SessionHistory({
               </tr>
             </thead>
             <tbody role="rowgroup">
-              {rows.map((result, index) => {
+              {results.map((result, index) => {
                 const session = result.session,
                   done = status(session),
                   officialShifted = reportedShifted(session),
@@ -294,7 +287,7 @@ export function SessionHistory({
             </tbody>
           </table>
         </div>
-        {!rows.length && (
+        {!results.length && (
           <div className="empty">
             <h3>No sessions in this view</h3>
             <p>Try another period. Only joined, ended sessions appear.</p>

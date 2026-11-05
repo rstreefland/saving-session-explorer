@@ -2,8 +2,7 @@ import { z } from 'zod';
 import { MeterDiscoveryCache } from './meterDiscovery';
 import { inferHolidayRegion } from '../domain/region';
 import { Temporal, midnight, local, milliseconds } from '../domain/time';
-import { day } from '../domain/calculate';
-import type { Dataset, Reading } from '../domain/types';
+import type { BaselineIssue, Dataset, Reading } from '../domain/types';
 
 // Avoid runtime code generation, including Zod's eval probe, under the production CSP.
 z.config({ jitless: true });
@@ -304,15 +303,12 @@ export async function loadDataset(
   if (!imports) throw new Error('Could not identify the registered import meter point.');
   const selectedRegion =
     region === 'auto' ? inferHolidayRegion(data.account.signedUpMeterPoint.gspGroupId) : region;
-  const warnings: string[] = [];
+  const baselineIssues: BaselineIssue[] = [];
   const holidays =
     rawHolidays.available && selectedRegion
       ? rawHolidays.value[selectedRegion]?.events.map((e) => e.date)
       : undefined;
-  if (!holidays)
-    warnings.push(
-      'Bank holidays could not be verified. Power down and Power up estimates are unavailable; Happy Hours use import readings only.',
-    );
+  if (!holidays) baselineIssues.push('holidays');
   const start = midnight(from);
   const end = midnight(to).add({ days: 1 });
   const historyStart = start.subtract({ days: 60 }).toInstant().toString();
@@ -351,18 +347,9 @@ export async function loadDataset(
       return { serial, readings };
     }, signal),
   ]);
-  if (!linkedExport.available)
-    warnings.push(
-      'Linked export readings could not be loaded. Power down and Power up estimates are unavailable; Happy Hours use import readings only.',
-    );
-  if (data.events.length !== data.eventCount)
-    warnings.push(
-      'Octopus returned an incomplete event calendar; baseline exclusions cannot be verified.',
-    );
-  if (!data.events.some((e) => milliseconds(e.startAt) <= milliseconds(historyStart)))
-    warnings.push(
-      'The event calendar does not reach the start of the baseline history. Verify older event exclusions with Octopus.',
-    );
+  if (!linkedExport.available) baselineIssues.push('exports');
+  // The API count establishes completeness; the oldest event is not a coverage boundary.
+  if (data.events.length !== data.eventCount) baselineIssues.push('event-history');
   const eventDays = new Set<string>();
   for (const event of [...data.events, ...data.account.joinedEvents]) {
     for (
@@ -383,7 +370,6 @@ export async function loadDataset(
           milliseconds(s.startAt) < end.epochMilliseconds &&
           milliseconds(s.endAt) <= Temporal.Now.instant().epochMilliseconds,
       )
-      .sort((a, b) => milliseconds(b.startAt) - milliseconds(a.startAt))
       .map((session) => ({
         ...session,
         rewardPerKwhInOctoPoints: eventRates.get(session.eventId) ?? null,
@@ -391,13 +377,9 @@ export async function loadDataset(
     eventDays: [...eventDays],
     imports: importMeter.readings,
     exports: linkedExport.available ? (linkedExport.value?.readings ?? null) : [],
-    exportStatus: !linkedExport.available
-      ? 'unavailable'
-      : linkedExport.value
-        ? 'available'
-        : 'not-present',
     holidays: holidays ?? [],
-    warnings,
+    baselineIssues,
+    warnings: [],
     fetchedAt: Temporal.Now.instant().toString(),
     mpan,
     accountNumber: profile?.number?.trim() || account,

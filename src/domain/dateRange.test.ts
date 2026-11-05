@@ -33,3 +33,8 @@ it('uses the UK date when UTC is still on the previous day', () => {
   expect(day('2026-07-01T23:30:00Z')).toBe('2026-07-02');
   expect(clockTime('2026-07-01T23:30:00Z')).toBe('00:30');
 });
+
+it('limits inclusive custom ranges to 366 calendar days', () => {
+  expect(validRange('2024-01-01', '2024-12-31', '2025-01-01')).toBe(true);
+  expect(validRange('2024-01-01', '2025-01-01', '2025-01-01')).toBe(false);
+});

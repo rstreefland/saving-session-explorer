@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Activity } from 'lucide-react';
 import { loadDataset } from './api/client';
 import { createQueryClient } from './api/queryClient';
+import { dataWarnings } from './domain/availability';
 import { calculateAll } from './domain/calculate';
 import { last30Days, validRange, type Preset } from './domain/dateRange';
 import { day, formatLocal, milliseconds, todayInLondon } from './domain/time';
@@ -32,7 +33,7 @@ export default function App(props: AppProps = {}) {
   );
 }
 
-function SessionLens({ load = loadDataset }: AppProps) {
+function SessionLens({ load }: AppProps) {
   const [range, setRange] = useState(() => last30Days());
   const [selected, setSelected] = useState<Preset | 'custom'>('30d');
   const [demo, setDemo] = useState<Dataset | null>(null);
@@ -71,6 +72,7 @@ function SessionLens({ load = loadDataset }: AppProps) {
         milliseconds(b.session.startAt) - milliseconds(a.session.startAt) ||
         b.session.eventId - a.session.eventId,
     );
+  const warnings = data && type !== 'WEEKEND_HAPPY_HOUR' ? dataWarnings(data) : [];
   const error = validationError || remote.error;
 
   function reset(forget = false) {
@@ -172,7 +174,7 @@ function SessionLens({ load = loadDataset }: AppProps) {
                 onTypeChange={setType}
                 summary={<SessionSummary results={visible} type={type} />}
               />
-              {(coverage?.missing || data.warnings.length > 0) && (
+              {(coverage?.missing || warnings.length > 0) && (
                 <details className="data-notes">
                   <summary>Meter data notes</summary>
                   {coverage && coverage.missing > 0 && (
@@ -181,7 +183,9 @@ function SessionLens({ load = loadDataset }: AppProps) {
                       missing or invalid readings. Each session is checked separately.
                     </p>
                   )}
-                  {type !== 'WEEKEND_HAPPY_HOUR' && data.warnings.map((w) => <p key={w}>{w}</p>)}
+                  {warnings.map((warning) => (
+                    <p key={warning}>{warning}</p>
+                  ))}
                 </details>
               )}
               <p className="fine-print">

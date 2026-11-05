@@ -7,7 +7,7 @@ const count = (value: number) => String(value);
 export function SessionSummary({ results, type }: { results: Calculation[]; type: SessionType }) {
   const happy = type === 'WEEKEND_HAPPY_HOUR';
   const outcomes = results.map(sessionOutcome);
-  const estimated = outcomes.filter((outcome) => outcome.label === 'Achieved').length;
+  const estimated = outcomes.filter((outcome) => outcome.code === 'achieved').length;
   const actual = results.filter((result) => result.session.resultsStatus === 'SUCCESS').length;
   return (
     <section className="stats" aria-label="Session summary">

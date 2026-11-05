@@ -68,6 +68,16 @@ Keep fixtures anonymous and add regression tests alongside the code they cover. 
 
 Built with React 19, TypeScript, Vite, TanStack React Query, the Temporal polyfill, Zod, Lucide React and locally bundled Fontsource fonts. Styling is custom CSS; requests use native `fetch`. Tests use Vitest, React Testing Library, user-event, jest-dom and jsdom, with Istanbul coverage. Playwright checks layouts and the production security policy in Chromium and WebKit.
 
+### Maintaining the data flow
+
+`App` owns the selected dates and session type, and filters and sorts the rows once. `SessionHistory` renders those rows in the supplied order. `useSessionData` owns requests, cancellation and the account-scoped loader; leave the optional `load` prop unset in production so the meter-discovery cache is used.
+
+`loadDataset` validates external responses and builds a `Dataset`. Its `baselineIssues` contain explicit reasons why baseline estimates are unavailable; `warnings` are informational and never change calculation eligibility. `domain/availability.ts` maps those reasons to messages. Calendar completeness is checked against the API's event count, not the date of its oldest event: a period with no events is valid. If the API introduces a bounded history window, model that coverage explicitly before calculating older baselines.
+
+`calculateAll` is pure: it selects reference dates, checks half-hour readings, computes totals and compares published results. Select reference dates before checking readings so gaps cannot silently change the baseline. A missing value is `null`; zero is valid consumption. Happy Hours need import readings only. `sessionOutcome` supplies semantic codes for UI decisions; labels are presentation text.
+
+When changing account handling, test the normal `App` with intercepted `fetch` as well as the hook in isolation. Forgetting an account must always clear memory and cancel requests, even if browser storage cannot be cleared. Keep the storage error visible so the user knows whether saved details remain.
+
 ## Account data and privacy
 
 The app runs in your browser. The API key and account number are saved in local storage; results and readings are cached in memory. **Forget account** clears saved credentials and the query and meter-discovery caches. Meter discovery is cached in memory for up to five minutes within the active account; account or API key changes discard it. Requests go directly to Octopus’s APIs and GOV.UK. No analytics or application backend is used.

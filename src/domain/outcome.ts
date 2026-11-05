@@ -2,6 +2,7 @@ import type { Calculation } from './types';
 import { isHappyHour } from './session';
 
 export interface SessionOutcome {
+  code: 'unavailable' | 'usage-recorded' | 'achieved' | 'partly-achieved' | 'not-achieved';
   label: string;
   achieved: boolean;
   attention: boolean;
@@ -14,11 +15,14 @@ export function sessionOutcome(result: Calculation): SessionOutcome {
       'session-readings': 'Awaiting meter readings',
       'baseline-readings': 'Awaiting meter readings',
       'baseline-history': 'Not enough history',
+      holidays: 'Awaiting bank holiday data',
+      exports: 'Awaiting export readings',
       'event-history': 'Awaiting session history',
       'clock-change': 'Clock change: check readings',
       unsupported: 'Not supported',
     };
     return {
+      code: 'unavailable',
       label: unavailableReason ? labels[unavailableReason] : 'Not enough data',
       achieved: false,
       attention: false,
@@ -26,7 +30,13 @@ export function sessionOutcome(result: Calculation): SessionOutcome {
     };
   }
   if (isHappyHour(session))
-    return { label: 'Usage recorded', achieved: false, attention: false, tone: 'neutral' };
+    return {
+      code: 'usage-recorded',
+      label: 'Usage recorded',
+      achieved: false,
+      attention: false,
+      tone: 'neutral',
+    };
 
   const achieved = rewarded > 1e-9;
   const officialReward = session.rewardGivenInOctoPoints;
@@ -40,8 +50,15 @@ export function sessionOutcome(result: Calculation): SessionOutcome {
   // half-hours can miss their target while the session still succeeds overall.
   // Rewarded energy remains the sum of positive half-hour shifts, not this net change.
   const achievedOverall = result.netSaved !== null && result.netSaved * direction > 1e-9;
+  const code = achieved ? (achievedOverall ? 'achieved' : 'partly-achieved') : 'not-achieved';
+  const labels = {
+    achieved: 'Achieved',
+    'partly-achieved': 'Partly achieved',
+    'not-achieved': 'Not achieved',
+  };
   return {
-    label: achieved ? (achievedOverall ? 'Achieved' : 'Partly achieved') : 'Not achieved',
+    code,
+    label: labels[code],
     achieved,
     attention,
     tone: achieved ? 'positive' : 'negative',

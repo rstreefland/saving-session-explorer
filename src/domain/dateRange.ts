@@ -10,7 +10,7 @@ export function validRange(from: string, to: string, today = todayInLondon().toS
     return (
       Temporal.PlainDate.compare(start, end) <= 0 &&
       to <= today &&
-      start.until(end, { largestUnit: 'days' }).days <= 366
+      start.until(end, { largestUnit: 'days' }).days < 366
     );
   } catch {
     return false;

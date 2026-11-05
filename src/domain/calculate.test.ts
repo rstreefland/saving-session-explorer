@@ -142,7 +142,7 @@ describe('calculations', () => {
   });
   it('blocks estimates when the event calendar is unverified', () => {
     const data = demoDataset();
-    data.warnings = ['Incomplete calendar'];
+    data.baselineIssues = ['event-history'];
     expect(calculateAll(data)[0].rewarded).toBeNull();
   });
   it('rejects unsupported types, historic rules and malformed windows', () => {
@@ -213,7 +213,7 @@ describe('Happy Hours', () => {
     s.energyUsedInKwh = 0.3;
     s.energyDeltaKwh = 0;
     data.exports = [];
-    data.warnings = ['Incomplete event calendar'];
+    data.baselineIssues = ['event-history'];
     const result = calculateAll(data)[0];
     expect(result.state).toBe('match');
     expect(result.rewarded).toBeCloseTo(0.3);
@@ -248,3 +248,22 @@ describe('Happy Hours', () => {
     expect(calculateAll(data)[3].state).toBe('incomplete');
   });
 });
+
+it('informational warnings do not change estimates', () => {
+  const data = demoDataset();
+  const before = calculateAll(data);
+  data.warnings = ['Optional account profile unavailable'];
+  expect(calculateAll(data)).toEqual(before);
+});
+it.each(['holidays', 'exports', 'event-history'] as const)(
+  'explains the unavailable %s dependency',
+  (issue) => {
+    const data = demoDataset();
+    data.baselineIssues = [issue];
+    expect(calculateAll(data)[0]).toMatchObject({
+      rewarded: null,
+      unavailableReason: issue,
+      state: 'incomplete',
+    });
+  },
+);

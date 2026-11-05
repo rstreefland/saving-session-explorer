@@ -10,9 +10,9 @@ function explanation(result: Calculation) {
   if (isHappyHour(result.session))
     return 'Electricity imported during your booked hour is added up. No baseline comparison is needed.';
   const up = result.session.eventType === 'TURN_UP';
-  if (outcome.label === 'Achieved')
+  if (outcome.code === 'achieved')
     return `You used ${number(Math.abs(result.netSaved!))} kWh ${up ? 'more' : 'less'} than baseline over the whole session.`;
-  if (outcome.label === 'Partly achieved')
+  if (outcome.code === 'partly-achieved')
     return `You used ${up ? 'more' : 'less'} in some half-hours, but not over the session as a whole. Those half-hours still count towards rewards.`;
   return `You did not use ${up ? 'more' : 'less'} than baseline in any half-hour.`;
 }

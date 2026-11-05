@@ -80,6 +80,7 @@ export function demoDataset(allTypes = false): Dataset {
     exports: null,
     eventDays: sessions.map((s) => day(s.startAt)),
     holidays: [],
+    baselineIssues: [],
     warnings: [],
     mpan: 'DEMO',
     fetchedAt: Temporal.Now.instant().toString(),
