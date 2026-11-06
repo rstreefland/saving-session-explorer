@@ -5,11 +5,11 @@
   font-synthesis: none;
   color-scheme: light;
   --ink: #302640;
-  --paper: #faf6e9;
+  --paper: #f7f6f5;
   --pink: #f2a3cf;
   --mint: #a9d8c1;
   --line: #695a78;
-  --mono: 'Courier New', monospace;
+  --mono: 'DM Sans', sans-serif;
 }
 
 * {
@@ -41,12 +41,12 @@ button {
   color: var(--ink);
   border: 2px solid var(--ink);
   padding: 10px 14px;
-  background: #ebe5d6;
+  background: #e8e5e9;
   box-shadow: 3px 3px 0 var(--ink);
 }
 
 button:hover:not(:disabled) {
-  background: #fff9e9;
+  background: #faf9fa;
 }
 
 button:active:not(:disabled) {
@@ -84,7 +84,7 @@ p {
 h1,
 h2,
 h3 {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'DM Sans', sans-serif;
 }
 
 h1 {
@@ -158,7 +158,7 @@ main {
 
 .panel {
   border: 2px solid var(--line);
-  background: #f1ecdf;
+  background: #eeecef;
 }
 
 form {
@@ -190,7 +190,7 @@ input,
 select {
   color: var(--ink);
   border: 2px solid var(--line);
-  background: #fffcf3;
+  background: #fdfcfd;
   padding: 10px;
   font-family: var(--mono);
   font-size: 16px;
@@ -277,8 +277,8 @@ summary {
 
 .notice {
   padding: 13px 15px;
-  background: #f6e4ad;
-  border: 1px solid #a48a47;
+  background: #eee7f1;
+  border: 1px solid #8a6a9d;
   font-size: 14px;
   margin: 15px 0;
 }
@@ -377,7 +377,7 @@ th {
   border: 2px dashed #b4a3b9;
   text-align: center;
   padding: 36px 20px;
-  background: #f3efdf;
+  background: #f0eef1;
 }
 
 .empty svg {
@@ -560,7 +560,7 @@ footer {
 
 /* Expanded readings: explanation first, then the data behind it. */
 .history-table .details-row > td {
-  background: #fffdf6;
+  background: #fdfcfd;
   padding: 26px;
 }
 
@@ -615,7 +615,7 @@ footer {
 .calculation-card {
   margin: 0;
   border: 1px solid #c5b6ce;
-  background: #f8f4eb;
+  background: #f5f3f6;
   padding: 16px;
   min-width: 0;
 }

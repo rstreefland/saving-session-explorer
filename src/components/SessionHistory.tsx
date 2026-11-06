@@ -37,9 +37,10 @@ function reward(session: Session) {
 }
 
 function sessionTime(value: string) {
-  return formatLocal(value, { hour: 'numeric', minute: '2-digit', hourCycle: 'h12' })
-    .replace(':00', '')
-    .replace(/\s(?=[ap]m)/g, '');
+  return formatLocal(value, { hour: 'numeric', minute: '2-digit', hourCycle: 'h12' }).replace(
+    /\s(?=[ap]m)/g,
+    '',
+  );
 }
 
 function ShiftedEnergy({ value }: { value: number | null }) {
@@ -176,7 +177,6 @@ export function SessionHistory({
                 const endTime = sessionTime(session.endAt);
                 const fullTimeRange = `${startTime} – ${endTime}`;
                 const samePeriod = startTime.slice(-2) === endTime.slice(-2);
-
                 const visibleTimeRange = compact
                   ? `${samePeriod ? startTime.slice(0, -2) : startTime}–${endTime}`
                   : fullTimeRange;
