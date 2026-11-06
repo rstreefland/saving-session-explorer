@@ -13,12 +13,6 @@ git clone https://github.com/rstreefland/saving-session-explorer.git
 cd saving-session-explorer
 ```
 
-While [PR #1](https://github.com/rstreefland/saving-session-explorer/pull/1) is open, switch to its implementation branch before installing:
-
-```sh
-git switch experiment/saving-session-explorer
-```
-
 Install dependencies and start the development server:
 
 ```sh
@@ -82,9 +76,9 @@ When changing account handling, test the normal `App` with intercepted `fetch` a
 
 The app runs in your browser. The API key and account number are saved in local storage; results and readings are cached in memory. **Forget account** clears saved credentials and the React Query results cache. Accounts with multiple candidate meters are checked again whenever a dataset is fetched, so newly available half-hourly data can change the selected meter. Requests go directly to Octopus’s APIs and GOV.UK. No analytics or application backend is used.
 
-Authentication and REST requests use `api.oegb-kraken.energy`. Session results use the separate `api.backend.octopus.energy` GraphQL endpoint because the primary API does not expose `savingSessions`. The authentication token exchange is the only GraphQL mutation; the app does not change your account.
+Authentication and REST requests use `api.oegb-kraken.energy`. Session results use the separate `api.backend.octopus.energy` GraphQL endpoint because the primary API does not expose `savingSessions`. The API key is sent directly to Octopus to obtain an access token for reading session results and account details. The app does not change your account or join sessions.
 
-Production hosting is prepared for `saving-session-explorer.streefland.co.uk`, giving this app its own local-storage origin. Other subdomains cannot read that storage. If hosted at a GitHub Pages project URL instead, every app under the same `<owner>.github.io` hostname shares local storage, regardless of path. Only trusted apps should share a hostname with saved API keys.
+The app is hosted on GitHub Pages at `saving-session-explorer.streefland.co.uk`, with its own local-storage origin. Other subdomains cannot read that storage. If hosted at a GitHub Pages project URL instead, every app under the same `<owner>.github.io` hostname shares local storage, regardless of path. Only trusted apps should share a hostname with saved API keys.
 
 The production build includes a Content Security Policy that restricts scripts to bundled files and network requests to the app, Octopus and GOV.UK. It is not a substitute for a dedicated origin. Development mode keeps Vite's live reload working without applying the production policy.
 
@@ -98,17 +92,13 @@ Estimates and discrepancies do not prove that a reward is incorrect. Sources: [S
 
 ## Deployment
 
-Pull requests run formatting checks, coverage tests, a production build and Chromium/WebKit browser checks. The Pages workflow uploads `dist/` using `upload-pages-artifact`, then deploys that artifact using `deploy-pages`.
+Pushing or merging to `main` automatically builds and deploys the site. Pull requests run formatting checks, coverage tests, a production build and Chromium/WebKit browser checks before merging.
 
-Deployment is manual: pushing or merging does not publish the site. After owner approval, merge the implementation and configure **Settings → Pages** to use **GitHub Actions**, with the custom domain `saving-session-explorer.streefland.co.uk`. The site is built at `/` for this domain; `public/CNAME` records the intended hostname. For Actions-based Pages, the domain must also be set in repository settings.
+To redeploy manually, choose **Actions → Deploy GitHub Pages → Run workflow** and select `main`.
 
-Add the DNS record after configuring the domain in GitHub:
+The deployment workflow validates and builds the app, uploads `dist/` using `upload-pages-artifact`, then publishes it using `deploy-pages`. Only `main` can deploy.
 
-| Type  | Name                      | Target                  |
-| ----- | ------------------------- | ----------------------- |
-| CNAME | `saving-session-explorer` | `rstreefland.github.io` |
-
-Once GitHub verifies DNS and provisions the certificate, enable **Enforce HTTPS**. Run **Deploy GitHub Pages** manually from the Actions tab on `main`. The workflow rejects other branches. See [GitHub's custom-domain setup](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site).
+The site uses `/` as its base path for `saving-session-explorer.streefland.co.uk`. The hostname is recorded in `public/CNAME` and configured in **Settings → Pages**, with DNS managed in Cloudflare. See [GitHub's custom-domain setup](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site) when configuring a different host.
 
 ## About this experiment
 
