@@ -85,7 +85,7 @@
 }
 
 .history-row {
-  background: #faf6e9;
+  background: #f7f6f5;
 }
 
 .history-row.stripe {
@@ -131,21 +131,21 @@
   display: block;
   margin-top: 9px;
   padding: 8px 10px;
-  color: #794100;
-  background: #fff0d0;
-  border-left: 3px solid #996022;
+  color: #473950;
+  background: #eee7f1;
+  border-left: 3px solid #8a6a9d;
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
   line-height: 1.6;
 }
 
 .reward-query small {
-  color: #794100;
+  color: #473950;
   line-height: 1.5;
 }
 
 .row-attention {
-  outline: 2px solid #996022;
+  outline: 2px solid #8a6a9d;
   outline-offset: -2px;
 }
 
