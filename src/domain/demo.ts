@@ -3,18 +3,25 @@ import type { Dataset, Session, Reading } from './types';
 
 const fixtures = new Map<string, Dataset>();
 let fixtureDay = '';
+
 export function demoDataset(allTypes = false): Dataset {
   const date = todayInLondon().toString();
+
   if (fixtureDay !== date) {
     fixtures.clear();
     fixtureDay = date;
   }
+
   const cacheKey = String(allTypes);
   const cached = fixtures.get(cacheKey);
+
   if (cached) return { ...structuredClone(cached), fetchedAt: Temporal.Now.instant().toString() };
+
   const today = midnight(date);
+
   const sessions: Session[] = [2, 5, 9, 12].map((offset, i) => {
     const start = today.subtract({ days: offset }).with({ hour: 17 });
+
     return {
       eventId: i + 1,
       startAt: iso(start),
@@ -29,8 +36,10 @@ export function demoDataset(allTypes = false): Dataset {
       rewardPerKwhInOctoPoints: 80,
     };
   });
+
   if (allTypes) {
     const start = today.subtract({ days: 3 }).with({ hour: 12 });
+
     sessions.push(
       {
         ...sessions[1],
@@ -55,25 +64,32 @@ export function demoDataset(allTypes = false): Dataset {
       },
     );
   }
+
   const imports: Reading[] = [];
+
   const periods = sessions.map((session) => ({
     start: milliseconds(session.startAt),
     end: milliseconds(session.endAt),
   }));
+
   const halfHour = 1_800_000;
+
   for (
     let time = today.subtract({ days: 75 }).epochMilliseconds;
     time < today.epochMilliseconds;
     time += halfHour
   ) {
     const sessionIndex = periods.findIndex((period) => time >= period.start && time < period.end);
+
     if (sessionIndex === 3 && time - periods[3].start === halfHour) continue;
+
     imports.push({
       interval_start: Temporal.Instant.fromEpochMilliseconds(time).toString(),
       interval_end: Temporal.Instant.fromEpochMilliseconds(time + halfHour).toString(),
       consumption: sessionIndex >= 0 ? 0.15 : 0.6,
     });
   }
+
   const dataset: Dataset = {
     sessions,
     imports,
@@ -85,6 +101,8 @@ export function demoDataset(allTypes = false): Dataset {
     mpan: 'DEMO',
     fetchedAt: Temporal.Now.instant().toString(),
   };
+
   fixtures.set(cacheKey, structuredClone(dataset));
+
   return dataset;
 }

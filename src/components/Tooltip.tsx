@@ -11,10 +11,12 @@ export function Tooltip({ label, text }: { label: string; text: string }) {
 
   function show() {
     clearTimeout(hideTimer.current);
+
     const bounds = trigger.current!.getBoundingClientRect();
     const width = Math.min(320, window.innerWidth - 24);
     const height = popup.current?.getBoundingClientRect().height ?? 0;
     const below = bounds.bottom + 8;
+
     setPosition({
       top:
         below + height <= window.innerHeight - 12 ? below : Math.max(12, bounds.top - height - 8),
@@ -24,11 +26,14 @@ export function Tooltip({ label, text }: { label: string; text: string }) {
 
   useLayoutEffect(() => {
     if (!open || !popup.current || !trigger.current) return;
+
     const anchor = trigger.current.getBoundingClientRect();
     const height = popup.current.getBoundingClientRect().height;
     const below = anchor.bottom + 8;
+
     const top =
       below + height <= window.innerHeight - 12 ? below : Math.max(12, anchor.top - height - 8);
+
     setPosition((previous) => (previous && previous.top !== top ? { ...previous, top } : previous));
   }, [open, text]);
 
@@ -36,13 +41,17 @@ export function Tooltip({ label, text }: { label: string; text: string }) {
 
   useEffect(() => {
     if (!open) return;
+
     const hide = () => setPosition(null);
+
     const dismiss = (event: KeyboardEvent) => {
       if (event.key === 'Escape') hide();
     };
+
     window.addEventListener('scroll', hide, true);
     window.addEventListener('resize', hide);
     window.addEventListener('keydown', dismiss);
+
     return () => {
       window.removeEventListener('scroll', hide, true);
       window.removeEventListener('resize', hide);

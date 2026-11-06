@@ -19,22 +19,29 @@ const statuses: Record<string, { label: string; tone: SessionOutcome['tone'] }> 
   CALCULATING: { label: 'Pending', tone: 'waiting' },
   UPCOMING: { label: 'Upcoming', tone: 'waiting' },
 };
+
 function status(session: Session) {
   return statuses[session.resultsStatus ?? ''] ?? { label: 'Pending', tone: 'waiting' };
 }
+
 function reward(session: Session) {
   if (['CALCULATING', 'UPCOMING'].includes(session.resultsStatus ?? '') || !session.resultsStatus)
     return PLACEHOLDER;
+
   const value = isHappyHour(session) ? session.rewardGivenInPence : session.rewardGivenInOctoPoints;
+
   if (value == null) return PLACEHOLDER;
   if (isHappyHour(session)) return value + 'p';
+
   return <OctopointsValue value={value} />;
 }
+
 function sessionTime(value: string) {
   return formatLocal(value, { hour: 'numeric', minute: '2-digit', hourCycle: 'h12' })
     .replace(':00', '')
     .replace(/\s(?=[ap]m)/g, '');
 }
+
 function ShiftedEnergy({ value }: { value: number | null }) {
   return (
     <small className="shifted-energy">
@@ -42,10 +49,13 @@ function ShiftedEnergy({ value }: { value: number | null }) {
     </small>
   );
 }
+
 function calculatedReward(result: Calculation) {
   const estimate = estimateOctopoints(result);
+
   return estimate.state === 'ready' ? <OctopointsValue value={estimate.points} /> : PLACEHOLDER;
 }
+
 export function SessionHistory({
   results,
   type,
@@ -59,14 +69,18 @@ export function SessionHistory({
 }) {
   const id = useId(),
     [expanded, setExpanded] = useState<Set<number>>(() => new Set());
+
   const happy = type === 'WEEKEND_HAPPY_HOUR';
   const compact = useMediaQuery('(max-width: 800px)');
   const columns = compact ? 4 : happy ? 5 : 6;
+
   function changeTab(index: number) {
     const next = SESSION_TYPES[(index + SESSION_TYPES.length) % SESSION_TYPES.length].value;
+
     onTypeChange(next);
     document.getElementById(id + '-' + next)?.focus();
   }
+
   return (
     <div className="history">
       <div className="session-tabs" role="tablist" aria-label="Session type">
@@ -151,20 +165,25 @@ export function SessionHistory({
                   officialShifted = reportedShifted(session),
                   outcome = sessionOutcome(result),
                   open = expanded.has(session.eventId);
+
                 const date = formatLocal(session.startAt, {
                   day: '2-digit',
                   month: '2-digit',
                   year: '2-digit',
                 });
+
                 const startTime = sessionTime(session.startAt);
                 const endTime = sessionTime(session.endAt);
                 const fullTimeRange = `${startTime} – ${endTime}`;
                 const samePeriod = startTime.slice(-2) === endTime.slice(-2);
+
                 const visibleTimeRange = compact
                   ? `${samePeriod ? startTime.slice(0, -2) : startTime}–${endTime}`
                   : fullTimeRange;
+
                 const label =
                   SESSION_TYPES.find((t) => t.value === session.eventType)!.label + ' ' + date;
+
                 return (
                   <Fragment key={session.eventId}>
                     <tr
@@ -260,8 +279,10 @@ export function SessionHistory({
                           onClick={() =>
                             setExpanded((previous) => {
                               const next = new Set(previous);
+
                               if (next.has(session.eventId)) next.delete(session.eventId);
                               else next.add(session.eventId);
+
                               return next;
                             })
                           }

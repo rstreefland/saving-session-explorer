@@ -23,9 +23,12 @@ import { readAccount, readKey } from './domain/storage';
 interface AppProps {
   load?: typeof loadDataset;
 }
+
 export default function App(props: AppProps = {}) {
   const [client] = useState(createQueryClient);
+
   useEffect(() => () => client.clear(), [client]);
+
   return (
     <QueryClientProvider client={client}>
       <SessionLens {...props} />
@@ -39,16 +42,20 @@ function SessionLens({ load }: AppProps) {
   const [demo, setDemo] = useState<Dataset | null>(null);
   const [validationError, setValidationError] = useState('');
   const [type, setType] = useState<SessionType>('TURN_DOWN');
+
   const remote = useSessionData(load, () => {
     const key = readKey().trim();
     const account = readAccount().trim();
+
     return key && /^A-[A-Za-z0-9]+$/.test(account)
       ? { key, account, region: 'auto', ...range }
       : null;
   });
+
   const data = demo ?? remote.data;
   const { from, to } = range;
   const results = useMemo(() => (data ? calculateAll(data) : []), [data]);
+
   const coverage = useMemo(
     () =>
       data && validRange(from, to)
@@ -60,6 +67,7 @@ function SessionLens({ load }: AppProps) {
         : null,
     [data, from, to, type],
   );
+
   const visible = results
     .filter(
       (r) =>
@@ -72,6 +80,7 @@ function SessionLens({ load }: AppProps) {
         milliseconds(b.session.startAt) - milliseconds(a.session.startAt) ||
         b.session.eventId - a.session.eventId,
     );
+
   const warnings = data && type !== 'WEEKEND_HAPPY_HOUR' ? dataWarnings(data) : [];
   const error = validationError || remote.error;
 
@@ -80,26 +89,33 @@ function SessionLens({ load }: AppProps) {
     setDemo(null);
     setValidationError('');
   }
+
   function changeRange(nextFrom: string, nextTo: string, preset: Preset | 'custom') {
     // Demo remains available when exploring its date filters.
     if (!demo) {
       if (validRange(nextFrom, nextTo)) remote.changeRange(nextFrom, nextTo);
       else remote.reset();
     }
+
     setValidationError('');
     setRange({ from: nextFrom, to: nextTo });
     setSelected(preset);
   }
+
   function connect(key: string, account: string) {
     setDemo(null);
     setValidationError('');
+
     if (!validRange(from, to)) {
       remote.reset();
       setValidationError('Choose a past date range of up to 366 days.');
+
       return;
     }
+
     remote.connect({ key, account, region: 'auto', from, to });
   }
+
   return (
     <div className="app-shell">
       <header className="titlebar">

@@ -6,6 +6,7 @@ import { RewardRoundingExplanation } from '../RewardRoundingExplanation';
 
 export function OctopusComparison({ result }: { result: Calculation }) {
   const happy = isHappyHour(result.session);
+
   const rows: [string, number | null, number | null][] = happy
     ? [['Imported', result.actual, reportedShifted(result.session)]]
     : [
@@ -13,6 +14,7 @@ export function OctopusComparison({ result }: { result: Calculation }) {
         ['Your usage', result.actual, result.session.consumptionDeltaKwh],
         ['Shifted for rewards', result.rewarded, reportedShifted(result.session)],
       ];
+
   return (
     <ReadingDisclosure title="Compare with Octopus">
       <table className="reading-table comparison-table" aria-label="Usage comparison">

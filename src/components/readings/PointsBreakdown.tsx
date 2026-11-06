@@ -14,8 +14,10 @@ const precise = (value: number) => value.toLocaleString('en-GB', { maximumFracti
 
 export function PointsBreakdown({ result }: { result: Calculation }) {
   if (isHappyHour(result.session)) return null;
+
   const estimate = estimateOctopoints(result);
   const actual = actualOctopoints(result.session);
+
   return (
     <section className="points-breakdown" aria-label="Octopoints estimate">
       <h4>Octopoints estimate</h4>

@@ -7,6 +7,7 @@ import { halfHourEnd, number } from './format';
 export function HalfHourBreakdown({ result }: { result: Calculation }) {
   const happy = isHappyHour(result.session);
   const direction = result.session.eventType === 'TURN_UP' ? -1 : 1;
+
   return (
     <section className="half-hour-breakdown" aria-label="Half-hour breakdown">
       <h4>Half-hour breakdown</h4>
@@ -33,6 +34,7 @@ export function HalfHourBreakdown({ result }: { result: Calculation }) {
               slot.baseline === null || slot.actual === null
                 ? null
                 : Math.max(0, (slot.baseline - slot.actual) * direction);
+
             return (
               <tr key={slot.start}>
                 <th scope="row">

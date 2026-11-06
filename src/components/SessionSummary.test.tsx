@@ -17,7 +17,9 @@ it('counts estimated and official achievement independently, including estimates
     { ...base, rewarded: null, netSaved: null },
     { ...base, session: { ...base.session, resultsStatus: 'FAIL', rewardGivenInOctoPoints: 0 } },
   ];
+
   render(<SessionSummary results={results} type="TURN_DOWN" />);
+
   expect(screen.getByText('Sessions').nextElementSibling).toHaveTextContent('5');
   expect(screen.getByText('Achieved (Actual / Estimated)').nextElementSibling).toHaveTextContent(
     '2 / 3',
@@ -34,6 +36,7 @@ it('does not count partly achieved sessions as fully achieved', () => {
       type="TURN_DOWN"
     />,
   );
+
   expect(screen.getByText('Achieved (Actual / Estimated)').nextElementSibling).toHaveTextContent(
     '0 / 0',
   );
@@ -52,6 +55,7 @@ it('uses the Power up direction for the estimated count', () => {
       type="TURN_UP"
     />,
   );
+
   expect(screen.getByText('Achieved (Actual / Estimated)').nextElementSibling).toHaveTextContent(
     '0 / 1',
   );
@@ -61,6 +65,7 @@ it('keeps Happy Hours as usage readiness without claiming achievement', () => {
   render(
     <SessionSummary results={[base, { ...base, rewarded: null }]} type="WEEKEND_HAPPY_HOUR" />,
   );
+
   expect(screen.getByText('Usage ready').nextElementSibling).toHaveTextContent('1');
   expect(screen.queryByText('Achieved (Actual / Estimated)')).not.toBeInTheDocument();
 });

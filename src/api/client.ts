@@ -10,8 +10,10 @@ z.config({ jitless: true });
 export const GRAPHQL = 'https://api.backend.octopus.energy/v1/graphql/';
 export const AUTH = 'https://api.oegb-kraken.energy/v1/graphql/';
 const REST = 'https://api.oegb-kraken.energy/v1/';
+
 const nullable = z.number().finite().nullable();
 const iso = z.string().datetime({ offset: true });
+
 const sessionSchema = z.object({
   eventId: z.number(),
   startAt: iso,
@@ -26,16 +28,19 @@ const sessionSchema = z.object({
   rewardGivenInPence: nullable.nullish(),
   energyUsedInKwh: nullable.nullish(),
 });
+
 const readingSchema = z.object({
   interval_start: iso,
   interval_end: iso,
   consumption: z.number().finite(),
 });
+
 const meterPoint = z.object({
   mpan: z.string(),
   is_export: z.boolean(),
   meters: z.array(z.object({ serial_number: z.string() })),
 });
+
 export const accountSchema = z.object({
   properties: z.array(
     z.object({
@@ -43,7 +48,9 @@ export const accountSchema = z.object({
     }),
   ),
 });
+
 export type Account = z.infer<typeof accountSchema>;
+
 export const SESSION_QUERY = `query Sessions($account: String!) {
   savingSessions {
     events { id startAt endAt rewardPerKwhInOctoPoints }
@@ -58,14 +65,17 @@ export const SESSION_QUERY = `query Sessions($account: String!) {
 
 async function json(url: string, init: RequestInit, signal: AbortSignal): Promise<unknown> {
   let response: Response;
+
   try {
     response = await fetch(url, { ...init, signal });
   } catch (e) {
     if (signal.aborted) throw e;
+
     throw new Error(
       'Could not reach Octopus or GOV.UK. Check your connection; browser CORS restrictions may also block access.',
     );
   }
+
   if (!response.ok)
     throw new Error(
       response.status === 401 || response.status === 403
@@ -74,8 +84,10 @@ async function json(url: string, init: RequestInit, signal: AbortSignal): Promis
           ? 'Octopus rate limit reached. Please wait before refreshing.'
           : `Service returned HTTP ${response.status}. Please try again.`,
     );
+
   return response.json();
 }
+
 export async function graphql(
   url: string,
   query: string,
@@ -92,16 +104,20 @@ export async function graphql(
     },
     signal,
   );
+
   const envelope = z
     .object({ data: z.unknown().optional(), errors: z.array(z.unknown()).optional() })
     .parse(raw);
+
   // Never echo upstream error messages: these can contain personal data or credentials.
   if (envelope.errors?.length || !envelope.data)
     throw new Error(
       'Octopus could not complete the query. Check credentials and account access; its API may have changed.',
     );
+
   return envelope.data;
 }
+
 export async function fetchAccount(
   key: string,
   account: string,
@@ -115,6 +131,7 @@ export async function fetchAccount(
     ),
   );
 }
+
 function consumptionUrl(mpan: string, serial: string, parameters: Record<string, string>) {
   return `${REST}electricity-meter-points/${encodeURIComponent(mpan)}/meters/${encodeURIComponent(serial)}/consumption/?${new URLSearchParams(parameters)}`;
 }
@@ -122,13 +139,17 @@ function consumptionUrl(mpan: string, serial: string, parameters: Record<string,
 async function* readingPages(key: string, firstUrl: string, signal: AbortSignal, maxPages = 100) {
   let next: string | null = firstUrl;
   const seen = new Set<string>();
+
   while (next) {
     if (!next.startsWith(REST) || seen.has(next) || seen.size >= maxPages)
       throw new Error('Unexpected Octopus pagination link.');
+
     seen.add(next);
+
     const page = z
       .object({ next: z.string().nullable(), results: z.array(readingSchema) })
       .parse(await json(next, { headers: { Authorization: `Basic ${btoa(key + ':')}` } }, signal));
+
     yield page.results;
     next = page.next;
   }
@@ -143,13 +164,16 @@ export async function fetchReadings(
   signal: AbortSignal,
 ): Promise<Reading[]> {
   const readings: Reading[] = [];
+
   const url = consumptionUrl(mpan, serial, {
     period_from: from,
     period_to: to,
     page_size: '25000',
     order_by: 'period',
   });
+
   for await (const page of readingPages(key, url, signal)) readings.push(...page);
+
   return readings;
 }
 
@@ -162,31 +186,38 @@ export async function selectMeter(
   signal: AbortSignal,
 ): Promise<string> {
   const serials = [...new Set(point.meters.map((meter) => meter.serial_number))].sort();
+
   if (serials.length === 0)
     throw new Error('Octopus returned no electricity meter for the registered meter point.');
+
   if (serials.length === 1) return serials[0];
 
   const candidates = await Promise.all(
     serials.map(async (serial) => {
       const url = consumptionUrl(point.mpan, serial, { page_size: '100', order_by: '-period' });
+
       for await (const page of readingPages(key, url, signal, 10)) {
         const valid = page.filter((reading) => {
           const start = milliseconds(reading.interval_start);
+
           return (
             reading.consumption >= 0 &&
             start % 1_800_000 === 0 &&
             milliseconds(reading.interval_end) - start === 1_800_000
           );
         });
+
         if (valid.length)
           return {
             serial,
             latest: Math.max(...valid.map((reading) => milliseconds(reading.interval_end))),
           };
       }
+
       return { serial, latest: null };
     }),
   );
+
   // Sorting serials first makes ties deterministic, independent of API response order.
   const selected = candidates.reduce<(typeof candidates)[number] | null>(
     (best, candidate) =>
@@ -195,10 +226,12 @@ export async function selectMeter(
         : best,
     null,
   );
+
   if (!selected)
     throw new Error(
       'No half-hourly readings were found for these electricity meters. Check that your smart meter is sending half-hourly data.',
     );
+
   return selected.serial;
 }
 
@@ -209,6 +242,7 @@ export interface LoadOptions {
   to: string;
   region: string;
 }
+
 async function fetchAccountProfile(account: string, token: string, signal: AbortSignal) {
   try {
     const data = await graphql(
@@ -218,6 +252,7 @@ async function fetchAccountProfile(account: string, token: string, signal: Abort
       signal,
       token,
     );
+
     return z
       .object({
         account: z
@@ -227,16 +262,19 @@ async function fetchAccountProfile(account: string, token: string, signal: Abort
       .parse(data).account;
   } catch (error) {
     if (signal.aborted) throw error;
+
     // Profile information is optional; it must not prevent meter results from loading.
     return null;
   }
 }
+
 /** A failed optional dependency must not hide usable import-only Happy Hour results. */
 async function optionalDependency<T>(load: () => Promise<T>, signal: AbortSignal) {
   try {
     return { available: true as const, value: await load() };
   } catch (error) {
     if (signal.aborted) throw error;
+
     return { available: false as const };
   }
 }
@@ -247,6 +285,7 @@ export async function loadDataset(
   discovery = new MeterDiscoveryCache(),
 ): Promise<Dataset> {
   const { key, account, from, to, region } = options;
+
   const auth = z
     .object({ obtainKrakenToken: z.object({ token: z.string() }) })
     .parse(
@@ -257,6 +296,7 @@ export async function loadDataset(
         signal,
       ),
     );
+
   const [rawSessions, details, rawHolidays, profile] = await Promise.all([
     graphql(GRAPHQL, SESSION_QUERY, { account }, signal, auth.obtainKrakenToken.token),
     fetchAccount(key, account, signal),
@@ -269,6 +309,7 @@ export async function loadDataset(
     ),
     fetchAccountProfile(account, auth.obtainKrakenToken.token, signal),
   ]);
+
   const data = z
     .object({
       savingSessions: z.object({
@@ -290,28 +331,39 @@ export async function loadDataset(
       }),
     })
     .parse(rawSessions).savingSessions;
+
   if (!data.account?.signedUpMeterPoint)
     throw new Error(
       'No electricity meter is registered for Saving Sessions. Join Octoplus with a smart meter sending half-hourly readings.',
     );
+
   const mpan = data.account.signedUpMeterPoint.mpan;
+
   const property = details.properties.find((p) =>
     p.electricity_meter_points.some((m) => m.mpan === mpan),
   );
+
   const imports = property?.electricity_meter_points.find((m) => m.mpan === mpan && !m.is_export);
   const exports = property?.electricity_meter_points.filter((m) => m.is_export) ?? [];
+
   if (!imports) throw new Error('Could not identify the registered import meter point.');
+
   const selectedRegion =
     region === 'auto' ? inferHolidayRegion(data.account.signedUpMeterPoint.gspGroupId) : region;
+
   const baselineIssues: BaselineIssue[] = [];
+
   const holidays =
     rawHolidays.available && selectedRegion
       ? rawHolidays.value[selectedRegion]?.events.map((e) => e.date)
       : undefined;
+
   if (!holidays) baselineIssues.push('holidays');
+
   const start = midnight(from);
   const end = midnight(to).add({ days: 1 });
   const historyStart = start.subtract({ days: 60 }).toInstant().toString();
+
   const select = (point: MeterPoint) =>
     discovery.select(
       point.mpan,
@@ -319,9 +371,11 @@ export async function loadDataset(
       signal,
       () => selectMeter(key, point, signal),
     );
+
   const [importMeter, linkedExport] = await Promise.all([
     (async () => {
       const serial = await select(imports);
+
       const readings = await fetchReadings(
         key,
         mpan,
@@ -330,12 +384,15 @@ export async function loadDataset(
         end.toInstant().toString(),
         signal,
       );
+
       return { serial, readings };
     })(),
     optionalDependency(async () => {
       if (exports.length === 0) return null;
       if (exports.length !== 1) throw new Error('Ambiguous export meter points.');
+
       const serial = await select(exports[0]);
+
       const readings = await fetchReadings(
         key,
         exports[0].mpan,
@@ -344,13 +401,17 @@ export async function loadDataset(
         end.toInstant().toString(),
         signal,
       );
+
       return { serial, readings };
     }, signal),
   ]);
+
   if (!linkedExport.available) baselineIssues.push('exports');
   // The API count establishes completeness; the oldest event is not a coverage boundary.
   if (data.events.length !== data.eventCount) baselineIssues.push('event-history');
+
   const eventDays = new Set<string>();
+
   for (const event of [...data.events, ...data.account.joinedEvents]) {
     for (
       let d = local(event.startAt).startOfDay();
@@ -359,9 +420,11 @@ export async function loadDataset(
     )
       eventDays.add(d.toPlainDate().toString());
   }
+
   const eventRates = new Map(
     data.events.map((event) => [event.id, event.rewardPerKwhInOctoPoints]),
   );
+
   return {
     sessions: data.account.joinedEvents
       .filter(
@@ -396,6 +459,7 @@ export async function loadDataset(
 /** Each mounted app owns its loader; account/key changes discard discovery results. */
 export function createDatasetLoader() {
   let scope: { key: string; account: string; discovery: MeterDiscoveryCache } | null = null;
+
   return Object.assign(
     (options: LoadOptions, signal: AbortSignal) => {
       if (!scope || scope.key !== options.key || scope.account !== options.account)
@@ -404,6 +468,7 @@ export function createDatasetLoader() {
           account: options.account,
           discovery: new MeterDiscoveryCache(),
         };
+
       return loadDataset(options, signal, scope.discovery);
     },
     {

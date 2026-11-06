@@ -8,8 +8,10 @@ export interface SessionOutcome {
   attention: boolean;
   tone: 'positive' | 'negative' | 'neutral' | 'waiting';
 }
+
 export function sessionOutcome(result: Calculation): SessionOutcome {
   const { session, rewarded, unavailableReason } = result;
+
   if (rewarded === null) {
     const labels: Record<NonNullable<Calculation['unavailableReason']>, string> = {
       'session-readings': 'Awaiting meter readings',
@@ -21,6 +23,7 @@ export function sessionOutcome(result: Calculation): SessionOutcome {
       'clock-change': 'Clock change: check readings',
       unsupported: 'Not supported',
     };
+
     return {
       code: 'unavailable',
       label: unavailableReason ? labels[unavailableReason] : 'Not enough data',
@@ -29,6 +32,7 @@ export function sessionOutcome(result: Calculation): SessionOutcome {
       tone: 'waiting',
     };
   }
+
   if (isHappyHour(session))
     return {
       code: 'usage-recorded',
@@ -40,22 +44,26 @@ export function sessionOutcome(result: Calculation): SessionOutcome {
 
   const achieved = rewarded > 1e-9;
   const officialReward = session.rewardGivenInOctoPoints;
+
   // Pending results and awarded sessions must never look like disputes over small kWh differences.
   const attention =
     achieved &&
     ((session.resultsStatus === 'FAIL' && (officialReward === 0 || officialReward === null)) ||
       (session.resultsStatus === 'MISSING_READINGS' && officialReward === 0));
+
   const direction = session.eventType === 'TURN_UP' ? -1 : 1;
   // Overall success concerns the net change across the whole window. Individual
   // half-hours can miss their target while the session still succeeds overall.
   // Rewarded energy remains the sum of positive half-hour shifts, not this net change.
   const achievedOverall = result.netSaved !== null && result.netSaved * direction > 1e-9;
   const code = achieved ? (achievedOverall ? 'achieved' : 'partly-achieved') : 'not-achieved';
+
   const labels = {
     achieved: 'Achieved',
     'partly-achieved': 'Partly achieved',
     'not-achieved': 'Not achieved',
   };
+
   return {
     code,
     label: labels[code],

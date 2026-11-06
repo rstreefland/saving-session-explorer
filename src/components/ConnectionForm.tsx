@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { KeyRound } from 'lucide-react';
 import { readKey, saveKey, readAccount, saveAccount, forgetAccount } from '../domain/storage';
+
 export function ConnectionForm({
   onConnect,
   onForget,
@@ -22,11 +23,14 @@ export function ConnectionForm({
 }) {
   const [key, setKey] = useState(readKey),
     [account, setAccount] = useState(readAccount);
+
   const [error, setError] = useState(''),
     [expanded, setExpanded] = useState(
       () => !(key.trim() && /^A-[A-Za-z0-9]+$/.test(account.trim())),
     );
+
   const lastConnection = useRef<{ number?: string; name?: string | null; region?: string }>({});
+
   useEffect(() => {
     if (connected) {
       lastConnection.current = {
@@ -37,6 +41,7 @@ export function ConnectionForm({
       setExpanded(false);
     } else if (!busy) setExpanded(true);
   }, [connected, busy, accountNumber, accountHolderName, holidayRegion]);
+
   function forget() {
     lastConnection.current = {};
     setKey('');
@@ -44,23 +49,29 @@ export function ConnectionForm({
     setError('');
     setExpanded(true);
     onForget();
+
     try {
       forgetAccount();
     } catch (error) {
       setError((error as Error).message);
     }
   }
+
   const displayRegion = holidayRegion ?? lastConnection.current.region;
   const displayAccount = accountNumber || lastConnection.current.number || account;
+
   const displayName =
     accountHolderName !== undefined ? accountHolderName : lastConnection.current.name;
+
   const collapsed = !expanded && (connected || busy);
+
   const regionLabel =
     displayRegion === 'scotland'
       ? 'Scotland'
       : displayRegion === 'england-and-wales'
         ? 'England & Wales'
         : null;
+
   return (
     <section
       className={
@@ -131,6 +142,7 @@ export function ConnectionForm({
             onSubmit={(event) => {
               event.preventDefault();
               setError('');
+
               try {
                 saveKey(key.trim());
                 saveAccount(account.trim());

@@ -13,6 +13,7 @@ export async function connectedAccount(page: Page) {
       );
     });
   });
+
   const sessions = [
     { id: 1, date: '2026-11-04', hour: 14, status: 'CALCULATING' },
     { id: 2, date: '2026-11-03', hour: 17, status: 'CALCULATING' },
@@ -33,7 +34,9 @@ export async function connectedAccount(page: Page) {
     rewardGivenInPence: s.happy ? 4 : null,
     energyUsedInKwh: s.happy ? 0.2 : null,
   }));
+
   const readings = [];
+
   for (
     let time = Date.parse('2026-08-01T00:00:00Z');
     time < Date.parse('2026-11-05T00:00:00Z');
@@ -42,17 +45,22 @@ export async function connectedAccount(page: Page) {
     const session = sessions.find(
       (s) => time >= Date.parse(s.startAt) && time < Date.parse(s.endAt),
     );
+
     if (session?.eventId === 1) continue;
+
     readings.push({
       interval_start: new Date(time).toISOString(),
       interval_end: new Date(time + 1_800_000).toISOString(),
       consumption: session && session.eventId !== 3 ? 0.1 : 0.6,
     });
   }
+
   await page.route('https://api.oegb-kraken.energy/**', async (route) => {
     const url = route.request().url();
+
     if (url.includes('/graphql/')) {
       const query = route.request().postDataJSON().query;
+
       return route.fulfill({
         json: {
           data: query.includes('obtainKrakenToken')
@@ -66,6 +74,7 @@ export async function connectedAccount(page: Page) {
         },
       });
     }
+
     if (url.includes('/accounts/'))
       return route.fulfill({
         json: {
@@ -78,6 +87,7 @@ export async function connectedAccount(page: Page) {
           ],
         },
       });
+
     return route.fulfill({ json: { next: null, results: readings } });
   });
   await page.route('https://api.backend.octopus.energy/**', (route) =>

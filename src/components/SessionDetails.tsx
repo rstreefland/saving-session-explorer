@@ -9,6 +9,7 @@ import { PointsBreakdown } from './readings/PointsBreakdown';
 
 export function SessionDetails({ result }: { result: Calculation }) {
   const outcome = sessionOutcome(result);
+
   return (
     <div className="session-details">
       <CalculationSummary result={result} />

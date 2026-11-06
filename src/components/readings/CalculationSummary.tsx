@@ -5,15 +5,21 @@ import { number } from './format';
 
 function explanation(result: Calculation) {
   const outcome = sessionOutcome(result);
+
   if (result.rewarded === null)
     return 'This calculation cannot be completed yet. The available readings are shown below.';
+
   if (isHappyHour(result.session))
     return 'Electricity imported during your booked hour is added up. No baseline comparison is needed.';
+
   const up = result.session.eventType === 'TURN_UP';
+
   if (outcome.code === 'achieved')
     return `You used ${number(Math.abs(result.netSaved!))} kWh ${up ? 'more' : 'less'} than baseline over the whole session.`;
+
   if (outcome.code === 'partly-achieved')
     return `You used ${up ? 'more' : 'less'} in some half-hours, but not over the session as a whole. Those half-hours still count towards rewards.`;
+
   return `You did not use ${up ? 'more' : 'less'} than baseline in any half-hour.`;
 }
 
@@ -52,6 +58,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
   const outcome = sessionOutcome(result);
   const change = result.netSaved;
   const up = result.session.eventType === 'TURN_UP';
+
   const baselineCard = (
     <EnergyCard
       step={up ? 2 : 1}
@@ -64,6 +71,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
       }
     />
   );
+
   const usageCard = (
     <EnergyCard
       step={happy || up ? 1 : 2}
@@ -74,6 +82,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
       }
     />
   );
+
   return (
     <section className="calculation-summary" aria-label="Calculation summary">
       <div className="calculation-heading">

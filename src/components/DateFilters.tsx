@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { last30Days, validRange, type Preset } from '../domain/dateRange';
 import { todayInLondon } from '../domain/time';
+
 export function DateFilters({
   from,
   to,
@@ -15,6 +16,7 @@ export function DateFilters({
   const dialog = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState({ from, to });
   const [open, setOpen] = useState(false);
+
   return (
     <div className="toolbar">
       <div className="period-buttons" role="group" aria-label="Date range">
@@ -23,6 +25,7 @@ export function DateFilters({
           aria-pressed={selected === '30d'}
           onClick={() => {
             const range = last30Days();
+
             onChange(range.from, range.to, '30d');
           }}
         >
@@ -54,6 +57,7 @@ export function DateFilters({
         <form
           onSubmit={(e) => {
             e.preventDefault();
+
             if (validRange(draft.from, draft.to)) {
               onChange(draft.from, draft.to, 'custom');
               dialog.current?.close();

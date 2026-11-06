@@ -1,8 +1,10 @@
 import { expect, it } from 'vitest';
 import { readingCoverage } from './coverage';
 import { demoDataset } from './demo';
+
 it('counts all missing slots and handles both DST transitions', () => {
   const data = { ...demoDataset(), imports: [] };
+
   expect(readingCoverage(data, '2026-03-29', '2026-03-29', Infinity)).toEqual({
     expected: 46,
     missing: 46,
@@ -12,6 +14,7 @@ it('counts all missing slots and handles both DST transitions', () => {
     missing: 50,
   });
 });
+
 it('does not require future slots and distinguishes zero readings from missing export', () => {
   const data = {
     ...demoDataset(),
@@ -23,6 +26,7 @@ it('does not require future slots and distinguishes zero readings from missing e
       },
     ],
   };
+
   expect(
     readingCoverage(data, '2026-01-01', '2026-01-01', Date.parse('2026-01-01T00:40:00Z')),
   ).toEqual({ expected: 1, missing: 0 });

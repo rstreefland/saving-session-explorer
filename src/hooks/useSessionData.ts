@@ -6,6 +6,7 @@ interface Request {
   options: LoadOptions;
   scope: number;
 }
+
 const queryKey = (request: Request | null) =>
   request
     ? ['sessions', request.scope, request.options.region, request.options.from, request.options.to]
@@ -18,14 +19,19 @@ export function useSessionData(
 ) {
   const client = useQueryClient();
   const [defaultLoad] = useState(createDatasetLoader);
+
   const [request, setRequest] = useState<Request | null>(() => {
     const options = initialOptions();
+
     return options ? { options, scope: 1 } : null;
   });
+
   const identity = useRef<{ key: string; account: string; scope: number } | null>(
     request ? { key: request.options.key, account: request.options.account, scope: 1 } : null,
   );
+
   const nextScope = useRef(request ? 1 : 0);
+
   const query = useQuery({
     queryKey: queryKey(request),
     enabled: request !== null,
@@ -35,6 +41,7 @@ export function useSessionData(
   function reset(forget = false) {
     void client.cancelQueries({ queryKey: ['sessions'] });
     setRequest(null);
+
     if (forget) {
       client.clear();
       defaultLoad.clear();
@@ -44,11 +51,14 @@ export function useSessionData(
 
   function connect(options: LoadOptions) {
     const previous = identity.current;
+
     if (!previous || previous.key !== options.key || previous.account !== options.account) {
       client.clear();
       identity.current = { key: options.key, account: options.account, scope: ++nextScope.current };
     }
+
     const next = { options, scope: identity.current!.scope };
+
     if (JSON.stringify(queryKey(next)) === JSON.stringify(queryKey(request))) {
       void query.refetch();
     } else {

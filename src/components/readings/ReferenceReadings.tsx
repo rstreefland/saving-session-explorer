@@ -8,7 +8,9 @@ export function ReferenceReadings({ result }: { result: Calculation }) {
   const id = useId();
   const [selected, setSelected] = useState(0);
   const slot = result.slots[selected] ?? result.slots[0];
+
   if (!slot) return null;
+
   return (
     <ReadingDisclosure title={`Days used for baseline (${result.days.length})`}>
       <p>

@@ -3,6 +3,7 @@ export interface Reading {
   interval_end: string;
   consumption: number;
 }
+
 export interface Session {
   eventId: number;
   startAt: string;
@@ -19,6 +20,7 @@ export interface Session {
   rewardGivenInPence?: number | null;
   energyUsedInKwh?: number | null;
 }
+
 export type BaselineIssue = 'holidays' | 'exports' | 'event-history';
 
 export interface Dataset {
@@ -39,12 +41,14 @@ export interface Dataset {
   fetchedAt: string;
   mpan: string;
 }
+
 export interface Slot {
   start: string;
   baseline: number | null;
   actual: number | null;
   references: { date: string; value: number | null }[];
 }
+
 export interface Calculation {
   session: Session;
   slots: Slot[];

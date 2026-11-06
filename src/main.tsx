@@ -10,6 +10,7 @@ import '@fontsource/space-grotesk/latin-700.css';
 import './style.css';
 import './styles/sessionHistory.css';
 import './styles/connection.css';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
