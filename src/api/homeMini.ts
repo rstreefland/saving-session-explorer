@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { AUTH, graphql } from './client';
-import { indexReadings } from '../domain/calculate';
 import type { Reading } from '../domain/types';
 
 // Configure before constructing schemas: this module loads before client.ts.
@@ -56,7 +55,15 @@ export function mergeHomeMini(
   end: number,
 ): Reading[] {
   const occupied = new Set(readings.map((r) => Date.parse(r.interval_start)));
-  const candidates: Reading[] = telemetrySchema.parse(raw).smartMeterTelemetry.flatMap((row) => {
+  const telemetry = telemetrySchema.parse(raw).smartMeterTelemetry;
+  const counts = new Map<number, number>();
+  // Count raw timestamps before discarding unusable values: an invalid duplicate
+  // still makes the interval ambiguous, including equivalent timestamp offsets.
+  for (const row of telemetry) {
+    const time = Date.parse(row.readAt);
+    counts.set(time, (counts.get(time) ?? 0) + 1);
+  }
+  const candidates: Reading[] = telemetry.flatMap((row) => {
     const time = Date.parse(row.readAt);
     const value =
       row.consumptionDelta === null || String(row.consumptionDelta).trim() === ''
@@ -65,6 +72,7 @@ export function mergeHomeMini(
     return time >= start &&
       time + HALF_HOUR <= end &&
       time % HALF_HOUR === 0 &&
+      counts.get(time) === 1 &&
       Number.isFinite(value) &&
       value >= 0
       ? [
@@ -77,15 +85,7 @@ export function mergeHomeMini(
         ]
       : [];
   });
-  const indexed = indexReadings(candidates);
-  return [
-    ...readings,
-    ...candidates.filter(
-      (r) =>
-        !occupied.has(Date.parse(r.interval_start)) &&
-        indexed.get(Date.parse(r.interval_start)) != null,
-    ),
-  ];
+  return [...readings, ...candidates.filter((r) => !occupied.has(Date.parse(r.interval_start)))];
 }
 
 export async function fillHomeMiniGaps(options: {
