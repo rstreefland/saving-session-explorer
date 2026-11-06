@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://saving-session-explorer.streefland.co.uk/sitemap.xml

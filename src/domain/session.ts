@@ -20,3 +20,6 @@ export function reportedShifted(session: Session) {
     ? (session.energyUsedInKwh ?? session.energyDeltaKwh)
     : (session.energyDeltaKwh ?? (session.resultsStatus === 'FAIL' ? 0 : null));
 }
+
+export const MISSING_SESSION_EXPLANATION =
+  'Octopus couldn’t get readings for this Session. If you opted in, Octopus says it will credit the average Octopoints earned in that Session.';

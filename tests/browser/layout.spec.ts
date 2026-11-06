@@ -201,3 +201,90 @@ test('production CSP blocks injected scripts and unapproved requests while toolt
     )
     .toEqual(expect.arrayContaining(['script-src-elem', 'connect-src']));
 });
+
+for (const width of [320, 1280]) {
+  test(`provisional Mini estimates fit at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await connectedAccount(page, true);
+    await page.goto('/');
+    const row = page.locator('.history-row').first();
+    await expect(row.getByRole('button', { name: 'Provisional reading' })).toBeVisible();
+    await fitsViewport(page);
+    await row.getByRole('button', { name: /Readings for/ }).click();
+    await page
+      .locator('.session-details')
+      .getByRole('button', { name: 'Provisional reading' })
+      .first()
+      .click();
+    await expect(page.getByRole('tooltip')).toContainText('Home Mini');
+    await fitsViewport(page);
+    expect(
+      await page.evaluate(() => (window as unknown as { cspViolations: string[] }).cspViolations),
+    ).toEqual([]);
+  });
+}
+
+test('meter notes list gap periods and calculation guides open independently', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await connectedAccount(page, true);
+  await page.goto('/');
+  await expect(page.locator('.history-row')).toHaveCount(4);
+  await page.getByText('Missing data?', { exact: true }).click();
+  const gaps = page.getByRole('table', { name: 'Missing meter readings' });
+  await expect(gaps).toContainText('4 Nov 2026');
+  await expect(gaps).toContainText('Home Mini data available');
+  await expect(gaps).toContainText('Yes');
+  const guides = page.getByRole('region', { name: 'Calculation guides' });
+  for (const title of [
+    'How your baseline is calculated',
+    'Understanding your results and rewards',
+    'Why estimates can differ from Octopus',
+  ]) {
+    await expect(guides.getByText(title, { exact: true })).toBeVisible();
+    await guides.getByText(title, { exact: true }).click();
+    await expect(guides.locator('#methodology')).not.toHaveAttribute('open');
+  }
+  await fitsViewport(page);
+});
+
+for (const width of [320, 1280]) {
+  test(`Power up keeps energy estimates without reward estimates at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Try demo', exact: true }).click();
+    await page.getByRole('tab', { name: 'Power up', exact: true }).click();
+    const table = page.getByRole('table', { name: 'Power up session history' });
+    await expect(table.getByRole('columnheader', { name: 'Calculated result' })).toBeVisible();
+    await expect(table.getByRole('columnheader', { name: 'Calculated reward' })).toHaveCount(0);
+    await expect(
+      table.locator('.history-row .outcome-cell').first().locator('.mobile-reward'),
+    ).toHaveCount(0);
+    await table.getByRole('button', { name: /Readings for/ }).click();
+    await expect(page.getByRole('region', { name: 'Calculation summary' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Octopoints estimate' })).toHaveCount(0);
+    await fitsViewport(page);
+  });
+}
+
+for (const width of [320, 1280]) {
+  test(`Octopus missing-data results explain average credits at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await connectedAccount(page, false, true);
+    await page.goto('/');
+    const result = page.getByRole('button', { name: 'Missing data', exact: true });
+    await expect(result).toBeVisible();
+    const row = result.locator('xpath=ancestor::tr');
+    await result.scrollIntoViewIfNeeded();
+    await expect(result).toBeInViewport();
+    await result.click();
+    await expect(page.getByRole('tooltip')).toContainText('average Octopoints earned');
+    await result.press('Escape');
+    await row.getByRole('button', { name: /Readings for/ }).click();
+    await expect(page.getByRole('note', { name: 'Octopus missing data' })).toContainText(
+      'Your own estimate may differ from an average credit',
+    );
+    await fitsViewport(page);
+  });
+}

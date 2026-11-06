@@ -37,7 +37,7 @@ it('uses Octopus status descriptions and preserves zero, missing and pending res
     'Achieved0.00 kWh shifted',
     'Partly achieved0.00 kWh shifted',
     'Not achieved0.00 kWh shifted',
-    'Missing readings•••',
+    'Missing data•••',
     'Pending•••',
   ]);
   expect(within(table).getAllByRole('cell', { name: '0 Octopoints' })).toHaveLength(4);
@@ -274,7 +274,7 @@ it('shows calculated and actual rewards independently, including before Octopus 
   );
 });
 
-it('does not mistake a Power up placeholder rate for a zero-point reward', () => {
+it('hides the Power up reward estimate while keeping the actual reward', () => {
   const result = calculateAll(demoDataset(true)).find((r) => r.session.eventType === 'TURN_UP')!;
 
   render(<SessionHistory results={[result]} type="TURN_UP" onTypeChange={vi.fn()} />);
@@ -283,8 +283,8 @@ it('does not mistake a Power up placeholder rate for a zero-point reward', () =>
     screen.getByRole('button', { name: /Readings for/ }).closest('tr')!,
   ).getAllByRole('cell');
 
-  expect(cells[2]).toHaveTextContent('•••');
-  expect(cells[3]).toHaveTextContent('0 Octopoints');
+  expect(screen.queryByRole('columnheader', { name: 'Calculated reward' })).not.toBeInTheDocument();
+  expect(cells[2]).toHaveTextContent('0 Octopoints');
 });
 
 it('keeps Happy Hour cash credits without an estimated Octopoints column', async () => {
@@ -417,4 +417,32 @@ it.each([
   expect(within(date).getByText(visible)).toHaveAttribute('aria-hidden', 'true');
   expect(within(date).getByText(spoken)).toHaveClass('sr-only');
   expect(date).toHaveAccessibleName(new RegExp(spoken));
+});
+
+it('keeps a calculated missed-reward flag alongside Octopus missing-data information', async () => {
+  const result = calculateAll(demoDataset())[1];
+  render(
+    <SessionHistory
+      results={[
+        {
+          ...result,
+          session: {
+            ...result.session,
+            resultsStatus: 'MISSING_READINGS',
+            rewardGivenInOctoPoints: 0,
+          },
+        },
+      ]}
+      type="TURN_DOWN"
+      onTypeChange={vi.fn()}
+    />,
+  );
+  await userEvent.click(screen.getByRole('button', { name: 'Missing data' }));
+  expect(screen.getByRole('tooltip')).toHaveTextContent(
+    'Octopus says it will credit the average Octopoints earned',
+  );
+  expect(screen.getByText('Possible missed reward', { exact: true })).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Octopus reward information' }),
+  ).not.toBeInTheDocument();
 });

@@ -86,7 +86,7 @@ The production build includes a Content Security Policy that restricts scripts t
 
 Power down and Power up estimates compare net import with a historical baseline, counting qualifying changes separately for each half-hour. Ordinary weekday sessions use ten eligible weekdays; weekend and bank holiday sessions use four eligible weekend days. Holidays and event days are excluded from the reference dates. Happy Hours use imported electricity without a baseline. Missing or invalid readings and incomplete history prevent a complete estimate. A failure to load linked export readings or verify bank holidays blocks baseline-based estimates but leaves import-only Happy Hour estimates available. Data may arrive late or be revised, and readings from different meter serials are not combined.
 
-Power down Octopoints use the published event rate, with inferred whole-penny rounding and a 2p minimum for a positive reward. This formula has not been confirmed by Octopus. Power up points and Happy Hour cash credits depend on tariff information and are not independently priced.
+Power down Octopoints use the published event rate, with inferred whole-penny rounding and a 2p minimum for a positive reward. This formula has not been confirmed by Octopus. Power up reward estimates are not shown; energy shifts are still estimated. Happy Hour cash credits are not independently priced.
 
 Estimates and discrepancies do not prove that a reward is incorrect. Sources: [Saving Sessions FAQs](https://octopus.energy/blog/saving-sessions-faqs/), [Octoplus terms](https://octopus.energy/Octoplus-terms-and-conditions/), [Octopus UK API documentation](https://developer.oegb-kraken.energy/) and [GOV.UK bank holidays](https://www.gov.uk/bank-holidays.json).
 
@@ -103,3 +103,33 @@ The site uses `/` as its base path for `saving-session-explorer.streefland.co.uk
 ## About this experiment
 
 This project was entirely built using AI, guided by human prompts and feedback. It is experimental software, not a reproduction of Octopus’s settlement system.
+
+### Provisional Home Mini fallback
+
+When standard import readings are absent, the app queries `smartMeterTelemetry`
+with `HALF_HOURLY` grouping using the existing account access token. It matches the
+active device to both the selected MPAN and meter serial, requests UTC days within
+the last 29 days (inside the API's rolling 30-day history limit), and converts
+`consumptionDelta` from Wh to kWh. Only completed, aligned half-hours with a finite,
+nonnegative value are accepted. Nulls and duplicate telemetry remain missing;
+existing standard rows, including invalid or conflicting rows, are never overwritten.
+
+Sessions using Mini inputs for usage or baseline show a small clock indicator with a tooltip explaining
+that the readings are provisional. Refreshing reloads standard readings first, replacing fallback data as they
+arrive. Provisional estimates do not trigger possible-missed-reward alerts. Export
+readings still come exclusively from the standard API. Older gaps and gaps in the
+Mini stream remain missing. Daily requests run sequentially, stop on an API error,
+and preserve successful data; fallback failures never prevent standard results
+from loading. No background collection or persistent telemetry cache is added.
+
+### Search and link previews
+
+The initial HTML includes the public introduction without requiring JavaScript.
+It is rendered from the same component as the interactive introduction and never
+includes account data. The page supplies a meta description, canonical URL,
+Open Graph and Twitter metadata, an SVG favicon, and a 1200×630 PNG sharing card.
+The editable sharing-card source is `public/social-card.svg`.
+
+`public/robots.txt` allows crawling and points to `public/sitemap.xml`, which lists
+the single public page. If the public hostname changes, update the canonical,
+sharing URLs, robots sitemap URL, sitemap entry and `public/CNAME` together.

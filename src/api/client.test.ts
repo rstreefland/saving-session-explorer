@@ -131,6 +131,9 @@ function setup({
         if (query.includes('obtainKrakenToken'))
           return response({ data: { obtainKrakenToken: { token: 'jwt' } } });
 
+        if (query.includes('HomeMiniDevices'))
+          return response({ data: { account: { electricityAgreements: [] } } });
+
         return profileUnavailable
           ? response({ errors: [{ message: 'Profile unavailable' }] })
           : response({ data: { account: { number: 'A-123', billingName: holderName } } });

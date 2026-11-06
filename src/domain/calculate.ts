@@ -103,6 +103,9 @@ function comparisonState(
 }
 
 export function calculateAll(data: Dataset): Calculation[] {
+  const miniTimes = new Set(
+    data.imports.filter((r) => r.source === 'home-mini').map((r) => milliseconds(r.interval_start)),
+  );
   const imports = indexReadings(data.imports);
   const exports = data.exports === null ? null : indexReadings(data.exports);
 
@@ -133,6 +136,7 @@ export function calculateAll(data: Dataset): Calculation[] {
 
     const slots: Calculation['slots'] = [];
     let ambiguousClockTime = false;
+    let provisional = false;
 
     if (!unsupported)
       for (
@@ -140,6 +144,7 @@ export function calculateAll(data: Dataset): Calculation[] {
         time.epochMilliseconds < end.epochMilliseconds;
         time = time.add({ minutes: 30 })
       ) {
+        if (miniTimes.has(time.epochMilliseconds)) provisional = true;
         const references = days.map((date) => {
           const target = referenceTime(date, time.toPlainTime());
 
@@ -147,6 +152,8 @@ export function calculateAll(data: Dataset): Calculation[] {
             referenceTime(time.toPlainDate().toString(), time.toPlainTime()) !== null;
 
           if (target === null || !unambiguous) ambiguousClockTime = true;
+
+          if (target !== null && unambiguous && miniTimes.has(target)) provisional = true;
 
           return { date, value: target !== null && unambiguous ? read(target) : null };
         });
@@ -156,6 +163,7 @@ export function calculateAll(data: Dataset): Calculation[] {
 
         slots.push({
           start: iso(time),
+          actualProvisional: miniTimes.has(time.epochMilliseconds),
           actual: happyHour
             ? (imports.get(time.epochMilliseconds) ?? null)
             : read(time.epochMilliseconds),
@@ -215,6 +223,7 @@ export function calculateAll(data: Dataset): Calculation[] {
 
     return {
       session,
+      provisional,
       slots,
       days,
       issues,

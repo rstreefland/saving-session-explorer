@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import { calculateAll } from '../../domain/calculate';
 import { demoDataset } from '../../domain/demo';
@@ -88,15 +88,14 @@ it('does not present a partial meter calculation as a complete reward', () => {
   expect(screen.queryByRole('list')).not.toBeInTheDocument();
 });
 
-it('explains Power up tariff requirements and excludes Happy Hour cash rewards', () => {
+it('hides reward estimates for Power up and Happy Hours', () => {
   const result = calculation();
 
   result.session.eventType = 'TURN_UP';
 
   const view = render(<PointsBreakdown result={result} />);
 
-  expect(screen.getByText(/Power up rewards need your import tariff rates/)).toBeVisible();
-  expect(within(screen.getByRole('region')).queryByRole('list')).not.toBeInTheDocument();
+  expect(screen.queryByRole('region')).not.toBeInTheDocument();
 
   view.rerender(
     <PointsBreakdown

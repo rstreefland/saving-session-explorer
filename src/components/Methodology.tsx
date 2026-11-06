@@ -1,69 +1,96 @@
-import { RewardRoundingExplanation } from './RewardRoundingExplanation';
+import { MISSING_SESSION_EXPLANATION } from '../domain/session';
 
 export function Methodology() {
   return (
-    <details id="methodology" className="methodology panel">
-      <summary>How the calculation works</summary>
-      <p>
-        <strong>Power down:</strong> your session usage is compared with your baseline for the same
-        time. If your baseline is 1 kWh and you use 0.4 kWh, you shifted 0.6 kWh.
-      </p>
-      <p>
-        <strong>Power up:</strong> the same comparison, but you earn rewards for using more. If your
-        baseline is 1 kWh and you use 1.6 kWh, you shifted 0.6 kWh.
-      </p>
-      <p>
-        <strong>Happy Hours:</strong> the electricity imported during your booked hour is added up.
-        There is no baseline comparison. The credit depends on your tariff and the session’s rules.
-      </p>
-      <p>
-        <strong>Octopus vs calculated figures:</strong> “Result” comes from Octopus. “Calculated
-        result” says whether your meter readings suggest you achieved the session. A complete
-        estimate cannot be produced until all the required readings are available.
-      </p>
-      <p>
-        <strong>Calculated reward:</strong> for Power down, shifted energy is multiplied by the
-        session’s Octopoints rate. The reward is then rounded up to a whole penny, with a 2p minimum
-        assumed for a positive reward. This fits the results checked, but the formula has not been
-        confirmed by Octopus. Open a session to see the steps and the difference from the actual
-        reward. Power up rewards require tariff rates, so those are not estimated yet.
-      </p>
-      <details>
-        <summary>How your baseline is calculated</summary>
+    <section className="methodology panel" aria-label="Calculation guides">
+      <details id="methodology">
+        <summary>How your usage is calculated</summary>
+        <ul>
+          <li>
+            <strong>Power down:</strong> rewards reductions below your usual usage.
+          </li>
+          <li>
+            <strong>Power up:</strong> rewards increases above your usual usage.
+          </li>
+          <li>
+            <strong>Happy Hours:</strong> adds up electricity imported during your booked hour,
+            without a baseline.
+          </li>
+        </ul>
         <p>
-          Achieved means you met the target overall. Partly achieved means you met it in some
-          half-hours, but not overall. You can still earn Octopoints for those half-hours.
-        </p>
-        <p>
-          For a weekday session that is not a bank holiday, the same half-hours from the last 10
-          eligible weekdays are used. For a weekend or bank holiday session, the last 4 eligible
-          weekend days are used. Only weekend days are used for that baseline. Up to 60 days of
-          history are checked, with bank holidays and known session days left out.
-        </p>
-        <p>
-          Each half-hour is counted separately: using more later does not cancel a reduction
-          earlier. For Power down and Power up, electricity you export is included. Happy Hours use
-          import readings only.
-        </p>
-        <p>
-          Small differences in energy estimates are normal and are shown only in the reading
-          details. A possible missed reward is flagged only when your complete readings suggest you
-          achieved a Power down or Power up session and Octopus reports no reward. Pending results
-          are never treated as missed rewards. “Reward” is the amount reported by Octopus.
+          Power down and Power up use imports minus exports. Each half-hour counts separately, so a
+          qualifying change in one half-hour isn’t cancelled out by another.
         </p>
       </details>
       <details>
-        <summary>Why the kWh figures can differ</summary>
-        <RewardRoundingExplanation />
+        <summary>How your baseline is calculated</summary>
+        <p>Your baseline estimates what you would normally use at the same time:</p>
+        <ul>
+          <li>
+            <strong>Weekday sessions:</strong> average of the last 10 eligible weekdays.
+          </li>
+          <li>
+            <strong>Weekend and bank holiday sessions:</strong> average of the last 4 eligible
+            weekend days.
+          </li>
+        </ul>
         <p>
-          The meter estimate is kept separate from Octopus’s reported figures. Different kWh alone
-          do not prove that a reward is wrong. Some baseline totals can also differ, and the API
-          does not show the underlying half-hour baselines used by Octopus for these results.
+          The app looks back up to 60 days, excluding bank holidays and known session days. Missing
+          readings can prevent a complete estimate.
+        </p>
+      </details>
+      <details>
+        <summary>Understanding your results and rewards</summary>
+        <p>
+          <strong>Calculated</strong> figures are this app’s estimates. <strong>Actual</strong>{' '}
+          figures come from Octopus.
+        </p>
+        <p>For Power down and Power up, Octopus uses these result labels:</p>
+        <ul>
+          <li>
+            <strong>Achieved:</strong> You opted in and shifted power over the whole Session
+          </li>
+          <li>
+            <strong>Partly achieved:</strong> You opted in and shifted power for part of the Session
+            (one half-hour slot out of two)
+          </li>
+          <li>
+            <strong>Not achieved:</strong> You opted in but didn’t shift power at any point in the
+            Session
+          </li>
+          <li>
+            <strong>Missing data:</strong> {MISSING_SESSION_EXPLANATION}
+          </li>
+        </ul>
+        <p>
+          For Power down, the estimated reward uses the session’s Octopoints rate, rounds up to a
+          whole penny and assumes a 2p minimum for a positive reward. These rounding assumptions fit
+          the results checked but aren’t confirmed by Octopus.
+        </p>
+        <p>
+          Power up energy use is estimated, but rewards aren’t estimated. Happy Hours pay bill
+          credit rather than Octopoints.
+        </p>
+      </details>
+      <details>
+        <summary>Why estimates can differ from Octopus</summary>
+        <p>
+          Octopus appears to round rewards before converting them back to kWh. Its underlying
+          baseline readings also aren’t available through the API, so we can’t reproduce every
+          figure exactly.
+        </p>
+        <p>
+          Clock-marked estimates use Home Mini data while standard readings are unavailable. These
+          are provisional.
+        </p>
+        <p>
+          A difference alone doesn’t mean your reward is wrong. Open a session’s breakdown to
+          inspect the readings and calculation.
         </p>
       </details>
       <a href="https://octopus.energy/blog/saving-sessions-faqs/">Octopus FAQs ↗</a>
       {' · '}
       <a href="https://octopus.energy/Octoplus-terms-and-conditions/">Official terms ↗</a>
-    </details>
+    </section>
   );
 }

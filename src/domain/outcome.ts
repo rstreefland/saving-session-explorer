@@ -45,8 +45,10 @@ export function sessionOutcome(result: Calculation): SessionOutcome {
   const achieved = rewarded > 1e-9;
   const officialReward = session.rewardGivenInOctoPoints;
 
-  // Pending results and awarded sessions must never look like disputes over small kWh differences.
+  // This flags the calculated side for review; the actual reward separately
+  // explains Octopus's average-credit policy for missing-readings sessions.
   const attention =
+    !result.provisional &&
     achieved &&
     ((session.resultsStatus === 'FAIL' && (officialReward === 0 || officialReward === null)) ||
       (session.resultsStatus === 'MISSING_READINGS' && officialReward === 0));

@@ -7,8 +7,10 @@ const count = (value: number) => String(value);
 export function SessionSummary({ results, type }: { results: Calculation[]; type: SessionType }) {
   const happy = type === 'WEEKEND_HAPPY_HOUR';
   const outcomes = results.map(sessionOutcome);
-  const estimated = outcomes.filter((outcome) => outcome.code === 'achieved').length;
-  const actual = results.filter((result) => result.session.resultsStatus === 'SUCCESS').length;
+  const estimated = outcomes.filter((outcome) => outcome.achieved).length;
+  const actual = results.filter((result) =>
+    ['SUCCESS', 'PARTIAL_SUCCESS'].includes(result.session.resultsStatus ?? ''),
+  ).length;
 
   return (
     <section className="stats" aria-label="Session summary">
@@ -17,7 +19,15 @@ export function SessionSummary({ results, type }: { results: Calculation[]; type
         <strong>{count(results.length)}</strong>
       </div>
       <div>
-        <span>{happy ? 'Usage ready' : 'Achieved (Actual / Estimated)'}</span>
+        <span>
+          {happy ? (
+            'Usage ready'
+          ) : (
+            <>
+              Achieved or partly achieved<small className="stats-context">Actual / Estimated</small>
+            </>
+          )}
+        </span>
         <strong>
           {happy
             ? count(results.filter((result) => result.rewarded !== null).length)

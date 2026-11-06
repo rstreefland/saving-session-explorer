@@ -250,3 +250,65 @@ it('uses the same numeric placeholder for pending supplier figures and missing r
     within(screen.getByRole('table', { name: 'Usage comparison' })).getAllByText('•••'),
   ).toHaveLength(3);
 });
+
+it('explains provisional Mini inputs without suggesting a missed reward', async () => {
+  const result = mixed(0.1, 0.1);
+  render(
+    <SessionDetails
+      result={{
+        ...result,
+        provisional: true,
+        session: { ...result.session, resultsStatus: 'FAIL', rewardGivenInOctoPoints: 0 },
+      }}
+    />,
+  );
+  await userEvent.click(screen.getByRole('button', { name: 'Provisional reading' }));
+  expect(screen.getByRole('tooltip')).toHaveTextContent('Home Mini');
+  expect(screen.queryByText(/Possible missed reward/)).not.toBeInTheDocument();
+});
+
+it('marks only usage boxes whose half-hour comes from the Mini', async () => {
+  const data = demoDataset();
+  const start = Date.parse(data.sessions[1].startAt);
+  data.imports.find((r) => Date.parse(r.interval_start) === start)!.source = 'home-mini';
+  const result = calculateAll(data)[1];
+  expect(result.slots.map((slot) => slot.actualProvisional)).toEqual([true, false]);
+  render(<SessionDetails result={result} />);
+  const usageCards = screen
+    .getAllByText('Your usage', { selector: 'dt' })
+    .map((term) => term.closest('dl')!);
+  expect(
+    within(usageCards[0]).getByRole('button', { name: 'Provisional reading' }),
+  ).toBeInTheDocument();
+  expect(
+    within(usageCards[1]).queryByRole('button', { name: 'Provisional reading' }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(within(usageCards[0]).getByRole('button', { name: 'Provisional reading' }));
+  expect(screen.getByRole('tooltip')).toHaveTextContent(
+    'This estimate uses figures from your Octopus Home Mini device because your smart meter readings have not arrived yet. These are indicative only and may differ to the smart meter readings.',
+  );
+});
+
+it('explains Octopus missing data and average credits even when our readings are complete', () => {
+  const result = mixed(0.1, 0.1);
+  render(
+    <SessionDetails
+      result={{
+        ...result,
+        session: {
+          ...result.session,
+          resultsStatus: 'MISSING_READINGS',
+          rewardGivenInOctoPoints: 0,
+        },
+      }}
+    />,
+  );
+  expect(screen.getByRole('note', { name: 'Octopus missing data' })).toHaveTextContent(
+    'Octopus says it will credit the average Octopoints earned in that Session',
+  );
+  expect(screen.getByRole('note', { name: 'Octopus missing data' })).toHaveTextContent(
+    'Your own estimate may differ from an average credit',
+  );
+  expect(screen.getByText(/Possible missed reward/)).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Calculation summary' })).toBeInTheDocument();
+});

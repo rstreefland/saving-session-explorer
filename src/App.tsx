@@ -15,6 +15,8 @@ import { ConnectionForm } from './components/ConnectionForm';
 import { DateFilters } from './components/DateFilters';
 import { SessionHistory } from './components/SessionHistory';
 import { SessionSummary } from './components/SessionSummary';
+import { MeterDataNotes } from './components/MeterDataNotes';
+import { PublicIntro } from './components/PublicIntro';
 import { Methodology } from './components/Methodology';
 import type { SessionType } from './domain/session';
 import { useSessionData } from './hooks/useSessionData';
@@ -81,7 +83,7 @@ function SessionLens({ load }: AppProps) {
         b.session.eventId - a.session.eventId,
     );
 
-  const warnings = data && type !== 'WEEKEND_HAPPY_HOUR' ? dataWarnings(data) : [];
+  const warnings = data ? (type !== 'WEEKEND_HAPPY_HOUR' ? dataWarnings(data) : data.warnings) : [];
   const error = validationError || remote.error;
 
   function reset(forget = false) {
@@ -123,22 +125,7 @@ function SessionLens({ load }: AppProps) {
         <span>Octopus Saving Session Explorer</span>
       </header>
       <main>
-        <section className="intro">
-          <div>
-            <h1>Saving Session Explorer</h1>
-            <p>
-              Octopus take a few days to calculate Saving Session results. This tool uses your smart
-              meter data to estimate how you did sooner. It can also compare these estimates with
-              Octopus Energy’s figures when they arrive. Use it to understand the numbers or spot
-              possible missed rewards.
-            </p>
-            <p>
-              Read or contribute to the{' '}
-              <a href="https://github.com/rstreefland/saving-session-explorer">code on GitHub</a>.{' '}
-              Not affiliated with or endorsed by Octopus Energy.
-            </p>
-          </div>
-        </section>
+        <PublicIntro />
         <ConnectionForm
           onConnect={connect}
           onForget={() => reset(true)}
@@ -190,20 +177,7 @@ function SessionLens({ load }: AppProps) {
                 onTypeChange={setType}
                 summary={<SessionSummary results={visible} type={type} />}
               />
-              {(coverage?.missing || warnings.length > 0) && (
-                <details className="data-notes">
-                  <summary>Meter data notes</summary>
-                  {coverage && coverage.missing > 0 && (
-                    <p>
-                      {coverage.missing} of {coverage.expected} half-hours in this period have
-                      missing or invalid readings. Each session is checked separately.
-                    </p>
-                  )}
-                  {warnings.map((warning) => (
-                    <p key={warning}>{warning}</p>
-                  ))}
-                </details>
-              )}
+              <MeterDataNotes coverage={coverage} warnings={warnings} />
               <p className="fine-print">
                 Fetched {formatLocal(data.fetchedAt, { dateStyle: 'short', timeStyle: 'short' })}.
                 {data.meterSerials && (
