@@ -39,7 +39,7 @@
 }
 
 .history-table thead {
-  background: #e5dce9;
+  background: #ece7ef;
 }
 
 .history-table th,
@@ -85,11 +85,18 @@
 }
 
 .history-row {
-  background: #f7f6f5;
+  background: var(--paper);
 }
 
 .history-row.stripe {
-  background: #eae1ef;
+  background: #f3f0f3;
+}
+
+@media (hover: hover) {
+  .history-row:hover,
+  .history-row.stripe:hover {
+    background: #ece7ef;
+  }
 }
 
 .outcome-cell {
@@ -156,7 +163,7 @@
 .history-table .sticky-date {
   position: sticky;
   left: 0;
-  background: #e5dce9;
+  background: #ece7ef;
   z-index: 2;
 }
 
@@ -289,7 +296,7 @@
     }
 
     .history-table > thead > tr {
-      background: #e5dce9;
+      background: #ece7ef;
     }
 
     .history-table > tbody > .history-row {
