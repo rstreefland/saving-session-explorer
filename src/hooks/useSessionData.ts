@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { loadDataset, createDatasetLoader, type LoadOptions } from '../api/client';
+import { loadDataset, type LoadOptions } from '../api/client';
 
 interface Request {
   options: LoadOptions;
@@ -14,11 +14,10 @@ const queryKey = (request: Request | null) =>
 
 /** Credentials live in closures, never query keys or persisted caches. */
 export function useSessionData(
-  load?: typeof loadDataset,
+  load: typeof loadDataset = loadDataset,
   initialOptions: () => LoadOptions | null = () => null,
 ) {
   const client = useQueryClient();
-  const [defaultLoad] = useState(createDatasetLoader);
 
   const [request, setRequest] = useState<Request | null>(() => {
     const options = initialOptions();
@@ -35,7 +34,7 @@ export function useSessionData(
   const query = useQuery({
     queryKey: queryKey(request),
     enabled: request !== null,
-    queryFn: ({ signal }) => (load ?? defaultLoad)(request!.options, signal),
+    queryFn: ({ signal }) => load(request!.options, signal),
   });
 
   function reset(forget = false) {
@@ -44,7 +43,6 @@ export function useSessionData(
 
     if (forget) {
       client.clear();
-      defaultLoad.clear();
       identity.current = null;
     }
   }

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { MeterDiscoveryCache } from './meterDiscovery';
 import { inferHolidayRegion } from '../domain/region';
 import { Temporal, midnight, local, milliseconds } from '../domain/time';
 import type { BaselineIssue, Dataset, Reading } from '../domain/types';
@@ -185,6 +184,8 @@ export async function selectMeter(
   point: MeterPoint,
   signal: AbortSignal,
 ): Promise<string> {
+  signal.throwIfAborted();
+
   const serials = [...new Set(point.meters.map((meter) => meter.serial_number))].sort();
 
   if (serials.length === 0)
@@ -217,6 +218,8 @@ export async function selectMeter(
       return { serial, latest: null };
     }),
   );
+
+  signal.throwIfAborted();
 
   // Sorting serials first makes ties deterministic, independent of API response order.
   const selected = candidates.reduce<(typeof candidates)[number] | null>(
@@ -279,11 +282,7 @@ async function optionalDependency<T>(load: () => Promise<T>, signal: AbortSignal
   }
 }
 
-export async function loadDataset(
-  options: LoadOptions,
-  signal: AbortSignal,
-  discovery = new MeterDiscoveryCache(),
-): Promise<Dataset> {
+export async function loadDataset(options: LoadOptions, signal: AbortSignal): Promise<Dataset> {
   const { key, account, from, to, region } = options;
 
   const auth = z
@@ -364,17 +363,9 @@ export async function loadDataset(
   const end = midnight(to).add({ days: 1 });
   const historyStart = start.subtract({ days: 60 }).toInstant().toString();
 
-  const select = (point: MeterPoint) =>
-    discovery.select(
-      point.mpan,
-      point.meters.map((meter) => meter.serial_number),
-      signal,
-      () => selectMeter(key, point, signal),
-    );
-
   const [importMeter, linkedExport] = await Promise.all([
     (async () => {
-      const serial = await select(imports);
+      const serial = await selectMeter(key, imports, signal);
 
       const readings = await fetchReadings(
         key,
@@ -391,7 +382,7 @@ export async function loadDataset(
       if (exports.length === 0) return null;
       if (exports.length !== 1) throw new Error('Ambiguous export meter points.');
 
-      const serial = await select(exports[0]);
+      const serial = await selectMeter(key, exports[0], signal);
 
       const readings = await fetchReadings(
         key,
@@ -454,27 +445,4 @@ export async function loadDataset(
     holidayRegion: selectedRegion ?? undefined,
     holidayRegionSource: region === 'auto' ? 'Octopus grid supply point' : 'Manual override',
   };
-}
-
-/** Each mounted app owns its loader; account/key changes discard discovery results. */
-export function createDatasetLoader() {
-  let scope: { key: string; account: string; discovery: MeterDiscoveryCache } | null = null;
-
-  return Object.assign(
-    (options: LoadOptions, signal: AbortSignal) => {
-      if (!scope || scope.key !== options.key || scope.account !== options.account)
-        scope = {
-          key: options.key,
-          account: options.account,
-          discovery: new MeterDiscoveryCache(),
-        };
-
-      return loadDataset(options, signal, scope.discovery);
-    },
-    {
-      clear: () => {
-        scope = null;
-      },
-    },
-  );
 }

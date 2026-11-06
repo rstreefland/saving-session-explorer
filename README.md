@@ -70,7 +70,7 @@ Built with React 19, TypeScript, Vite, TanStack React Query, [temporal-polyfill]
 
 ### Maintaining the data flow
 
-`App` owns the selected dates and session type, and filters and sorts the rows once. `SessionHistory` renders those rows in the supplied order. `useSessionData` owns requests, cancellation and the account-scoped loader; leave the optional `load` prop unset in production so the meter-discovery cache is used.
+`App` owns the selected dates and session type, and filters and sorts the rows once. `SessionHistory` renders those rows in the supplied order. `useSessionData` owns requests, cancellation and the account-scoped React Query results cache. The optional `load` prop allows tests to substitute the API loader.
 
 `loadDataset` validates external responses and builds a `Dataset`. Its `baselineIssues` contain explicit reasons why baseline estimates are unavailable; `warnings` are informational and never change calculation eligibility. `domain/availability.ts` maps those reasons to messages. Calendar completeness is checked against the API's event count, not the date of its oldest event: a period with no events is valid. If the API introduces a bounded history window, model that coverage explicitly before calculating older baselines.
 
@@ -80,7 +80,7 @@ When changing account handling, test the normal `App` with intercepted `fetch` a
 
 ## Account data and privacy
 
-The app runs in your browser. The API key and account number are saved in local storage; results and readings are cached in memory. **Forget account** clears saved credentials and the query and meter-discovery caches. Meter discovery is cached in memory for up to five minutes within the active account; account or API key changes discard it. Requests go directly to Octopus’s APIs and GOV.UK. No analytics or application backend is used.
+The app runs in your browser. The API key and account number are saved in local storage; results and readings are cached in memory. **Forget account** clears saved credentials and the React Query results cache. Accounts with multiple candidate meters are checked again whenever a dataset is fetched, so newly available half-hourly data can change the selected meter. Requests go directly to Octopus’s APIs and GOV.UK. No analytics or application backend is used.
 
 Authentication and REST requests use `api.oegb-kraken.energy`. Session results use the separate `api.backend.octopus.energy` GraphQL endpoint because the primary API does not expose `savingSessions`. The authentication token exchange is the only GraphQL mutation; the app does not change your account.
 

@@ -8,15 +8,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { dataWarnings } from '../domain/availability';
 import { calculateAll } from '../domain/calculate';
 import type { Session } from '../domain/types';
-import {
-  fetchReadings,
-  graphql,
-  loadDataset,
-  selectMeter,
-  createDatasetLoader,
-  AUTH,
-  GRAPHQL,
-} from './client';
+import { fetchReadings, graphql, loadDataset, selectMeter, AUTH, GRAPHQL } from './client';
 
 const signal = () => new AbortController().signal;
 
@@ -569,41 +561,6 @@ it('preserves Happy Hours when the holiday service is unavailable', async () => 
   expect(calculateAll(data)[0]).toMatchObject({ actual: 0.2, rewarded: 0.2, state: 'match' });
 });
 
-it('reuses meter discovery across ranges and refreshes, but never across private account scopes', async () => {
-  const calls = setup({ meters: 2 });
-  const load = createDatasetLoader();
-  const probes = () => calls.filter((url) => url.includes('order_by=-period'));
-
-  await load(options, signal());
-
-  expect(probes()).toHaveLength(2);
-
-  await load({ ...options, from: '2026-10-15' }, signal());
-
-  expect(probes()).toHaveLength(2);
-
-  await load(options, signal());
-
-  expect(probes()).toHaveLength(2);
-
-  await load({ ...options, account: 'A-OTHER' }, signal());
-
-  expect(probes()).toHaveLength(4);
-
-  await load({ ...options, key: 'other-key', account: 'A-OTHER' }, signal());
-
-  expect(probes()).toHaveLength(6);
-
-  load.clear();
-  await load(options, signal());
-
-  expect(probes()).toHaveLength(8);
-
-  await createDatasetLoader()(options, signal());
-
-  expect(probes()).toHaveLength(10);
-});
-
 it('propagates cancellation of an optional dependency instead of returning partial data', async () => {
   setup({ joinedEvents: [happyHour] });
 
@@ -623,8 +580,14 @@ it('propagates cancellation of an optional dependency instead of returning parti
   await expect(loadDataset(options, controller.signal)).rejects.toThrow('Cancelled');
 });
 
-it('the production App reuses discovery when results are refreshed', async () => {
-  const calls = setup({ meters: 2 });
+it('refreshes the selected meter when newer half-hour readings arrive on another serial', async () => {
+  const meterReadings = {
+    ABC: [reading],
+    REPLACEMENT: [
+      { ...reading, interval_start: '2026-10-31T00:00:00Z', interval_end: '2026-10-31T00:30:00Z' },
+    ],
+  };
+  const calls = setup({ meters: 2, meterReadings });
 
   localStorage.setItem('session-lens.api-key', 'test-key');
   localStorage.setItem('session-lens.account-number', 'A-123');
@@ -634,16 +597,19 @@ it('the production App reuses discovery when results are refreshed', async () =>
   const refresh = await screen.findByRole('button', { name: 'Refresh results' });
 
   await waitFor(() => expect(refresh).toBeEnabled());
+  expect(screen.getByText(/Import meter: ABC/)).toBeInTheDocument();
 
-  const probes = () => calls.filter((url) => url.includes('order_by=-period'));
-
-  expect(probes()).toHaveLength(2);
-
+  meterReadings.REPLACEMENT = [
+    { ...reading, interval_start: '2026-11-02T00:00:00Z', interval_end: '2026-11-02T00:30:00Z' },
+  ];
   await user.click(refresh);
-  await waitFor(() => expect(refresh).toBeEnabled());
 
-  expect(calls.filter((url) => url.includes('period_from='))).toHaveLength(2);
-  expect(probes()).toHaveLength(2);
+  await waitFor(() => expect(screen.getByText(/Import meter: REPLACEMENT/)).toBeInTheDocument());
+  const historyCalls = calls.filter((url) => url.includes('period_from='));
+
+  expect(historyCalls).toHaveLength(2);
+  expect(historyCalls[0]).toContain('/meters/ABC/');
+  expect(historyCalls[1]).toContain('/meters/REPLACEMENT/');
 });
 
 it('keeps estimates stable when the range starts before the oldest event in a complete calendar', async () => {
