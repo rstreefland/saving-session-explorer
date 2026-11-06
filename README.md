@@ -66,7 +66,7 @@ Keep fixtures anonymous and add regression tests alongside the code they cover. 
 - `src/hooks`: account-scoped server state, cancellation and responsive layout state.
 - `src/components`: account controls, session history and calculation details.
 
-Built with React 19, TypeScript, Vite, TanStack React Query, the Temporal polyfill, Zod, Lucide React and locally bundled Fontsource fonts. Styling is custom CSS; requests use native `fetch`. Tests use Vitest, React Testing Library, user-event, jest-dom and jsdom, with Istanbul coverage. Playwright checks layouts and the production security policy in Chromium and WebKit.
+Built with React 19, TypeScript, Vite, TanStack React Query, [temporal-polyfill](https://www.npmjs.com/package/temporal-polyfill), Zod, Lucide React and locally bundled Fontsource fonts. Styling is custom CSS; requests use native `fetch`. Tests use Vitest, React Testing Library, user-event, jest-dom and jsdom, with Istanbul coverage. Playwright checks layouts and the production security policy in Chromium and WebKit.
 
 ### Maintaining the data flow
 

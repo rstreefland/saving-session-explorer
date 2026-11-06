@@ -38,7 +38,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          temporal: ['@js-temporal/polyfill'],
+          temporal: ['temporal-polyfill'],
           react: ['react', 'react-dom'],
           query: ['@tanstack/react-query'],
         },

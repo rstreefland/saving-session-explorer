@@ -1,4 +1,4 @@
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from 'temporal-polyfill';
 
 // Import explicitly rather than patching globals, for consistent browser and test support.
 export { Temporal };

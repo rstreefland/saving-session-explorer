@@ -1,9 +1,20 @@
 import type { Page } from '@playwright/test';
+import type { Temporal } from 'temporal-polyfill';
 
 // Entirely synthetic account and meter data. No requests reach external services.
 export async function connectedAccount(page: Page) {
   await page.clock.setFixedTime(new Date('2026-11-05T12:00:00Z'));
   await page.addInitScript(() => {
+    // The ponyfill uses native Temporal when available, whose clock is independent of Date.
+    const native = (globalThis as typeof globalThis & { Temporal?: typeof Temporal }).Temporal;
+
+    if (native) {
+      const instant = native.Instant.from('2026-11-05T12:00:00Z');
+      native.Now.instant = () => instant;
+      native.Now.plainDateISO = (zone) =>
+        instant.toZonedDateTimeISO(zone ?? native.Now.timeZoneId()).toPlainDate();
+    }
+
     localStorage.setItem('session-lens.api-key', 'synthetic-test-key');
     localStorage.setItem('session-lens.account-number', 'A-TEST');
     (window as unknown as { cspViolations: string[] }).cspViolations = [];
