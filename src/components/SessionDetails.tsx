@@ -2,7 +2,6 @@ import type { Calculation } from '../domain/types';
 import { isHappyHour } from '../domain/session';
 import { sessionOutcome } from '../domain/outcome';
 import { CalculationSummary } from './readings/CalculationSummary';
-import { HalfHourBreakdown } from './readings/HalfHourBreakdown';
 import { ReferenceReadings } from './readings/ReferenceReadings';
 import { OctopusComparison } from './readings/OctopusComparison';
 import { PointsBreakdown } from './readings/PointsBreakdown';
@@ -28,7 +27,6 @@ export function SessionDetails({ result }: { result: Calculation }) {
           Possible missed reward: your readings suggest you qualify, but Octopus reports no reward.
         </p>
       )}
-      <HalfHourBreakdown result={result} />
       <PointsBreakdown result={result} />
       {!isHappyHour(result.session) && (
         <p className="reading-note">

@@ -84,7 +84,7 @@ it('expands and collapses reading details per row', async () => {
   await userEvent.click(button);
 
   expect(button).toHaveAttribute('aria-expanded', 'true');
-  expect(screen.getByRole('table', { name: 'Half-hour readings (kWh)' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Calculation summary' })).toBeInTheDocument();
   expect(
     document.getElementById(button.getAttribute('aria-controls')!)?.querySelector('td'),
   ).toHaveAttribute('colspan', '6');
@@ -93,7 +93,7 @@ it('expands and collapses reading details per row', async () => {
 
   expect(button).toHaveAttribute('aria-expanded', 'false');
   expect(button).toHaveFocus();
-  expect(screen.queryByRole('table', { name: 'Half-hour readings (kWh)' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Calculation summary' })).not.toBeInTheDocument();
 });
 
 it('labels Octopus results and names the reason a comparison is unavailable', () => {

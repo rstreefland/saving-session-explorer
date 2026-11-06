@@ -99,10 +99,56 @@ for (const width of [320, 375, 390, 600, 800, 1280]) {
     await expect(page.locator('.session-details')).toBeVisible();
 
     await fitsViewport(page);
+    // Check complete formulas as well as placeholders, including the stacked mobile layout.
+    await page
+      .getByRole('button', { name: /Readings for/ })
+      .first()
+      .click();
+    await page
+      .getByRole('button', { name: /Readings for/ })
+      .nth(1)
+      .click();
+
+    const calculation = page.getByRole('region', { name: 'Calculation summary' });
+    await expect(calculation).toContainText('Total shifted for rewards');
+    await expect(calculation.getByText('Overall change', { exact: true })).toHaveCount(0);
+
+    // Read geometry in one browser evaluation rather than a round-trip for every card.
+    const equationsFit = await calculation.evaluate((element) => {
+      const outer = element.getBoundingClientRect();
+      const cards = [...element.querySelectorAll('.calculation-card')];
+      const operators = [...element.querySelectorAll('.calculation-operator')];
+
+      return (
+        cards.length === 6 &&
+        operators.length === 4 &&
+        cards.every((card) => {
+          const bounds = card.getBoundingClientRect();
+
+          return bounds.x >= outer.x - 1 && bounds.right <= outer.right + 1;
+        }) &&
+        operators.every((operator) => {
+          const bounds = operator.getBoundingClientRect();
+
+          return (
+            bounds.width > 0 &&
+            bounds.height > 0 &&
+            getComputedStyle(operator).visibility === 'visible'
+          );
+        })
+      );
+    });
+
+    expect(equationsFit).toBe(true);
+    await fitsViewport(page);
     await page.getByRole('tab', { name: 'Happy Hours' }).click();
 
     await expect(page.locator('.history-row')).toHaveCount(1);
 
+    await page.getByRole('button', { name: /Readings for/ }).click();
+    await expect(page.getByRole('region', { name: 'Calculation summary' })).toContainText(
+      'Total imported',
+    );
     await fitsViewport(page);
 
     expect(

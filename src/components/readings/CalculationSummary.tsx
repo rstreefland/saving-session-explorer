@@ -1,53 +1,27 @@
+import { PLACEHOLDER } from '../placeholder';
 import type { Calculation } from '../../domain/types';
 import { isHappyHour } from '../../domain/session';
-import { sessionOutcome } from '../../domain/outcome';
-import { number } from './format';
-
-function explanation(result: Calculation) {
-  const outcome = sessionOutcome(result);
-
-  if (result.rewarded === null)
-    return 'This calculation cannot be completed yet. The available readings are shown below.';
-
-  if (isHappyHour(result.session))
-    return 'Electricity imported during your booked hour is added up. No baseline comparison is needed.';
-
-  const up = result.session.eventType === 'TURN_UP';
-
-  if (outcome.code === 'achieved')
-    return `You used ${number(Math.abs(result.netSaved!))} kWh ${up ? 'more' : 'less'} than baseline over the whole session.`;
-
-  if (outcome.code === 'partly-achieved')
-    return `You used ${up ? 'more' : 'less'} in some half-hours, but not over the session as a whole. Those half-hours still count towards rewards.`;
-
-  return `You did not use ${up ? 'more' : 'less'} than baseline in any half-hour.`;
-}
+import { clockTime } from '../../domain/time';
+import { halfHourEnd, number } from './format';
 
 function EnergyCard({
-  step,
   label,
   value,
   note,
-  overBaseline = false,
+  tone,
 }: {
-  step: number;
   label: string;
   value: number | null;
-  note: string;
-  overBaseline?: boolean;
+  note?: string;
+  tone?: 'positive' | 'negative';
 }) {
   return (
-    <dl className={'calculation-card' + (overBaseline ? ' calculation-card-over-baseline' : '')}>
-      <dt>
-        <span className="calculation-step" aria-hidden="true">
-          {step}
-        </span>
-        {label}
-      </dt>
+    <dl className={'calculation-card' + (tone ? ' calculation-card-' + tone : '')}>
+      <dt>{label}</dt>
       <dd>
         {number(value)}
         {value !== null && <span className="energy-unit"> kWh</span>}
-        <span className="calculation-card-note">{note}</span>
+        {note && <span className="calculation-card-note">{note}</span>}
       </dd>
     </dl>
   );
@@ -55,84 +29,94 @@ function EnergyCard({
 
 export function CalculationSummary({ result }: { result: Calculation }) {
   const happy = isHappyHour(result.session);
-  const outcome = sessionOutcome(result);
-  const change = result.netSaved;
   const up = result.session.eventType === 'TURN_UP';
-
-  const baselineCard = (
-    <EnergyCard
-      step={up ? 2 : 1}
-      label="Baseline"
-      value={result.baseline}
-      note={
-        result.days.length
-          ? `Average of ${result.days.length} similar days`
-          : 'Reference readings unavailable'
-      }
-    />
-  );
-
-  const usageCard = (
-    <EnergyCard
-      step={happy || up ? 1 : 2}
-      label="Your usage"
-      value={result.actual}
-      note={
-        happy ? 'Electricity imported during this hour' : 'Electricity used during this session'
-      }
-    />
-  );
 
   return (
     <section className="calculation-summary" aria-label="Calculation summary">
-      <div className="calculation-heading">
-        <h3>{happy ? 'How your usage was calculated' : 'How your result was calculated'}</h3>
-        {!happy && (
-          <span className={'calculation-outcome outcome-' + outcome.tone}>{outcome.label}</span>
-        )}
-      </div>
-      <p className="calculation-explanation">{explanation(result)}</p>
-      <div
-        className={'calculation-cards' + (happy ? ' single-card' : '')}
-        role="group"
-        aria-label={
-          happy
-            ? 'Metered usage'
-            : up
-              ? 'Your usage minus baseline equals overall change'
-              : 'Baseline minus your usage equals overall change'
-        }
-      >
-        {happy ? (
-          usageCard
-        ) : (
-          <>
-            {up ? usageCard : baselineCard}
-            <span className="calculation-operator" aria-hidden="true">
-              −
-            </span>
-            {up ? baselineCard : usageCard}
-            <span className="calculation-operator" aria-hidden="true">
-              =
-            </span>
-            <EnergyCard
-              step={3}
-              label="Overall change"
-              overBaseline={change !== null && change < -1e-9}
-              value={change === null ? null : change * (up ? -1 : 1)}
-              note={
-                change === null
-                  ? 'Waiting for a complete calculation'
-                  : Math.abs(change) < 1e-9
-                    ? 'Same as baseline'
-                    : change > 0
-                      ? 'Less than baseline'
-                      : 'More than baseline'
+      <h3>{happy ? 'How your usage was calculated' : 'How your shifted energy was calculated'}</h3>
+      <p className="calculation-explanation">
+        {happy
+          ? 'Imported electricity is added up half-hour by half-hour. No baseline comparison is needed.'
+          : `Each half-hour is counted separately. Only usage ${up ? 'above' : 'below'} baseline counts towards rewards; other half-hours count as zero.`}
+      </p>
+      {result.rewarded === null && (
+        <p className="reading-note">
+          This estimate is incomplete. Available readings are shown; missing figures appear as{' '}
+          {PLACEHOLDER}.
+        </p>
+      )}
+      <p className="reading-note">Times are UK local time.</p>
+      {result.slots.map((slot) => {
+        const time = `${clockTime(slot.start)} to ${halfHourEnd(slot.start)}`;
+        const change =
+          slot.baseline === null || slot.actual === null
+            ? null
+            : (slot.baseline - slot.actual) * (up ? -1 : 1);
+        const shift = change === null ? null : Math.max(0, change);
+        const baseline = <EnergyCard label="Baseline" value={slot.baseline} />;
+        const usage = <EnergyCard label={happy ? 'Imported' : 'Your usage'} value={slot.actual} />;
+
+        return (
+          <section
+            className="half-hour-calculation"
+            key={slot.start}
+            aria-label={'Half-hour ' + time}
+          >
+            <h4>
+              <time dateTime={slot.start}>{time}</time>
+            </h4>
+            <div
+              className={'calculation-cards' + (happy ? ' single-card' : '')}
+              role="group"
+              aria-label={
+                happy
+                  ? 'Imported usage'
+                  : up
+                    ? 'Your usage minus baseline equals change'
+                    : 'Baseline minus your usage equals change'
               }
-            />
-          </>
-        )}
-      </div>
+            >
+              {happy ? (
+                usage
+              ) : (
+                <>
+                  {up ? usage : baseline}
+                  <span className="calculation-operator" aria-hidden="true">
+                    −
+                  </span>
+                  {up ? baseline : usage}
+                  <span className="calculation-operator" aria-hidden="true">
+                    =
+                  </span>
+                  <EnergyCard
+                    label="Change"
+                    value={change}
+                    tone={
+                      change === null || Math.abs(change) < 1e-9
+                        ? undefined
+                        : change > 0
+                          ? 'positive'
+                          : 'negative'
+                    }
+                    note={
+                      shift === null
+                        ? 'Awaiting readings'
+                        : `${number(shift)} kWh counts towards rewards`
+                    }
+                  />
+                </>
+              )}
+            </div>
+          </section>
+        );
+      })}
+      <dl className="calculation-total">
+        <dt>{happy ? 'Total imported' : 'Total shifted for rewards'}</dt>
+        <dd>
+          {number(result.rewarded)}
+          {result.rewarded !== null && <span className="energy-unit"> kWh</span>}
+        </dd>
+      </dl>
       {happy && (
         <p className="reading-note">
           Octopus calculates the bill credit using your tariff and the session rules.

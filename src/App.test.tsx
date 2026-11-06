@@ -75,7 +75,7 @@ describe('Session history', () => {
 
     await u.click(within(changedRow).getByRole('button', { name: /Readings for/ }));
 
-    expect(screen.getByRole('table', { name: 'Half-hour readings (kWh)' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Calculation summary' })).toBeInTheDocument();
 
     await u.click(screen.getByRole('tab', { name: 'Power up' }));
 

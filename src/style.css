@@ -582,21 +582,6 @@ footer {
   margin: 0 0 8px;
 }
 
-.calculation-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.calculation-outcome {
-  padding: 4px 10px;
-  border: 1px solid currentColor;
-  font-size: 15px;
-  font-weight: 700;
-}
-
 .calculation-explanation {
   margin: 12px 0 20px;
 }
@@ -620,7 +605,7 @@ footer {
   min-width: 0;
 }
 
-.calculation-card:last-child:not(:first-child) {
+.calculation-card.calculation-card-positive {
   background: #e7f0e8;
 }
 
@@ -630,19 +615,6 @@ footer {
   gap: 8px;
   font-size: 15px;
   font-weight: 600;
-}
-
-.calculation-step {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  border: 1px solid #a695af;
-  color: #65526d;
-  font-family: var(--mono);
-  font-size: 14px;
 }
 
 .calculation-card dd {
@@ -667,13 +639,13 @@ footer {
   margin-top: 8px;
 }
 
-.calculation-cards .calculation-card.calculation-card-over-baseline {
+.calculation-card.calculation-card-negative {
   background: #fae9ec;
   border-color: #bc7b87;
 }
 
-.calculation-card-over-baseline dd,
-.calculation-card-over-baseline .calculation-card-note {
+.calculation-card-negative dd,
+.calculation-card-negative .calculation-card-note {
   color: #992e45;
 }
 
@@ -686,12 +658,27 @@ footer {
   color: var(--line);
 }
 
-.half-hour-breakdown {
-  margin: 24px 0 12px;
+.half-hour-calculation {
+  margin: 24px 0;
 }
 
-.half-hour-breakdown > p {
-  margin: 0 0 12px;
+.calculation-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0 12px;
+  padding: 16px;
+  border: 1px solid #c5b6ce;
+  background: #e7f0e8;
+  font-weight: 700;
+}
+
+.calculation-total dd {
+  margin: 0;
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
 }
 
 .session-details .reading-note {
@@ -738,16 +725,6 @@ footer {
   font-weight: 700;
 }
 
-.history-table .reading-table .shifted-reading {
-  font-weight: 600;
-}
-
-.reading-time-end {
-  display: block;
-  color: #65526d;
-  font-size: 14px;
-}
-
 .reading-disclosure {
   border-top: 1px solid #c5b6ce;
   margin-top: 18px;
@@ -788,11 +765,6 @@ footer {
 
 .history-table .comparison-table thead th:last-child {
   width: 30%;
-}
-
-.history-table .happy-readings thead th:first-child,
-.history-table .happy-readings thead th:last-child {
-  width: 50%;
 }
 
 .calculation-gaps {
@@ -837,10 +809,6 @@ footer {
 
   .calculation-card-note {
     max-width: 140px;
-  }
-
-  .calculation-step {
-    display: none;
   }
 
   .history-table .reading-table th,
