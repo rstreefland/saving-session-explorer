@@ -1,10 +1,17 @@
 import { Fragment, useId, useState, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { Calculation, Session } from '../domain/types';
-import { SESSION_TYPES, isHappyHour, reportedShifted, type SessionType } from '../domain/session';
+import {
+  SESSION_TYPES,
+  isHappyHour,
+  reportedShifted,
+  MISSING_SESSION_EXPLANATION,
+  type SessionType,
+} from '../domain/session';
 import { sessionOutcome, type SessionOutcome } from '../domain/outcome';
 import { formatLocal } from '../domain/time';
 import { SessionDetails } from './SessionDetails';
+import { ProvisionalIndicator } from './ProvisionalIndicator';
 import { Tooltip } from './Tooltip';
 import { OctopointsValue } from './OctopointsValue';
 import { estimateOctopoints } from '../domain/points';
@@ -15,7 +22,7 @@ const statuses: Record<string, { label: string; tone: SessionOutcome['tone'] }> 
   SUCCESS: { label: 'Achieved', tone: 'positive' },
   PARTIAL_SUCCESS: { label: 'Partly achieved', tone: 'positive' },
   FAIL: { label: 'Not achieved', tone: 'negative' },
-  MISSING_READINGS: { label: 'Missing readings', tone: 'waiting' },
+  MISSING_READINGS: { label: 'Missing data', tone: 'waiting' },
   CALCULATING: { label: 'Pending', tone: 'waiting' },
   UPCOMING: { label: 'Upcoming', tone: 'waiting' },
 };
@@ -73,7 +80,8 @@ export function SessionHistory({
 
   const happy = type === 'WEEKEND_HAPPY_HOUR';
   const compact = useMediaQuery('(max-width: 800px)');
-  const columns = compact ? 4 : happy ? 5 : 6;
+  const estimateReward = type === 'TURN_DOWN';
+  const columns = compact ? 4 : estimateReward ? 6 : 5;
 
   function changeTab(index: number) {
     const next = SESSION_TYPES[(index + SESSION_TYPES.length) % SESSION_TYPES.length].value;
@@ -141,7 +149,7 @@ export function SessionHistory({
                     text="Actual figures from Octopus Energy."
                   />
                 </th>
-                {!compact && !happy && (
+                {!compact && estimateReward && (
                   <th role="columnheader" scope="col" className="reward-column">
                     <Tooltip
                       label="Calculated reward"
@@ -208,17 +216,19 @@ export function SessionHistory({
                               {result.rewarded === null
                                 ? PLACEHOLDER
                                 : result.rewarded.toFixed(2) + ' kWh'}
+                              {result.provisional && <ProvisionalIndicator />}
                             </span>
                           ) : (
                             <>
                               <span className={'outcome-label outcome-' + outcome.tone}>
                                 {outcome.label}
+                                {result.provisional && <ProvisionalIndicator />}
                               </span>
                               <ShiftedEnergy value={result.rewarded} />
                             </>
                           )}
                         </div>
-                        {compact && !happy && (
+                        {compact && estimateReward && (
                           <span className="mobile-reward">
                             <span className="mobile-reward-label">Octopoints</span>
                             {calculatedReward(result)}
@@ -244,7 +254,11 @@ export function SessionHistory({
                           ) : (
                             <>
                               <span className={'outcome-label outcome-' + done.tone}>
-                                {done.label}
+                                {session.resultsStatus === 'MISSING_READINGS' ? (
+                                  <Tooltip label={done.label} text={MISSING_SESSION_EXPLANATION} />
+                                ) : (
+                                  done.label
+                                )}
                               </span>
                               <ShiftedEnergy value={officialShifted} />
                             </>
@@ -259,7 +273,7 @@ export function SessionHistory({
                           </span>
                         )}
                       </td>
-                      {!compact && !happy && (
+                      {!compact && estimateReward && (
                         <td role="cell" className="numeric reward-cell reward-column">
                           {calculatedReward(result)}
                         </td>

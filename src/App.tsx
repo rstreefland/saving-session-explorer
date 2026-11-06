@@ -15,6 +15,7 @@ import { ConnectionForm } from './components/ConnectionForm';
 import { DateFilters } from './components/DateFilters';
 import { SessionHistory } from './components/SessionHistory';
 import { SessionSummary } from './components/SessionSummary';
+import { MeterDataNotes } from './components/MeterDataNotes';
 import { Methodology } from './components/Methodology';
 import type { SessionType } from './domain/session';
 import { useSessionData } from './hooks/useSessionData';
@@ -81,7 +82,7 @@ function SessionLens({ load }: AppProps) {
         b.session.eventId - a.session.eventId,
     );
 
-  const warnings = data && type !== 'WEEKEND_HAPPY_HOUR' ? dataWarnings(data) : [];
+  const warnings = data ? (type !== 'WEEKEND_HAPPY_HOUR' ? dataWarnings(data) : data.warnings) : [];
   const error = validationError || remote.error;
 
   function reset(forget = false) {
@@ -190,20 +191,7 @@ function SessionLens({ load }: AppProps) {
                 onTypeChange={setType}
                 summary={<SessionSummary results={visible} type={type} />}
               />
-              {(coverage?.missing || warnings.length > 0) && (
-                <details className="data-notes">
-                  <summary>Meter data notes</summary>
-                  {coverage && coverage.missing > 0 && (
-                    <p>
-                      {coverage.missing} of {coverage.expected} half-hours in this period have
-                      missing or invalid readings. Each session is checked separately.
-                    </p>
-                  )}
-                  {warnings.map((warning) => (
-                    <p key={warning}>{warning}</p>
-                  ))}
-                </details>
-              )}
+              <MeterDataNotes coverage={coverage} warnings={warnings} />
               <p className="fine-print">
                 Fetched {formatLocal(data.fetchedAt, { dateStyle: 'short', timeStyle: 'short' })}.
                 {data.meterSerials && (

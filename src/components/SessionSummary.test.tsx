@@ -21,13 +21,13 @@ it('counts estimated and official achievement independently, including estimates
   render(<SessionSummary results={results} type="TURN_DOWN" />);
 
   expect(screen.getByText('Sessions').nextElementSibling).toHaveTextContent('5');
-  expect(screen.getByText('Achieved (Actual / Estimated)').nextElementSibling).toHaveTextContent(
-    '2 / 3',
+  expect(screen.getByText('Achieved or partly achieved').nextElementSibling).toHaveTextContent(
+    '3 / 4',
   );
   expect(screen.getByText('Possible missed rewards').nextElementSibling).toHaveTextContent('1');
 });
 
-it('does not count partly achieved sessions as fully achieved', () => {
+it('includes partly achieved sessions in both actual and estimated counts', () => {
   render(
     <SessionSummary
       results={[
@@ -37,8 +37,8 @@ it('does not count partly achieved sessions as fully achieved', () => {
     />,
   );
 
-  expect(screen.getByText('Achieved (Actual / Estimated)').nextElementSibling).toHaveTextContent(
-    '0 / 0',
+  expect(screen.getByText('Achieved or partly achieved').nextElementSibling).toHaveTextContent(
+    '1 / 1',
   );
 });
 
@@ -56,7 +56,7 @@ it('uses the Power up direction for the estimated count', () => {
     />,
   );
 
-  expect(screen.getByText('Achieved (Actual / Estimated)').nextElementSibling).toHaveTextContent(
+  expect(screen.getByText('Achieved or partly achieved').nextElementSibling).toHaveTextContent(
     '0 / 1',
   );
 });
@@ -67,5 +67,5 @@ it('keeps Happy Hours as usage readiness without claiming achievement', () => {
   );
 
   expect(screen.getByText('Usage ready').nextElementSibling).toHaveTextContent('1');
-  expect(screen.queryByText('Achieved (Actual / Estimated)')).not.toBeInTheDocument();
+  expect(screen.queryByText('Achieved or partly achieved')).not.toBeInTheDocument();
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Temporal, local, midnight, iso } from './time';
+import { Temporal, local, midnight, iso, referenceTime } from './time';
 import { calculateAll, indexReadings, referenceDays } from './calculate';
 import { demoDataset } from './demo';
 import type { Session } from './types';
@@ -350,3 +350,20 @@ it.each(['holidays', 'exports', 'event-history'] as const)(
     });
   },
 );
+
+it('marks Mini session and baseline inputs provisional, then clears the marker when replaced', () => {
+  const data = demoDataset();
+  const before = calculateAll(data)[1];
+  const sessionReading = data.imports.find(
+    (r) => Date.parse(r.interval_start) === Date.parse(before.session.startAt),
+  )!;
+  sessionReading.source = 'home-mini';
+  expect(calculateAll(data)[1].provisional).toBe(true);
+  delete sessionReading.source;
+  expect(calculateAll(data)[1].provisional).toBe(false);
+  const target = referenceTime(before.days[0], local(before.session.startAt).toPlainTime());
+  const baselineReading = data.imports.find((r) => Date.parse(r.interval_start) === target)!;
+  baselineReading.source = 'home-mini';
+  expect(calculateAll(data)[1].provisional).toBe(true);
+  expect(calculateAll(data)[1].rewarded).toBe(before.rewarded);
+});

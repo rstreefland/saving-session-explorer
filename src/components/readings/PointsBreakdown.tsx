@@ -13,7 +13,7 @@ import { OctopointsValue } from '../OctopointsValue';
 const precise = (value: number) => value.toLocaleString('en-GB', { maximumFractionDigits: 6 });
 
 export function PointsBreakdown({ result }: { result: Calculation }) {
-  if (isHappyHour(result.session)) return null;
+  if (isHappyHour(result.session) || result.session.eventType === 'TURN_UP') return null;
 
   const estimate = estimateOctopoints(result);
   const actual = actualOctopoints(result.session);

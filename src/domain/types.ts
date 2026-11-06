@@ -1,4 +1,5 @@
 export interface Reading {
+  source?: 'home-mini';
   interval_start: string;
   interval_end: string;
   consumption: number;
@@ -43,6 +44,7 @@ export interface Dataset {
 }
 
 export interface Slot {
+  actualProvisional?: boolean;
   start: string;
   baseline: number | null;
   actual: number | null;
@@ -50,6 +52,8 @@ export interface Slot {
 }
 
 export interface Calculation {
+  /** True when session or baseline inputs include Home Mini telemetry. */
+  provisional?: boolean;
   session: Session;
   slots: Slot[];
   days: string[];

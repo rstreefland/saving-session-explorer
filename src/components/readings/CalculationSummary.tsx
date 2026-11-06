@@ -1,3 +1,4 @@
+import { ProvisionalIndicator } from '../ProvisionalIndicator';
 import { PLACEHOLDER } from '../placeholder';
 import type { Calculation } from '../../domain/types';
 import { isHappyHour } from '../../domain/session';
@@ -9,15 +10,20 @@ function EnergyCard({
   value,
   note,
   tone,
+  provisional,
 }: {
   label: string;
   value: number | null;
   note?: string;
   tone?: 'positive' | 'negative';
+  provisional?: boolean;
 }) {
   return (
     <dl className={'calculation-card' + (tone ? ' calculation-card-' + tone : '')}>
-      <dt>{label}</dt>
+      <dt>
+        {label}
+        {provisional && value !== null && <ProvisionalIndicator />}
+      </dt>
       <dd>
         {number(value)}
         {value !== null && <span className="energy-unit"> kWh</span>}
@@ -33,7 +39,10 @@ export function CalculationSummary({ result }: { result: Calculation }) {
 
   return (
     <section className="calculation-summary" aria-label="Calculation summary">
-      <h3>{happy ? 'How your usage was calculated' : 'How your shifted energy was calculated'}</h3>
+      <h3>
+        {happy ? 'How your usage was calculated' : 'How your shifted energy was calculated'}
+        {result.provisional && <ProvisionalIndicator />}
+      </h3>
       <p className="calculation-explanation">
         {happy
           ? 'Imported electricity is added up half-hour by half-hour. No baseline comparison is needed.'
@@ -54,7 +63,13 @@ export function CalculationSummary({ result }: { result: Calculation }) {
             : (slot.baseline - slot.actual) * (up ? -1 : 1);
         const shift = change === null ? null : Math.max(0, change);
         const baseline = <EnergyCard label="Baseline" value={slot.baseline} />;
-        const usage = <EnergyCard label={happy ? 'Imported' : 'Your usage'} value={slot.actual} />;
+        const usage = (
+          <EnergyCard
+            label={happy ? 'Imported' : 'Your usage'}
+            value={slot.actual}
+            provisional={slot.actualProvisional}
+          />
+        );
 
         return (
           <section

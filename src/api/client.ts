@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { fillHomeMiniGaps } from './homeMini';
 import { inferHolidayRegion } from '../domain/region';
 import { Temporal, midnight, local, milliseconds } from '../domain/time';
 import type { BaselineIssue, Dataset, Reading } from '../domain/types';
@@ -397,6 +398,17 @@ export async function loadDataset(options: LoadOptions, signal: AbortSignal): Pr
     }, signal),
   ]);
 
+  const homeMini = await fillHomeMiniGaps({
+    account,
+    token: auth.obtainKrakenToken.token,
+    mpan,
+    serial: importMeter.serial,
+    from: historyStart,
+    to: end.toInstant().toString(),
+    readings: importMeter.readings,
+    signal,
+  });
+
   if (!linkedExport.available) baselineIssues.push('exports');
   // The API count establishes completeness; the oldest event is not a coverage boundary.
   if (data.events.length !== data.eventCount) baselineIssues.push('event-history');
@@ -429,11 +441,15 @@ export async function loadDataset(options: LoadOptions, signal: AbortSignal): Pr
         rewardPerKwhInOctoPoints: eventRates.get(session.eventId) ?? null,
       })),
     eventDays: [...eventDays],
-    imports: importMeter.readings,
+    imports: homeMini.readings,
     exports: linkedExport.available ? (linkedExport.value?.readings ?? null) : [],
     holidays: holidays ?? [],
     baselineIssues,
-    warnings: [],
+    warnings: homeMini.unavailable
+      ? [
+          'Home Mini fallback could not be loaded completely. Standard meter readings are still used.',
+        ]
+      : [],
     fetchedAt: Temporal.Now.instant().toString(),
     mpan,
     accountNumber: profile?.number?.trim() || account,

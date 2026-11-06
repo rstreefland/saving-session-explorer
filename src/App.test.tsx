@@ -62,13 +62,17 @@ describe('Session history', () => {
     const tabs = screen.getByRole('tablist', { name: 'Session type' });
 
     expect(tabs.nextElementSibling).toContainElement(summary);
-    expect(summary.nextElementSibling).toContainElement(screen.getByRole('table'));
+    expect(summary.nextElementSibling).toContainElement(
+      screen.getByRole('table', { name: 'Power down session history' }),
+    );
 
-    const notes = screen.getByText('Meter data notes').closest('details')!;
+    const notes = screen.getByText('Missing data?').closest('details')!;
 
-    expect(notes.previousElementSibling).toContainElement(screen.getByRole('table'));
+    expect(notes.previousElementSibling).toContainElement(
+      screen.getByRole('table', { name: 'Power down session history' }),
+    );
     expect(
-      within(summary).getByText('Achieved (Actual / Estimated)').nextElementSibling,
+      within(summary).getByText('Achieved or partly achieved').nextElementSibling,
     ).toHaveTextContent('3 / 3');
 
     const changedRow = rows().find((row) => within(row).queryByText('0.64 kWh shifted'))!;
@@ -310,7 +314,7 @@ describe('Session history', () => {
     );
     expect(screen.getByText('No sessions in this view')).toBeInTheDocument();
 
-    await u.click(screen.getByText('Meter data notes'));
+    await u.click(screen.getByText('Missing data?'));
 
     expect(screen.getByText('Unverified history')).toBeInTheDocument();
   });

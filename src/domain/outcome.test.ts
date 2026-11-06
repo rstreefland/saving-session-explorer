@@ -128,3 +128,14 @@ it('flags a final failed session with no reported reward but does not guess that
     }).attention,
   ).toBe(false);
 });
+
+it('does not flag possible missed rewards from provisional Mini estimates', () => {
+  const result = calculateAll(demoDataset())[1];
+  expect(
+    sessionOutcome({
+      ...result,
+      provisional: true,
+      session: { ...result.session, resultsStatus: 'FAIL', rewardGivenInOctoPoints: 0 },
+    }).attention,
+  ).toBe(false);
+});

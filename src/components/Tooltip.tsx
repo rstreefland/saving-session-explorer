@@ -1,7 +1,7 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
-export function Tooltip({ label, text }: { label: string; text: string }) {
+export function Tooltip({ label, text, icon }: { label: string; text: string; icon?: ReactNode }) {
   const id = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const popup = useRef<HTMLDivElement>(null);
@@ -64,7 +64,8 @@ export function Tooltip({ label, text }: { label: string; text: string }) {
       <button
         ref={trigger}
         type="button"
-        className="tooltip-trigger"
+        className={'tooltip-trigger' + (icon ? ' tooltip-icon' : '')}
+        aria-label={icon ? label : undefined}
         aria-describedby={open ? id : undefined}
         onMouseEnter={show}
         onMouseLeave={() => {
@@ -77,7 +78,7 @@ export function Tooltip({ label, text }: { label: string; text: string }) {
           if (event.key === 'Escape') setPosition(null);
         }}
       >
-        {label}
+        {icon ?? label}
       </button>
       {position &&
         createPortal(
