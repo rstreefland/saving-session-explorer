@@ -1,9 +1,33 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { PublicIntro } from './src/components/PublicIntro';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [
     react(),
+    {
+      name: 'public-introduction',
+      transformIndexHtml: {
+        order: 'pre',
+        handler(html) {
+          const intro = renderToStaticMarkup(
+            createElement(
+              'main',
+              { className: 'app-shell' },
+              createElement(PublicIntro),
+              createElement(
+                'p',
+                { id: 'public-intro-notice', className: 'fine-print' },
+                'JavaScript is required to try the demo or connect your Octopus account.',
+              ),
+            ),
+          );
+          return html.replace('<!-- public-introduction -->', intro);
+        },
+      },
+    },
     {
       name: 'production-security-policy',
       apply: 'build',

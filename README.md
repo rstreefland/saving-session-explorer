@@ -121,3 +121,15 @@ readings still come exclusively from the standard API. Older gaps and gaps in th
 Mini stream remain missing. Daily requests run sequentially, stop on an API error,
 and preserve successful data; fallback failures never prevent standard results
 from loading. No background collection or persistent telemetry cache is added.
+
+### Search and link previews
+
+The initial HTML includes the public introduction without requiring JavaScript.
+It is rendered from the same component as the interactive introduction and never
+includes account data. The page supplies a meta description, canonical URL,
+Open Graph and Twitter metadata, an SVG favicon, and a 1200×630 PNG sharing card.
+The editable sharing-card source is `public/social-card.svg`.
+
+`public/robots.txt` allows crawling and points to `public/sitemap.xml`, which lists
+the single public page. If the public hostname changes, update the canonical,
+sharing URLs, robots sitemap URL, sitemap entry and `public/CNAME` together.

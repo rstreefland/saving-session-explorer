@@ -16,6 +16,7 @@ import { DateFilters } from './components/DateFilters';
 import { SessionHistory } from './components/SessionHistory';
 import { SessionSummary } from './components/SessionSummary';
 import { MeterDataNotes } from './components/MeterDataNotes';
+import { PublicIntro } from './components/PublicIntro';
 import { Methodology } from './components/Methodology';
 import type { SessionType } from './domain/session';
 import { useSessionData } from './hooks/useSessionData';
@@ -124,22 +125,7 @@ function SessionLens({ load }: AppProps) {
         <span>Octopus Saving Session Explorer</span>
       </header>
       <main>
-        <section className="intro">
-          <div>
-            <h1>Saving Session Explorer</h1>
-            <p>
-              Octopus take a few days to calculate Saving Session results. This tool uses your smart
-              meter data to estimate how you did sooner. It can also compare these estimates with
-              Octopus Energy’s figures when they arrive. Use it to understand the numbers or spot
-              possible missed rewards.
-            </p>
-            <p>
-              Read or contribute to the{' '}
-              <a href="https://github.com/rstreefland/saving-session-explorer">code on GitHub</a>.{' '}
-              Not affiliated with or endorsed by Octopus Energy.
-            </p>
-          </div>
-        </section>
+        <PublicIntro />
         <ConnectionForm
           onConnect={connect}
           onForget={() => reset(true)}
