@@ -23,127 +23,103 @@ function mixed(first: number, second: number, up = false) {
   return calculateAll(data)[1];
 }
 
-it('explains the overall result and separately adds the rewarded half-hours', () => {
+it('shows half-hour formulas and the rewarded total without an overall-change summary', () => {
   render(<SessionDetails result={mixed(0.1, 0.7)} />);
 
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
-
-  expect(within(summary).getByText('Achieved')).toBeInTheDocument();
-  expect(summary).toHaveTextContent(
-    'You used 0.400 kWh less than baseline over the whole session.',
-  );
-
-  const equation = within(summary).getByRole('group', {
-    name: 'Baseline minus your usage equals overall change',
+  const equations = within(summary).getAllByRole('group', {
+    name: 'Baseline minus your usage equals change',
   });
 
-  const figures = within(equation).getAllByRole('definition');
-
-  expect(figures[0]).toHaveTextContent('1.200 kWh');
-  expect(figures[1]).toHaveTextContent('0.800 kWh');
-  expect(figures[2]).toHaveTextContent('0.400 kWh');
-  expect(within(equation).getByText('−')).toBeVisible();
-  expect(within(equation).getByText('=')).toBeVisible();
-
-  const table = screen.getByRole('table', { name: 'Half-hour readings (kWh)' });
-  const rows = within(table).getAllByRole('row');
-
-  expect(rows[1]).toHaveTextContent('0.6000.1000.500');
-  expect(rows[2]).toHaveTextContent('0.6000.7000.000');
-  expect(rows[3]).toHaveTextContent('Total shifted for rewards0.500');
-  expect(screen.queryByRole('table', { name: 'Usage comparison' })).not.toBeInTheDocument();
+  expect(equations).toHaveLength(2);
   expect(
-    screen.queryByRole('table', { name: 'Readings used for baseline' }),
-  ).not.toBeInTheDocument();
+    within(equations[0])
+      .getAllByRole('definition')
+      .map((value) => value.textContent),
+  ).toEqual(['0.600 kWh', '0.100 kWh', '0.500 kWh0.500 kWh counts towards rewards']);
+  expect(
+    within(equations[1])
+      .getAllByRole('definition')
+      .map((value) => value.textContent),
+  ).toEqual(['0.600 kWh', '0.700 kWh', '-0.100 kWh0.000 kWh counts towards rewards']);
+  for (const equation of equations) {
+    expect(within(equation).getByText('−')).toBeVisible();
+    expect(within(equation).getByText('=')).toBeVisible();
+  }
+  expect(summary).toHaveTextContent('Total shifted for rewards0.500 kWh');
+  expect(within(summary).queryByText('Overall change')).not.toBeInTheDocument();
+  expect(within(summary).queryByText('Achieved')).not.toBeInTheDocument();
+  expect(screen.queryByRole('table', { name: 'Half-hour readings (kWh)' })).not.toBeInTheDocument();
 });
 
-it('explains why a partly achieved session can still earn rewards', () => {
+it('uses rewarded half-hours rather than the net session reduction in the screenshot example', () => {
+  const result = mixed(0.196, 0.125);
+
+  result.slots[0].baseline = 0.194;
+  result.slots[1].baseline = 0.202;
+  Object.assign(result, { baseline: 0.396, actual: 0.321, netSaved: 0.075, rewarded: 0.077 });
+  render(<SessionDetails result={result} />);
+
+  const summary = screen.getByRole('region', { name: 'Calculation summary' });
+
+  expect(summary).toHaveTextContent('-0.002 kWh0.000 kWh counts towards rewards');
+  expect(summary).toHaveTextContent('0.077 kWh counts towards rewards');
+  expect(summary).toHaveTextContent('Total shifted for rewards0.077 kWh');
+  expect(summary).not.toHaveTextContent('0.075');
+});
+
+it('retains earned shifts when usage rises over the session as a whole', () => {
   render(<SessionDetails result={mixed(0.1, 1.2)} />);
 
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
 
-  expect(summary).toHaveTextContent('Partly achieved');
-  expect(summary).toHaveTextContent('Those half-hours still count towards rewards.');
-  expect(summary).toHaveTextContent('More than baseline');
-
-  const equation = within(summary).getByRole('group', {
-    name: 'Baseline minus your usage equals overall change',
-  });
-
-  expect(within(equation).getAllByRole('definition')[2]).toHaveTextContent('-0.100 kWh');
+  expect(summary).toHaveTextContent('0.500 kWh counts towards rewards');
+  expect(summary).toHaveTextContent('-0.600 kWh0.000 kWh counts towards rewards');
+  expect(summary).toHaveTextContent('Total shifted for rewards0.500 kWh');
 });
 
-it('reverses the comparison for Power up without counting negative shifts as rewards', () => {
+it('reverses the formula for Power up and counts only usage above baseline', () => {
   render(<SessionDetails result={mixed(1.1, 0.5, true)} />);
 
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
-
-  expect(summary).toHaveTextContent(
-    'You used 0.400 kWh more than baseline over the whole session.',
-  );
-
-  const equation = within(summary).getByRole('group', {
-    name: 'Your usage minus baseline equals overall change',
+  const equations = within(summary).getAllByRole('group', {
+    name: 'Your usage minus baseline equals change',
   });
 
-  const figures = within(equation).getAllByRole('definition');
-
-  expect(figures[0]).toHaveTextContent('1.600 kWh');
-  expect(figures[1]).toHaveTextContent('1.200 kWh');
-  expect(figures[2]).toHaveTextContent('0.400 kWh');
-  expect(screen.getByRole('table', { name: 'Half-hour readings (kWh)' })).toHaveTextContent(
-    'Total shifted for rewards0.500',
-  );
+  expect(
+    within(equations[0])
+      .getAllByRole('definition')
+      .map((value) => value.textContent),
+  ).toEqual(['1.100 kWh', '0.600 kWh', '0.500 kWh0.500 kWh counts towards rewards']);
+  expect(
+    within(equations[1])
+      .getAllByRole('definition')
+      .map((value) => value.textContent),
+  ).toEqual(['0.500 kWh', '0.600 kWh', '-0.100 kWh0.000 kWh counts towards rewards']);
+  expect(summary).toHaveTextContent('Total shifted for rewards0.500 kWh');
 });
 
-it.each([
-  [0.1, 1.2, false, true],
-  [1.1, 0.5, true, true],
-  [0.1, 0.7, false, false],
-  [0.1, 1.1, false, false],
-] as const)(
-  'marks an overall increase above baseline regardless of session type (%s, %s, Power up: %s)',
-  (first, second, up, overBaseline) => {
-    render(<SessionDetails result={mixed(first, second, up)} />);
+it.each([false, true])('shows zero when no half-hour qualifies (Power up: %s)', (up) => {
+  render(<SessionDetails result={up ? mixed(0.2, 0.3, true) : mixed(0.8, 0.7)} />);
 
-    const card = screen
-      .getByText('Overall change', { selector: 'dt' })
-      .closest('.calculation-card')!;
+  const summary = screen.getByRole('region', { name: 'Calculation summary' });
 
-    if (overBaseline) {
-      expect(card).toHaveClass('calculation-card-over-baseline');
-      expect(card).toHaveTextContent('More than baseline');
-    } else expect(card).not.toHaveClass('calculation-card-over-baseline');
-  },
-);
+  expect(within(summary).getAllByText('0.000 kWh counts towards rewards')).toHaveLength(2);
+  expect(summary).toHaveTextContent('Total shifted for rewards0.000 kWh');
+});
 
-it.each([false, true])(
-  'explains an unsuccessful session in the correct direction (Power up: %s)',
-  (up) => {
-    render(<SessionDetails result={up ? mixed(0.2, 0.3, true) : mixed(0.8, 0.7)} />);
-
-    expect(screen.getByRole('region', { name: 'Calculation summary' })).toHaveTextContent(
-      `You did not use ${up ? 'more' : 'less'} than baseline in any half-hour.`,
-    );
-  },
-);
-
-it('shows missing readings explicitly without implying a zero or a complete estimate', () => {
+it('shows missing readings as placeholders without producing a complete total', () => {
   render(<SessionDetails result={calculateAll(demoDataset())[3]} />);
 
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
 
-  expect(summary).toHaveTextContent('Awaiting meter readings');
-  expect(summary).toHaveTextContent('This calculation cannot be completed yet.');
-  expect(screen.getByRole('heading', { name: 'What’s missing' })).toBeInTheDocument();
-
-  const table = screen.getByRole('table', { name: 'Half-hour readings (kWh)' });
-
-  expect(within(table).getAllByText('•••')).toHaveLength(3);
-  expect(table).toHaveTextContent('•••');
+  expect(summary).toHaveTextContent('This estimate is incomplete.');
+  expect(within(summary).getByText('Awaiting readings')).toBeVisible();
+  expect(summary).toHaveTextContent('Total shifted for rewards•••');
+  expect(screen.getByRole('heading', { name: 'What’s missing' })).toBeVisible();
 });
 
-it('shows Happy Hour imported usage without a baseline or a promise of bill credit', async () => {
+it('adds Happy Hour import readings without baseline equations or a promise of credit', async () => {
   const result = calculateAll(demoDataset(true)).find(
     (r) => r.session.eventType === 'WEEKEND_HAPPY_HOUR',
   )!;
@@ -151,21 +127,15 @@ it('shows Happy Hour imported usage without a baseline or a promise of bill cred
   render(<SessionDetails result={result} />);
 
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
+  const readings = within(summary).getAllByRole('group', { name: 'Imported usage' });
 
+  expect(readings).toHaveLength(2);
+  expect(readings[0]).toHaveTextContent('Imported0.150 kWh');
+  expect(summary).toHaveTextContent('Total imported0.300 kWh');
   expect(summary).toHaveTextContent('No baseline comparison is needed.');
-  expect(summary).toHaveTextContent('0.300 kWh');
-  expect(within(summary).getByRole('group', { name: 'Metered usage' })).toBeInTheDocument();
   expect(within(summary).queryByText('−')).not.toBeInTheDocument();
-  expect(within(summary).queryByText('=')).not.toBeInTheDocument();
   expect(screen.queryByText(/Days used for baseline/)).not.toBeInTheDocument();
-
-  const table = screen.getByRole('table', { name: 'Half-hour readings (kWh)' });
-
-  expect(within(table).getAllByRole('columnheader')).toHaveLength(2);
-  expect(table).toHaveTextContent('Total imported0.300');
-
   await userEvent.click(screen.getByText('Compare with Octopus'));
-
   expect(
     screen.queryByRole('complementary', { name: 'Why the kWh figures can differ' }),
   ).not.toBeInTheDocument();
@@ -246,7 +216,7 @@ it('explains an empty reference history without displaying a made-up average', a
   render(<SessionDetails result={calculateAll(data)[1]} />);
 
   expect(screen.getByRole('region', { name: 'Calculation summary' })).toHaveTextContent(
-    'Not enough history',
+    'This estimate is incomplete.',
   );
 
   await userEvent.click(screen.getByText('Days used for baseline (0)'));
