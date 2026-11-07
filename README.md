@@ -22,7 +22,7 @@ npm run dev
 
 Open the local URL printed by Vite. In the Account section, choose **Try demo** to explore sample results, or enter your Octopus API key and account number. A smart meter sharing half-hourly electricity readings is needed for independent estimates.
 
-Last 30 days is selected by default, including joined sessions later today. Custom dates can include future days to inspect upcoming sessions. Switch between Power down, Power up and Happy Hours, or choose custom dates. Use the chevron on a session row to inspect its readings, baseline and reward calculation.
+Last 30 days is selected by default, including joined sessions later today. Custom dates can include future days to inspect upcoming sessions. Switch between Power down, Power up and Happy Hours, or choose custom dates. On mobile, comparison cards show calculated and Octopus results side by side; larger screens use a table. Use the chevron on a session to inspect its readings, baseline and reward calculation.
 
 ## Development commands
 

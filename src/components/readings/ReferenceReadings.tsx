@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import type { Calculation } from '../../domain/types';
-import { clockTime } from '../../domain/time';
-import { halfHourEnd, number, referenceDate } from './format';
+import { halfHourRange, number } from './format';
+import { formatDate } from '../../domain/time';
 import { ReadingDisclosure } from './ReadingDisclosure';
 
 export function ReferenceReadings({ result }: { result: Calculation }) {
@@ -26,7 +26,7 @@ export function ReferenceReadings({ result }: { result: Calculation }) {
         >
           {result.slots.map((candidate, index) => (
             <option key={candidate.start} value={index}>
-              {clockTime(candidate.start)} to {halfHourEnd(candidate.start)}
+              {halfHourRange(candidate.start)}
             </option>
           ))}
         </select>
@@ -43,7 +43,7 @@ export function ReferenceReadings({ result }: { result: Calculation }) {
             {slot.references.map((reference) => (
               <tr key={reference.date}>
                 <th scope="row">
-                  <time dateTime={reference.date}>{referenceDate(reference.date)}</time>
+                  <time dateTime={reference.date}>{formatDate(reference.date)}</time>
                 </th>
                 <td>{number(reference.value)}</td>
               </tr>

@@ -1,5 +1,5 @@
 import { PLACEHOLDER } from '../placeholder';
-import { clockTime, iso, local, Temporal } from '../../domain/time';
+import { formatTimeRange, iso, local } from '../../domain/time';
 
 export function number(value: number | null) {
   if (value === null) return PLACEHOLDER;
@@ -9,12 +9,5 @@ export function number(value: number | null) {
   return formatted === '-0.000' ? '0.000' : formatted;
 }
 
-export const halfHourEnd = (start: string) => clockTime(iso(local(start).add({ minutes: 30 })));
-
-export const referenceDate = (date: string) =>
-  Temporal.PlainDate.from(date).toLocaleString('en-GB', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+export const halfHourRange = (start: string) =>
+  formatTimeRange(start, iso(local(start).add({ minutes: 30 })));

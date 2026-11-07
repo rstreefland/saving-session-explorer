@@ -54,7 +54,7 @@ it('flags a possible missed reward only for a qualifying estimate with no final 
 it('does not infer achievement when readings are missing, or promise Happy Hour credit', () => {
   const data = demoDataset();
 
-  expect(sessionOutcome(calculateAll(data)[3]).label).toBe('Awaiting meter readings');
+  expect(sessionOutcome(calculateAll(data)[3]).label).toBe('Awaiting readings');
 
   const result = calculateAll(data)[0];
 

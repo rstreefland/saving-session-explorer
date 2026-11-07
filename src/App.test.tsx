@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { StrictMode } from 'react';
 import App from './App';
-import { todayInLondon } from './domain/time';
+import { todayInLondon, formatDate } from './domain/time';
 import { demoDataset } from './domain/demo';
 
 const loadDataset = vi.fn<typeof import('./api/client').loadDataset>();
@@ -367,7 +367,7 @@ describe('Session history', () => {
     fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-02-01' } });
     await u.click(screen.getByRole('button', { name: 'Apply dates' }));
 
-    expect(screen.getByText('2026-01-01 → 2026-02-01')).toBeInTheDocument();
+    expect(screen.getByText('1 Jan 2026 → 1 Feb 2026 (inclusive)')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
     await u.click(screen.getByRole('button', { name: 'Last 30 days' }));
@@ -379,7 +379,11 @@ describe('Session history', () => {
 
     const today = todayInLondon();
 
-    expect(screen.getByText(`${today.subtract({ days: 29 })} → ${today}`)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `${formatDate(today.subtract({ days: 29 }).toString())} → ${formatDate(today.toString())} (inclusive)`,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('rejects invalid custom dates', async () => {

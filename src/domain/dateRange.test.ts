@@ -39,7 +39,7 @@ it('rejects nonexistent and repeated London wall times', () => {
 
 it('uses the UK date when UTC is still on the previous day', () => {
   expect(day('2026-07-01T23:30:00Z')).toBe('2026-07-02');
-  expect(clockTime('2026-07-01T23:30:00Z')).toBe('00:30');
+  expect(clockTime('2026-07-01T23:30:00Z')).toBe('12:30am');
 });
 
 it('limits inclusive custom ranges to 366 calendar days', () => {

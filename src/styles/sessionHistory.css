@@ -1,5 +1,11 @@
 /* Session table, result states and responsive comparison tracks. */
 
+.history {
+  --results-primary-size: 16px;
+  --results-secondary-size: 14px;
+  --results-label-size: 12px;
+}
+
 .session-tabs {
   display: flex;
   border: 2px solid var(--ink);
@@ -27,7 +33,7 @@
 
 .history-table {
   font-family: 'DM Sans', sans-serif;
-  font-size: 16px;
+  font-size: var(--results-primary-size);
   font-weight: 500;
   width: 100%;
   min-width: 0;
@@ -50,21 +56,21 @@
 }
 
 .history-table thead th {
-  font-size: 14px;
+  font-size: var(--results-secondary-size);
   font-family: 'DM Sans', sans-serif;
   white-space: normal;
 }
 
 .history-table small {
   display: block;
-  font-size: 14px;
+  font-size: var(--results-secondary-size);
   margin-top: 5px;
   font-weight: 500;
   color: #65526d;
 }
 
 .history-table .session-date {
-  font-size: 14px;
+  font-size: var(--results-secondary-size);
   font-weight: 500;
   position: sticky;
   left: 0;
@@ -77,11 +83,6 @@
 .session-date time {
   display: block;
   white-space: nowrap;
-}
-
-.session-date time {
-  margin-top: 7px;
-  color: #65526d;
 }
 
 .history-row {
@@ -108,7 +109,7 @@
 .outcome-label {
   display: block;
   font-weight: 700;
-  font-size: 15px;
+  font-size: var(--results-primary-size);
   line-height: 1.5;
 }
 
@@ -130,7 +131,7 @@
 
 .history-table .outcome-cell > small {
   color: #65526d;
-  font-size: 14px;
+  font-size: var(--results-secondary-size);
   line-height: 1.5;
 }
 
@@ -142,7 +143,7 @@
   background: #eee7f1;
   border-left: 3px solid #8a6a9d;
   font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
+  font-size: var(--results-secondary-size);
   line-height: 1.6;
 }
 
@@ -245,7 +246,7 @@
     margin-top: 6px;
     border-top: 1px solid #c5b6ce;
     padding-top: 6px;
-    font-size: 14px;
+    font-size: var(--results-secondary-size);
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
@@ -355,7 +356,7 @@
 @media (max-width: 600px) {
   .session-tabs button {
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
+    font-size: var(--results-secondary-size);
     padding: 11px 5px;
   }
 
@@ -373,7 +374,7 @@
 
   .history-table thead th {
     white-space: normal;
-    font-size: 14px;
+    font-size: var(--results-secondary-size);
     line-height: 1.5;
   }
 
@@ -383,7 +384,7 @@
 
   .history-table .session-date {
     min-width: 0;
-    font-size: 14px;
+    font-size: var(--results-secondary-size);
   }
 
   .session-date span,
@@ -397,23 +398,18 @@
     max-width: none;
   }
 
-  .outcome-label {
-    font-size: 15px;
-  }
-
   .history-table .outcome-cell > small {
-    font-size: 14px;
+    font-size: var(--results-secondary-size);
   }
 
   .history-table .reward-cell small {
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
     white-space: nowrap;
   }
 
   .reward-query {
     padding: 6px 4px;
-    font-size: 14px;
+    font-size: var(--results-secondary-size);
   }
 
   .reward-query small {
@@ -447,4 +443,132 @@
   .row-toggle svg {
     transition: none;
   }
+}
+
+/* Mobile session comparison cards. */
+.mobile-results {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  display: grid;
+  gap: 14px;
+  font-size: var(--results-primary-size);
+}
+.mobile-session {
+  padding: 16px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.mobile-session-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mobile-session-heading > div:first-child {
+  flex: 1;
+}
+.mobile-session-time,
+.history-table .session-time {
+  display: block;
+  font-weight: 700;
+  font-size: var(--results-primary-size);
+}
+.mobile-session-heading time,
+.history-table .session-date time {
+  display: block;
+  font-weight: 400;
+  color: #65526d;
+  font-size: var(--results-secondary-size);
+  margin-top: 4px;
+}
+.mobile-details-toggle {
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid #c5b6ce;
+  box-shadow: none;
+  background: transparent;
+}
+.mobile-details-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+.mobile-comparison {
+  position: relative;
+  margin-top: 14px;
+  border-top: 1px solid #ddd3e2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.mobile-comparison::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: #ddd3e2;
+  transform: translateX(-50%);
+}
+.mobile-source {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 12px 0;
+  align-items: start;
+}
+.mobile-source-label {
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  font-size: var(--results-label-size);
+  font-weight: 700;
+  color: #65526d;
+  padding-top: 3px;
+}
+.mobile-energy,
+.mobile-source-reward,
+.mobile-results .octopoints-value,
+.mobile-results .octopoints-value strong,
+.mobile-results .octopoints-value .points-unit {
+  font-size: var(--results-secondary-size);
+  font-weight: 400;
+  color: #65526d;
+}
+.mobile-energy {
+  display: block;
+  margin-top: 3px;
+}
+.mobile-source-reward {
+  text-align: left;
+  margin-top: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-attention {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid #8a6a9d;
+  background: #eee7f1;
+  font-size: var(--results-secondary-size);
+}
+.mobile-session-attention {
+  box-shadow: inset 3px 0 #8a6a9d;
+}
+.mobile-session-details {
+  margin-top: 16px;
+  min-width: 0;
+}
+.mobile-session-details .session-details {
+  padding: 0;
+  border: 0;
+}
+.mobile-source + .mobile-source {
+  padding: 12px 0 12px 12px;
+}
+.mobile-results .reward-unit-full {
+  display: inline;
+}
+.mobile-results .reward-unit-short {
+  display: none;
 }

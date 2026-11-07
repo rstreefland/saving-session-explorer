@@ -14,8 +14,8 @@ export function sessionOutcome(result: Calculation): SessionOutcome {
 
   if (rewarded === null) {
     const labels: Record<NonNullable<Calculation['unavailableReason']>, string> = {
-      'session-readings': 'Awaiting meter readings',
-      'baseline-readings': 'Awaiting meter readings',
+      'session-readings': 'Awaiting readings',
+      'baseline-readings': 'Awaiting readings',
       'baseline-history': 'Not enough history',
       holidays: 'Awaiting bank holiday data',
       exports: 'Awaiting export readings',

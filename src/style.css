@@ -269,12 +269,6 @@ summary {
   cursor: pointer;
 }
 
-.filter-help {
-  font-size: 14px;
-  color: #65526d;
-  margin: 9px 0 18px;
-}
-
 .notice {
   padding: 13px 15px;
   background: #eee7f1;
@@ -1021,7 +1015,6 @@ footer {
 }
 
 /* Secondary text stays readable instead of shrinking to make the layout fit. */
-.filter-help,
 .fine-print,
 .data-notes,
 .connection p,
@@ -1094,12 +1087,6 @@ footer {
   margin: 0;
   font-size: 16px;
   overflow-wrap: anywhere;
-}
-
-.points-comparison .points-unit {
-  font-size: 14px;
-  font-weight: 500;
-  display: block;
 }
 
 @media (max-width: 600px) {
@@ -1181,4 +1168,22 @@ footer {
   display: block;
   font-size: 12px;
   font-weight: 400;
+}
+
+.octopoints-value {
+  display: inline-block;
+  font-size: var(--results-primary-size, 16px);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.octopoints-value strong {
+  font-weight: 700;
+}
+
+.octopoints-value .points-unit {
+  display: inline;
+  font-size: inherit;
+  font-weight: 500;
+  margin: 0;
 }
