@@ -1,9 +1,9 @@
 import { createElement } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
 import { demoDataset } from '../domain/demo';
-import { todayInLondon } from '../domain/time';
+import { iso, midnight, todayInLondon } from '../domain/time';
 import { describe, it, expect, vi } from 'vitest';
 import { dataWarnings } from '../domain/availability';
 import { calculateAll } from '../domain/calculate';
@@ -636,3 +636,84 @@ it('keeps estimates stable when the range starts before the oldest event in a co
   expect(calculateAll(narrow)[0].rewarded).not.toBeNull();
   expect(calculateAll(wide)).toEqual(calculateAll(narrow));
 });
+
+it.each(['TURN_DOWN', 'TURN_UP'] as const)(
+  'loads and displays an upcoming %s baseline for a connected account',
+  async (eventType) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-01T17:00:00Z'));
+    try {
+      const base: Session = {
+        ...demoDataset().sessions[0],
+        eventType,
+        resultsStatus: 'UPCOMING',
+      };
+      const joinedEvents = [
+        ['2026-11-01T15:00:00Z', '2026-11-01T16:00:00Z'],
+        ['2026-11-01T16:30:00Z', '2026-11-01T17:30:00Z'],
+        ['2026-11-01T18:00:00Z', '2026-11-01T19:00:00Z'],
+        ['2026-11-02T18:00:00Z', '2026-11-02T19:00:00Z'],
+        ['2026-11-03T18:00:00Z', '2026-11-03T19:00:00Z'],
+      ].map(([startAt, endAt], index) => ({ ...base, eventId: 10 + index, startAt, endAt }));
+      const referenceDates = [
+        '2026-10-30',
+        '2026-10-29',
+        '2026-10-28',
+        '2026-10-27',
+        '2026-10-26',
+        '2026-10-23',
+        '2026-10-22',
+        '2026-10-21',
+        '2026-10-20',
+        '2026-10-19',
+      ];
+      const history = referenceDates.flatMap((date) =>
+        [0, 30].map((minute) => {
+          const start = midnight(date).with({ hour: 18, minute });
+          return {
+            interval_start: iso(start),
+            interval_end: iso(start.add({ minutes: 30 })),
+            consumption: 0.6,
+          };
+        }),
+      );
+      setup({ joinedEvents, meterReadings: { ABC: history } });
+      const data = await loadDataset(
+        { ...options, from: '2026-11-01', to: '2026-11-02' },
+        signal(),
+      );
+      expect(data.sessions.map((s) => s.eventId)).toEqual([10, 11, 12, 13]);
+      const upcoming = calculateAll(data).find((r) => r.session.eventId === 13)!;
+      expect(upcoming.baseline).toBeCloseTo(1.2);
+      expect(upcoming.actual).toBeNull();
+      expect(upcoming.rewarded).toBeNull();
+      expect(upcoming.issues).toEqual(['2 session half-hour reading(s) missing or invalid.']);
+
+      // Exercise the normal App and real loader, with only network responses mocked.
+      localStorage.setItem('session-lens.api-key', 'test-key');
+      localStorage.setItem('session-lens.account-number', 'A-123');
+      render(createElement(App));
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: 'Custom dates' }));
+      fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-11-01' } });
+      expect(screen.getByLabelText('To')).not.toHaveAttribute('max');
+      fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-11-02' } });
+      await user.click(screen.getByRole('button', { name: 'Apply dates' }));
+      if (eventType === 'TURN_UP') await user.click(screen.getByRole('tab', { name: 'Power up' }));
+      const toggle = await screen.findByRole('button', {
+        name: /Readings for Power (down|up) 02\/11\/26/,
+      });
+      const row = toggle.closest('tr')!;
+      const indicator = within(row).getByRole('button', { name: 'Session has not ended yet' });
+      await user.click(indicator);
+      expect(screen.getByRole('tooltip')).toHaveTextContent('You can inspect your baseline');
+      await user.click(toggle);
+      const summary = screen.getByRole('region', { name: 'Calculation summary' });
+      expect(within(summary).getAllByText('0.600')).toHaveLength(2);
+      expect(screen.getByText('2 session half-hour reading(s) missing or invalid.')).toBeVisible();
+      expect(summary).toHaveTextContent('This estimate is incomplete.');
+    } finally {
+      vi.useRealTimers();
+    }
+  },
+);

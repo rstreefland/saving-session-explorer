@@ -22,7 +22,7 @@ npm run dev
 
 Open the local URL printed by Vite. In the Account section, choose **Try demo** to explore sample results, or enter your Octopus API key and account number. A smart meter sharing half-hourly electricity readings is needed for independent estimates.
 
-Last 30 days is selected by default. Switch between Power down, Power up and Happy Hours, or choose custom dates. Use the chevron on a session row to inspect its readings, baseline and reward calculation.
+Last 30 days is selected by default, including joined sessions later today. Custom dates can include future days to inspect upcoming sessions. Switch between Power down, Power up and Happy Hours, or choose custom dates. Use the chevron on a session row to inspect its readings, baseline and reward calculation.
 
 ## Development commands
 
@@ -103,6 +103,10 @@ The site uses `/` as its base path for `saving-session-explorer.streefland.co.uk
 ## About this experiment
 
 This project was entirely built using AI, guided by human prompts and feedback. It is experimental software, not a reproduction of Octopus’s settlement system.
+
+### Upcoming sessions
+
+Joined Power down and Power up sessions are shown before they end. Expand a session to inspect its historical baseline while session usage and calculated results await readings. Future sessions are available through Custom dates. A baseline requires all eligible reference readings; for sessions farther ahead, some reference days may not have happened yet. Refresh results to load newly available readings and results.
 
 ### Provisional Home Mini fallback
 
