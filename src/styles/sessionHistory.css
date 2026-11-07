@@ -472,11 +472,12 @@
 .mobile-session-heading > div:first-child {
   flex: 1;
 }
-.mobile-session-heading time {
+.mobile-session-time {
+  display: block;
   font-weight: 700;
   font-size: 16px;
 }
-.mobile-session-time {
+.mobile-session-heading time {
   display: block;
   color: #65526d;
   font-size: 13px;

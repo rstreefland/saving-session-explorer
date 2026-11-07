@@ -148,13 +148,11 @@ function MobileResults({
           >
             <div className="mobile-session-heading">
               <div>
-                <time dateTime={session.startAt}>
-                  {date}
-                  <UpcomingSessionIndicator session={session} />
-                </time>
                 <span className="mobile-session-time">
                   {sessionTime(session.startAt)} – {sessionTime(session.endAt)}
+                  <UpcomingSessionIndicator session={session} />
                 </span>
+                <time dateTime={session.startAt}>{date}</time>
               </div>
               <button
                 type="button"
