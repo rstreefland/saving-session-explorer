@@ -105,7 +105,7 @@ it('labels Octopus results and names the reason a comparison is unavailable', ()
   expect(screen.getByRole('columnheader', { name: 'Result' })).toBeInTheDocument();
   expect(screen.getByRole('columnheader', { name: 'Calculated result' })).toBeInTheDocument();
   expect(screen.queryByText('Meter readings')).not.toBeInTheDocument();
-  expect(screen.getByText('Awaiting meter readings')).toBeInTheDocument();
+  expect(screen.getByText('Awaiting readings')).toBeInTheDocument();
   expect(screen.queryByText('Incomplete')).not.toBeInTheDocument();
 });
 
@@ -156,7 +156,7 @@ it('does not call missing calendar or baseline history a meter-reading delay', (
   );
 
   expect(screen.getByText('Awaiting session history')).toBeInTheDocument();
-  expect(screen.queryByText('Awaiting meter readings')).not.toBeInTheDocument();
+  expect(screen.queryByText('Awaiting readings')).not.toBeInTheDocument();
 
   view.rerender(
     <SessionHistory
@@ -308,12 +308,14 @@ it('keeps Happy Hour cash credits without an estimated Octopoints column', async
   ).toHaveAttribute('colspan', '5');
 });
 
-it('puts rewards below their corresponding results on mobile and adapts expanded rows on resize', async () => {
+it('puts rewards below their corresponding results on tablets and adapts expanded rows on resize', async () => {
   const media = Object.assign(new EventTarget(), { matches: true });
 
   vi.stubGlobal(
     'matchMedia',
-    vi.fn(() => media),
+    vi.fn((query: string) =>
+      query === '(max-width: 800px)' ? media : Object.assign(new EventTarget(), { matches: false }),
+    ),
   );
 
   const remove = vi.spyOn(media, 'removeEventListener');
@@ -358,7 +360,9 @@ it('puts rewards below their corresponding results on mobile and adapts expanded
 it('labels Happy Hour cash credits correctly in the compact table', () => {
   vi.stubGlobal(
     'matchMedia',
-    vi.fn(() => Object.assign(new EventTarget(), { matches: true })),
+    vi.fn((query: string) =>
+      Object.assign(new EventTarget(), { matches: query === '(max-width: 800px)' }),
+    ),
   );
 
   const result = calculateAll(demoDataset(true)).find(
@@ -376,7 +380,9 @@ it('labels Happy Hour cash credits correctly in the compact table', () => {
 it.each([0, 3])('shows a consistent placeholder for unavailable shifted figures (%s)', (index) => {
   vi.stubGlobal(
     'matchMedia',
-    vi.fn(() => Object.assign(new EventTarget(), { matches: true })),
+    vi.fn((query: string) =>
+      Object.assign(new EventTarget(), { matches: query === '(max-width: 800px)' }),
+    ),
   );
 
   const result = calculateAll(demoDataset())[index];
@@ -401,10 +407,12 @@ it.each([
   ['2026-11-05T16:30:00Z', '2026-11-05T17:30:00Z', '4:30–5:30pm', '4:30pm – 5:30pm'],
   ['2026-11-05T11:30:00Z', '2026-11-05T12:30:00Z', '11:30am–12:30pm', '11:30am – 12:30pm'],
   ['2026-11-05T09:30:00Z', '2026-11-05T10:30:00Z', '9:30–10:30am', '9:30am – 10:30am'],
-])('uses a compact, unambiguous time range on mobile (%s)', (startAt, endAt, visible, spoken) => {
+])('uses a compact, unambiguous time range on tablets (%s)', (startAt, endAt, visible, spoken) => {
   vi.stubGlobal(
     'matchMedia',
-    vi.fn(() => Object.assign(new EventTarget(), { matches: true })),
+    vi.fn((query: string) =>
+      Object.assign(new EventTarget(), { matches: query === '(max-width: 800px)' }),
+    ),
   );
 
   const result = calculateAll(demoDataset())[0];
@@ -445,4 +453,34 @@ it('keeps a calculated missed-reward flag alongside Octopus missing-data informa
   expect(
     screen.queryByRole('button', { name: 'Octopus reward information' }),
   ).not.toBeInTheDocument();
+});
+
+it('uses comparison cards on phones and preserves expanded readings when resizing to desktop', async () => {
+  const media = Object.assign(new EventTarget(), { matches: true });
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => media),
+  );
+  const result = calculateAll(demoDataset())[1];
+  const { container } = render(
+    <SessionHistory results={[result]} type="TURN_DOWN" onTypeChange={vi.fn()} />,
+  );
+  expect(screen.getByRole('list', { name: 'Session results' })).toBeInTheDocument();
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  const sources = container.querySelectorAll('.mobile-source');
+  expect(sources[0]).toHaveTextContent('CalculatedAchieved0.90 kWh shifted72 Octopoints');
+  expect(sources[1]).toHaveTextContent('OctopusAchieved0.64 kWh shifted72 Octopoints');
+  await userEvent.click(screen.getByRole('button', { name: /Readings for/ }));
+  expect(screen.getByRole('region', { name: 'Calculation summary' })).toBeInTheDocument();
+  act(() => {
+    media.matches = false;
+    media.dispatchEvent(new Event('change'));
+  });
+  expect(screen.getByRole('table', { name: 'Power down session history' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Readings for/ })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+  expect(screen.getByRole('region', { name: 'Calculation summary' })).toBeInTheDocument();
 });

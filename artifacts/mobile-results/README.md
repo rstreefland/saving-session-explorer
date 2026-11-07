@@ -2,14 +2,15 @@
 
 Branch: `explore/mobile-results`, based on `origin/main` at `e8f7566`.
 
-Three working React layouts, enabled at widths up to 600px with:
+**Selected: B, comparison cards.** Cards are now the default at widths up to 600px; the exploration selector and alternate layouts have been removed. The screenshots below document the original exploration, before shortening “Awaiting meter readings” to “Awaiting readings”.
+
+Original prototype URLs (historical):
 
 - `/?mobile-results=list`: stacked list, with a separate row for each source.
 - `/?mobile-results=cards`: cards comparing both sources side by side.
 - `/?mobile-results=compact`: reward-first list; expanding reveals the comparison and readings.
 
-Choose **Try demo**, then use the layout selector to compare without resetting the data.
-The normal URL and desktop table retain their existing layout pending a decision.
+Choose **Try demo** at the normal URL to see the selected cards. Desktop retains the table.
 
 Screenshots use identical demo data at 393 × 852 CSS pixels (iPhone 16 portrait),
 at 2× capture scale. These are browser viewport checks, not physical-device tests.

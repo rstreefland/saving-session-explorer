@@ -15,7 +15,7 @@ async function fitsViewport(page: Page) {
   );
   expect(
     await page
-      .locator('.history-scroll')
+      .locator('.history-scroll, .mobile-results')
       .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
   ).toBe(true);
 }
@@ -29,7 +29,7 @@ for (const width of [320, 375, 390, 600, 800, 1280]) {
     await expect(
       page.getByRole('heading', { name: 'Connected to Octopus', exact: true }),
     ).toBeVisible();
-    await expect(page.locator('.history-row')).toHaveCount(4);
+    await expect(page.locator('.history-row, .mobile-session')).toHaveCount(4);
 
     await page.evaluate(() => document.fonts.ready);
     await fitsViewport(page);
@@ -143,7 +143,7 @@ for (const width of [320, 375, 390, 600, 800, 1280]) {
     await fitsViewport(page);
     await page.getByRole('tab', { name: 'Happy Hours' }).click();
 
-    await expect(page.locator('.history-row')).toHaveCount(1);
+    await expect(page.locator('.history-row, .mobile-session')).toHaveCount(1);
 
     await page.getByRole('button', { name: /Readings for/ }).click();
     await expect(page.getByRole('region', { name: 'Calculation summary' })).toContainText(
@@ -164,7 +164,7 @@ test('production CSP blocks injected scripts and unapproved requests while toolt
   await connectedAccount(page);
   await page.goto('/');
 
-  await expect(page.locator('.history-row')).toHaveCount(4);
+  await expect(page.locator('.history-row, .mobile-session')).toHaveCount(4);
 
   await page.getByRole('button', { name: 'Calculated result', exact: true }).click();
 
@@ -207,7 +207,7 @@ for (const width of [320, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await connectedAccount(page, true);
     await page.goto('/');
-    const row = page.locator('.history-row').first();
+    const row = page.locator('.history-row, .mobile-session').first();
     await expect(row.getByRole('button', { name: 'Provisional reading' })).toBeVisible();
     await fitsViewport(page);
     await row.getByRole('button', { name: /Readings for/ }).click();
@@ -228,7 +228,7 @@ test('meter notes list gap periods and calculation guides open independently', a
   await page.setViewportSize({ width: 320, height: 900 });
   await connectedAccount(page, true);
   await page.goto('/');
-  await expect(page.locator('.history-row')).toHaveCount(4);
+  await expect(page.locator('.history-row, .mobile-session')).toHaveCount(4);
   await page.getByText('Missing data?', { exact: true }).click();
   const gaps = page.getByRole('table', { name: 'Missing meter readings' });
   await expect(gaps).toContainText('4 Nov 2026');
@@ -255,13 +255,18 @@ for (const width of [320, 1280]) {
     await page.goto('/');
     await page.getByRole('button', { name: 'Try demo', exact: true }).click();
     await page.getByRole('tab', { name: 'Power up', exact: true }).click();
-    const table = page.getByRole('table', { name: 'Power up session history' });
-    await expect(table.getByRole('columnheader', { name: 'Calculated result' })).toBeVisible();
-    await expect(table.getByRole('columnheader', { name: 'Calculated reward' })).toHaveCount(0);
-    await expect(
-      table.locator('.history-row .outcome-cell').first().locator('.mobile-reward'),
-    ).toHaveCount(0);
-    await table.getByRole('button', { name: /Readings for/ }).click();
+    if (width <= 600) {
+      const card = page.locator('.mobile-session').first();
+      await expect(card.locator('.mobile-source-label').first()).toHaveText('Calculated');
+      await expect(
+        card.locator('.mobile-source').first().locator('.mobile-source-reward'),
+      ).toHaveCount(0);
+    } else {
+      const table = page.getByRole('table', { name: 'Power up session history' });
+      await expect(table.getByRole('columnheader', { name: 'Calculated result' })).toBeVisible();
+      await expect(table.getByRole('columnheader', { name: 'Calculated reward' })).toHaveCount(0);
+    }
+    await page.getByRole('button', { name: /Readings for/ }).click();
     await expect(page.getByRole('region', { name: 'Calculation summary' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Octopoints estimate' })).toHaveCount(0);
     await fitsViewport(page);
@@ -275,7 +280,7 @@ for (const width of [320, 1280]) {
     await page.goto('/');
     const result = page.getByRole('button', { name: 'Missing data', exact: true });
     await expect(result).toBeVisible();
-    const row = result.locator('xpath=ancestor::tr');
+    const row = result.locator('xpath=ancestor::*[self::tr or self::li][1]');
     await result.scrollIntoViewIfNeeded();
     await expect(result).toBeInViewport();
     await result.click();

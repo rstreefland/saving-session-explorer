@@ -64,32 +64,22 @@ function calculatedReward(result: Calculation) {
   return estimate.state === 'ready' ? <OctopointsValue value={estimate.points} /> : PLACEHOLDER;
 }
 
-type MobileLayout = 'list' | 'cards' | 'compact';
-
-// Opt-in exploration: the shipped view stays unchanged until a layout is chosen.
-function explorationLayout(): MobileLayout | null {
-  const value = new URLSearchParams(window.location.search).get('mobile-results');
-  return value === 'list' || value === 'cards' || value === 'compact' ? value : null;
-}
-
 function MobileResults({
   results,
   type,
-  layout,
   id,
   expanded,
   toggle,
 }: {
   results: Calculation[];
   type: SessionType;
-  layout: MobileLayout;
   id: string;
   expanded: Set<number>;
   toggle: (eventId: number) => void;
 }) {
   const happy = type === 'WEEKEND_HAPPY_HOUR';
   return (
-    <ol className={'mobile-results mobile-results-' + layout} aria-label="Session results">
+    <ol className="mobile-results mobile-results-cards" aria-label="Session results">
       {results.map((result) => {
         const session = result.session;
         const outcome = sessionOutcome(result);
@@ -151,12 +141,6 @@ function MobileResults({
                   {sessionTime(session.startAt)} – {sessionTime(session.endAt)}
                 </span>
               </div>
-              {layout === 'compact' && (
-                <div className="mobile-headline-reward">
-                  <span>Octopus reward</span>
-                  {reward(session)}
-                </div>
-              )}
               <button
                 type="button"
                 className="mobile-details-toggle"
@@ -168,27 +152,10 @@ function MobileResults({
                 <ChevronDown size={20} aria-hidden="true" />
               </button>
             </div>
-            {layout === 'compact' && (
-              <div className="mobile-compact-status">
-                <span className={'outcome-label outcome-' + done.tone}>
-                  {happy ? 'Happy Hour' : done.label}
-                </span>
-                <span>
-                  {happy ? 'Usage' : 'Calculated'}:{' '}
-                  {happy
-                    ? result.rewarded === null
-                      ? PLACEHOLDER
-                      : result.rewarded.toFixed(2) + ' kWh'
-                    : outcome.label}
-                  {result.provisional && <ProvisionalIndicator />}
-                </span>
-              </div>
-            )}
             {outcome.attention && <p className="mobile-attention">Possible missed reward</p>}
-            {layout !== 'compact' && comparison}
+            {comparison}
             {open && (
               <div id={detailId} className="mobile-session-details">
-                {layout === 'compact' && comparison}
                 <SessionDetails result={result} />
               </div>
             )}
@@ -213,9 +180,7 @@ export function SessionHistory({
   const id = useId(),
     [expanded, setExpanded] = useState<Set<number>>(() => new Set());
 
-  const [layout, setLayout] = useState(explorationLayout);
   const phone = useMediaQuery('(max-width: 600px)');
-  const mobileExploration = phone && layout !== null;
   function toggle(eventId: number) {
     setExpanded((previous) => {
       const next = new Set(previous);
@@ -271,26 +236,11 @@ export function SessionHistory({
         ))}
       </div>
       <div role="tabpanel" id={id + '-panel'} aria-labelledby={id + '-' + type} tabIndex={0}>
-        {mobileExploration && (
-          <label className="mobile-layout-picker">
-            Explore mobile layout
-            <select
-              aria-label="Mobile results layout"
-              value={layout}
-              onChange={(e) => setLayout(e.target.value as MobileLayout)}
-            >
-              <option value="list">A · Stacked list</option>
-              <option value="cards">B · Comparison cards</option>
-              <option value="compact">C · Compact list</option>
-            </select>
-          </label>
-        )}
         {summary}
-        {mobileExploration ? (
+        {phone ? (
           <MobileResults
             results={results}
             type={type}
-            layout={layout}
             id={id}
             expanded={expanded}
             toggle={toggle}
