@@ -18,6 +18,16 @@ async function fitsViewport(page: Page) {
       .locator('.history-scroll, .mobile-results')
       .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
   ).toBe(true);
+  const rewardsStayTogether = await page.locator('.octopoints-value').evaluateAll((values) =>
+    values.every((value) => {
+      const range = document.createRange();
+      range.selectNode(value.firstChild!);
+      const number = range.getBoundingClientRect();
+      const unit = value.querySelector('.points-unit')!.getBoundingClientRect();
+      return number.bottom > unit.top && unit.bottom > number.top;
+    }),
+  );
+  expect(rewardsStayTogether).toBe(true);
 }
 
 for (const width of [320, 375, 390, 600, 800, 1280]) {

@@ -1,6 +1,6 @@
 export function OctopointsValue({ value }: { value: number }) {
   return (
-    <>
+    <span className="octopoints-value">
       {value.toLocaleString('en-GB')}{' '}
       <small className="points-unit">
         <span className="reward-unit-full" aria-hidden="true">
@@ -11,6 +11,6 @@ export function OctopointsValue({ value }: { value: number }) {
         </abbr>
         <span className="sr-only">Octopoints</span>
       </small>
-    </>
+    </span>
   );
 }

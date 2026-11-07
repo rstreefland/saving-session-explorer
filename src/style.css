@@ -1092,7 +1092,6 @@ footer {
 .points-comparison .points-unit {
   font-size: 14px;
   font-weight: 500;
-  display: block;
 }
 
 @media (max-width: 600px) {
@@ -1174,4 +1173,14 @@ footer {
   display: block;
   font-size: 12px;
   font-weight: 400;
+}
+
+.octopoints-value {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.octopoints-value .points-unit {
+  display: inline;
+  margin: 0;
 }
