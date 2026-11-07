@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useId, useState, type ReactNode } from 'react';
+import { Fragment, useId, useState, type ReactNode } from 'react';
 import { CalendarClock, ChevronDown } from 'lucide-react';
 import type { Calculation, Session } from '../domain/types';
 import {
@@ -51,24 +51,7 @@ function sessionTime(value: string) {
 }
 
 function UpcomingSessionIndicator({ session }: { session: Session }) {
-  const end = Date.parse(session.endAt);
-  const [now, setNow] = useState(Date.now);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-
-    function update() {
-      const current = Date.now();
-      setNow(current);
-      // Browser timeouts overflow above about 25 days; recheck longer waits in chunks.
-      if (end > current) timer = setTimeout(update, Math.min(end - current, 2_147_483_647));
-    }
-
-    update();
-    return () => clearTimeout(timer);
-  }, [end]);
-
-  if (end <= now) return null;
+  if (Date.parse(session.endAt) <= Date.now()) return null;
 
   return (
     <Tooltip
