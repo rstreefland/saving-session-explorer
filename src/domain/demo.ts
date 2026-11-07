@@ -39,6 +39,7 @@ export function demoDataset(allTypes = false): Dataset {
 
   if (allTypes) {
     const start = today.subtract({ days: 3 }).with({ hour: 12 });
+    const upcomingStart = today.with({ hour: 18 });
 
     sessions.push(
       {
@@ -61,6 +62,13 @@ export function demoDataset(allTypes = false): Dataset {
         rewardPerKwhInOctoPoints: 0,
         energyUsedInKwh: 0.3,
         rewardGivenInPence: 8,
+      },
+      {
+        ...sessions[0],
+        eventId: 103,
+        startAt: iso(upcomingStart),
+        endAt: iso(upcomingStart.add({ hours: 1 })),
+        resultsStatus: 'UPCOMING',
       },
     );
   }

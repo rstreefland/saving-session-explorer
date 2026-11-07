@@ -20,12 +20,13 @@ it('handles month boundaries and leap years as calendar days', () => {
 });
 
 it('validates custom dates without time-zone or millisecond arithmetic', () => {
-  expect(validRange('2026-01-01', '2026-11-05', '2026-11-05')).toBe(true);
+  expect(validRange('2026-01-01', '2026-11-05')).toBe(true);
   expect(validRange('', '2026-11-05')).toBe(false);
   expect(validRange('2026-02-30', '2026-11-05')).toBe(false);
   expect(validRange('2026-11-06', '2026-11-05')).toBe(false);
   expect(validRange('2020-01-01', '2026-11-05')).toBe(false);
-  expect(validRange('2026-11-05', '2026-11-06', '2026-11-05')).toBe(false);
+  expect(validRange('2026-11-05', '2026-11-06')).toBe(true);
+  expect(validRange('2030-01-01', '2030-01-02')).toBe(true);
 });
 
 it('rejects nonexistent and repeated London wall times', () => {
@@ -42,6 +43,6 @@ it('uses the UK date when UTC is still on the previous day', () => {
 });
 
 it('limits inclusive custom ranges to 366 calendar days', () => {
-  expect(validRange('2024-01-01', '2024-12-31', '2025-01-01')).toBe(true);
-  expect(validRange('2024-01-01', '2025-01-01', '2025-01-01')).toBe(false);
+  expect(validRange('2024-01-01', '2024-12-31')).toBe(true);
+  expect(validRange('2024-01-01', '2025-01-01')).toBe(false);
 });

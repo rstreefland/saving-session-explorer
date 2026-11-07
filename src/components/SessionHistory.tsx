@@ -1,5 +1,5 @@
 import { Fragment, useId, useState, type ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { CalendarClock, ChevronDown } from 'lucide-react';
 import type { Calculation, Session } from '../domain/types';
 import {
   SESSION_TYPES,
@@ -47,6 +47,18 @@ function sessionTime(value: string) {
   return formatLocal(value, { hour: 'numeric', minute: '2-digit', hourCycle: 'h12' }).replace(
     /\s(?=[ap]m)/g,
     '',
+  );
+}
+
+function UpcomingSessionIndicator({ session }: { session: Session }) {
+  if (Date.parse(session.endAt) <= Date.now()) return null;
+
+  return (
+    <Tooltip
+      label="Session has not ended yet"
+      icon={<CalendarClock size={14} aria-hidden="true" />}
+      text="This session has not ended yet. You can inspect your baseline but calculated results won't show until we've received either smart meter readings or figures from your Octopus Home Mini if you have one."
+    />
   );
 }
 
@@ -136,7 +148,10 @@ function MobileResults({
           >
             <div className="mobile-session-heading">
               <div>
-                <time dateTime={session.startAt}>{date}</time>
+                <time dateTime={session.startAt}>
+                  {date}
+                  <UpcomingSessionIndicator session={session} />
+                </time>
                 <span className="mobile-session-time">
                   {sessionTime(session.startAt)} – {sessionTime(session.endAt)}
                 </span>
@@ -327,7 +342,10 @@ export function SessionHistory({
                             <span className="sr-only">{fullTimeRange}</span>
                             <span aria-hidden="true">{visibleTimeRange}</span>
                           </span>
-                          <time dateTime={session.startAt}>{date}</time>
+                          <time dateTime={session.startAt}>
+                            {date}
+                            <UpcomingSessionIndicator session={session} />
+                          </time>
                         </th>
                         <td role="cell" className="outcome-cell">
                           <div className="result-summary">
