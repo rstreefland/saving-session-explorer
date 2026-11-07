@@ -111,7 +111,7 @@ function SessionLens({ load }: AppProps) {
 
     if (!validRange(from, to)) {
       remote.reset();
-      setValidationError('Choose a past date range of up to 366 days.');
+      setValidationError('Choose a date range of up to 366 days.');
 
       return;
     }

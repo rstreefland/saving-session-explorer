@@ -340,7 +340,7 @@ export function SessionHistory({
         {!results.length && (
           <div className="empty">
             <h3>No sessions in this view</h3>
-            <p>Try another period. Only joined, ended sessions appear.</p>
+            <p>Try another period. Only joined sessions appear.</p>
           </div>
         )}
       </div>

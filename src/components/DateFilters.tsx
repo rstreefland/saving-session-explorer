@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { last30Days, validRange, type Preset } from '../domain/dateRange';
-import { todayInLondon } from '../domain/time';
 
 export function DateFilters({
   from,
@@ -80,12 +79,11 @@ export function DateFilters({
               type="date"
               value={draft.to}
               min={draft.from}
-              max={todayInLondon().toString()}
               onChange={(e) => setDraft({ ...draft, to: e.target.value })}
             />
           </label>
           {!validRange(draft.from, draft.to) && (
-            <p role="alert">Choose a past date range of up to 366 days.</p>
+            <p role="alert">Choose a date range of up to 366 days.</p>
           )}
           <div className="dialog-actions">
             <button type="button" onClick={() => dialog.current?.close()}>

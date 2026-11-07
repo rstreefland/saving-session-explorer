@@ -69,5 +69,5 @@ test('replaces the public fallback with a single working interactive introductio
   ).toHaveCount(1);
   await expect(page.locator('#public-intro-notice')).toHaveCount(0);
   await page.getByRole('button', { name: 'Try demo', exact: true }).click();
-  await expect(page.locator('.history-row')).toHaveCount(4);
+  await expect(page.locator('.history-row')).toHaveCount(5);
 });

@@ -433,8 +433,7 @@ export async function loadDataset(options: LoadOptions, signal: AbortSignal): Pr
       .filter(
         (s) =>
           milliseconds(s.startAt) >= start.epochMilliseconds &&
-          milliseconds(s.startAt) < end.epochMilliseconds &&
-          milliseconds(s.endAt) <= Temporal.Now.instant().epochMilliseconds,
+          milliseconds(s.startAt) < end.epochMilliseconds,
       )
       .map((session) => ({
         ...session,
