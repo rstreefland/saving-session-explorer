@@ -483,3 +483,31 @@ it('uses comparison cards on phones and preserves expanded readings when resizin
   );
   expect(screen.getByRole('region', { name: 'Calculation summary' })).toBeInTheDocument();
 });
+
+it('distinguishes readings buttons for sessions on the same day on phones', () => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => Object.assign(new EventTarget(), { matches: true })),
+  );
+  const result = calculateAll(demoDataset())[1];
+  const first = {
+    ...result,
+    session: { ...result.session, startAt: '2026-11-05T17:00:00Z', endAt: '2026-11-05T18:00:00Z' },
+  };
+  const second = {
+    ...result,
+    session: {
+      ...result.session,
+      eventId: 999,
+      startAt: '2026-11-05T19:00:00Z',
+      endAt: '2026-11-05T20:00:00Z',
+    },
+  };
+  render(<SessionHistory results={[first, second]} type="TURN_DOWN" onTypeChange={vi.fn()} />);
+  expect(
+    screen.getByRole('button', { name: 'Readings for 5 Nov 2026, 5:00pm – 6:00pm' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'Readings for 5 Nov 2026, 7:00pm – 8:00pm' }),
+  ).toBeInTheDocument();
+});

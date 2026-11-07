@@ -146,7 +146,9 @@ function MobileResults({
               <button
                 type="button"
                 className="mobile-details-toggle"
-                aria-label={'Readings for ' + date}
+                aria-label={
+                  'Readings for ' + date + ', ' + formatTimeRange(session.startAt, session.endAt)
+                }
                 aria-expanded={open}
                 aria-controls={detailId}
                 onClick={() => toggle(session.eventId)}
@@ -403,7 +405,7 @@ export function SessionHistory({
                           <button
                             type="button"
                             className="row-toggle"
-                            aria-label={'Readings for ' + label}
+                            aria-label={'Readings for ' + label + ', ' + timeRange}
                             aria-expanded={open}
                             aria-controls={id + '-details-' + session.eventId}
                             onClick={() =>
@@ -442,7 +444,7 @@ export function SessionHistory({
         {!results.length && (
           <div className="empty">
             <h3>No sessions in this view</h3>
-            <p>Try another period. Only joined, ended sessions appear.</p>
+            <p>Try another period. Only joined sessions appear.</p>
           </div>
         )}
       </div>

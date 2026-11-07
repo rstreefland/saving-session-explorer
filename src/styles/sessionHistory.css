@@ -481,6 +481,9 @@
   font-size: 13px;
   margin-top: 4px;
 }
+.history-table .session-date time {
+  font-size: 14px;
+}
 .mobile-details-toggle {
   flex-shrink: 0;
   min-width: 44px;
