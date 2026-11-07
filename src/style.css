@@ -1089,11 +1089,6 @@ footer {
   overflow-wrap: anywhere;
 }
 
-.points-comparison .points-unit {
-  font-size: 14px;
-  font-weight: 500;
-}
-
 @media (max-width: 600px) {
   .points-breakdown {
     padding: 16px 12px;
@@ -1177,10 +1172,18 @@ footer {
 
 .octopoints-value {
   display: inline-block;
+  font-size: var(--results-primary-size, 16px);
+  font-weight: 500;
   white-space: nowrap;
+}
+
+.octopoints-value strong {
+  font-weight: 700;
 }
 
 .octopoints-value .points-unit {
   display: inline;
+  font-size: inherit;
+  font-weight: 500;
   margin: 0;
 }

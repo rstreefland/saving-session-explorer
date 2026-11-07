@@ -1,7 +1,7 @@
 export function OctopointsValue({ value }: { value: number }) {
   return (
     <span className="octopoints-value">
-      {value.toLocaleString('en-GB')}{' '}
+      <strong>{value.toLocaleString('en-GB')}</strong>{' '}
       <small className="points-unit">
         <span className="reward-unit-full" aria-hidden="true">
           Octopoints

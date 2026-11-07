@@ -18,13 +18,43 @@ async function fitsViewport(page: Page) {
       .locator('.history-scroll, .mobile-results')
       .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
   ).toBe(true);
+  const sizesMatch = await page.evaluate(() => {
+    const time = document.querySelector('.mobile-session-time, .history-table .session-time');
+    const outcomes = document.querySelectorAll(
+      '.mobile-source .outcome-label, .history-row .outcome-label',
+    );
+    const date = document.querySelector(
+      '.mobile-session-heading time, .history-table .session-date time',
+    );
+    const energy = document.querySelector('.mobile-energy, .history-table .shifted-energy');
+    return (
+      (!time ||
+        [...outcomes].every(
+          (outcome) => getComputedStyle(outcome).fontSize === getComputedStyle(time).fontSize,
+        )) &&
+      (!date || !energy || getComputedStyle(date).fontSize === getComputedStyle(energy).fontSize)
+    );
+  });
+  expect(sizesMatch).toBe(true);
   const rewardsStayTogether = await page.locator('.octopoints-value').evaluateAll((values) =>
     values.every((value) => {
       const range = document.createRange();
       range.selectNode(value.firstChild!);
       const number = range.getBoundingClientRect();
       const unit = value.querySelector('.points-unit')!.getBoundingClientRect();
-      return number.bottom > unit.top && unit.bottom > number.top;
+      const amountStyle = getComputedStyle(value.querySelector('strong')!);
+      const unitStyle = getComputedStyle(value.querySelector('.points-unit')!);
+      const energy = value.closest('.mobile-source')?.querySelector('.mobile-energy');
+      const expectedStyle = energy ? getComputedStyle(energy) : amountStyle;
+      return (
+        number.bottom > unit.top &&
+        unit.bottom > number.top &&
+        unitStyle.fontSize === expectedStyle.fontSize &&
+        (!energy ||
+          (unitStyle.color === expectedStyle.color &&
+            unitStyle.fontWeight === expectedStyle.fontWeight)) &&
+        Number(amountStyle.fontWeight) >= 700
+      );
     }),
   );
   expect(rewardsStayTogether).toBe(true);
@@ -221,11 +251,14 @@ for (const width of [320, 1280]) {
     await expect(row.getByRole('button', { name: 'Provisional reading' })).toBeVisible();
     await fitsViewport(page);
     await row.getByRole('button', { name: /Readings for/ }).click();
-    await page
+    const provisional = page
       .locator('.session-details')
       .getByRole('button', { name: 'Provisional reading' })
-      .first()
-      .click();
+      .first();
+    // Scroll before activation: tooltips intentionally dismiss when the page scrolls.
+    await provisional.scrollIntoViewIfNeeded();
+    await expect(provisional).toBeInViewport();
+    await provisional.click();
     await expect(page.getByRole('tooltip')).toContainText('Home Mini');
     await fitsViewport(page);
     expect(
