@@ -446,3 +446,32 @@ it('keeps a calculated missed-reward flag alongside Octopus missing-data informa
     screen.queryByRole('button', { name: 'Octopus reward information' }),
   ).not.toBeInTheDocument();
 });
+
+it.each([1_000, 30 * 86_400_000])(
+  'removes the upcoming icon and open tooltip when the session ends in %s ms',
+  (remaining) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-05T17:00:00Z'));
+    try {
+      const result = calculateAll(demoDataset())[0];
+      result.session.endAt = new Date(Date.now() + remaining).toISOString();
+      const view = render(
+        <SessionHistory results={[result]} type="TURN_DOWN" onTypeChange={vi.fn()} />,
+      );
+      const icon = screen.getByRole('button', { name: 'Session has not ended yet' });
+      fireEvent.focus(icon);
+      expect(screen.getByRole('tooltip')).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(remaining - 1));
+      expect(icon).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(1));
+      expect(
+        screen.queryByRole('button', { name: 'Session has not ended yet' }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+      view.unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  },
+);
