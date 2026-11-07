@@ -64,6 +64,141 @@ function calculatedReward(result: Calculation) {
   return estimate.state === 'ready' ? <OctopointsValue value={estimate.points} /> : PLACEHOLDER;
 }
 
+type MobileLayout = 'list' | 'cards' | 'compact';
+
+// Opt-in exploration: the shipped view stays unchanged until a layout is chosen.
+function explorationLayout(): MobileLayout | null {
+  const value = new URLSearchParams(window.location.search).get('mobile-results');
+  return value === 'list' || value === 'cards' || value === 'compact' ? value : null;
+}
+
+function MobileResults({
+  results,
+  type,
+  layout,
+  id,
+  expanded,
+  toggle,
+}: {
+  results: Calculation[];
+  type: SessionType;
+  layout: MobileLayout;
+  id: string;
+  expanded: Set<number>;
+  toggle: (eventId: number) => void;
+}) {
+  const happy = type === 'WEEKEND_HAPPY_HOUR';
+  return (
+    <ol className={'mobile-results mobile-results-' + layout} aria-label="Session results">
+      {results.map((result) => {
+        const session = result.session;
+        const outcome = sessionOutcome(result);
+        const done = status(session);
+        const open = expanded.has(session.eventId);
+        const date = formatLocal(session.startAt, {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+        const detailId = id + '-mobile-details-' + session.eventId;
+        const comparison = (
+          <div className="mobile-comparison">
+            {[true, false].map((estimated) => {
+              const energy = estimated ? result.rewarded : reportedShifted(session);
+              const state = estimated ? outcome : done;
+              return (
+                <div className="mobile-source" key={String(estimated)}>
+                  <span className="mobile-source-label">
+                    {estimated ? 'Calculated' : 'Octopus'}
+                  </span>
+                  <div className="mobile-source-result">
+                    {!happy && (
+                      <span className={'outcome-label outcome-' + state.tone}>
+                        {!estimated && session.resultsStatus === 'MISSING_READINGS' ? (
+                          <Tooltip label={state.label} text={MISSING_SESSION_EXPLANATION} />
+                        ) : (
+                          state.label
+                        )}
+                        {estimated && result.provisional && <ProvisionalIndicator />}
+                      </span>
+                    )}
+                    <span className="mobile-energy">
+                      {energy === null
+                        ? PLACEHOLDER
+                        : energy.toFixed(2) + (happy ? ' kWh used' : ' kWh shifted')}
+                      {happy && estimated && result.provisional && <ProvisionalIndicator />}
+                    </span>
+                  </div>
+                  {(!estimated || type === 'TURN_DOWN') && (
+                    <div className="mobile-source-reward">
+                      {estimated ? calculatedReward(result) : reward(session)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+        return (
+          <li
+            key={session.eventId}
+            className={'mobile-session' + (outcome.attention ? ' mobile-session-attention' : '')}
+          >
+            <div className="mobile-session-heading">
+              <div>
+                <time dateTime={session.startAt}>{date}</time>
+                <span className="mobile-session-time">
+                  {sessionTime(session.startAt)} – {sessionTime(session.endAt)}
+                </span>
+              </div>
+              {layout === 'compact' && (
+                <div className="mobile-headline-reward">
+                  <span>Octopus reward</span>
+                  {reward(session)}
+                </div>
+              )}
+              <button
+                type="button"
+                className="mobile-details-toggle"
+                aria-label={'Readings for ' + date}
+                aria-expanded={open}
+                aria-controls={detailId}
+                onClick={() => toggle(session.eventId)}
+              >
+                <ChevronDown size={20} aria-hidden="true" />
+              </button>
+            </div>
+            {layout === 'compact' && (
+              <div className="mobile-compact-status">
+                <span className={'outcome-label outcome-' + done.tone}>
+                  {happy ? 'Happy Hour' : done.label}
+                </span>
+                <span>
+                  {happy ? 'Usage' : 'Calculated'}:{' '}
+                  {happy
+                    ? result.rewarded === null
+                      ? PLACEHOLDER
+                      : result.rewarded.toFixed(2) + ' kWh'
+                    : outcome.label}
+                  {result.provisional && <ProvisionalIndicator />}
+                </span>
+              </div>
+            )}
+            {outcome.attention && <p className="mobile-attention">Possible missed reward</p>}
+            {layout !== 'compact' && comparison}
+            {open && (
+              <div id={detailId} className="mobile-session-details">
+                {layout === 'compact' && comparison}
+                <SessionDetails result={result} />
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export function SessionHistory({
   results,
   type,
@@ -78,6 +213,17 @@ export function SessionHistory({
   const id = useId(),
     [expanded, setExpanded] = useState<Set<number>>(() => new Set());
 
+  const [layout, setLayout] = useState(explorationLayout);
+  const phone = useMediaQuery('(max-width: 600px)');
+  const mobileExploration = phone && layout !== null;
+  function toggle(eventId: number) {
+    setExpanded((previous) => {
+      const next = new Set(previous);
+      if (next.has(eventId)) next.delete(eventId);
+      else next.add(eventId);
+      return next;
+    });
+  }
   const happy = type === 'WEEKEND_HAPPY_HOUR';
   const compact = useMediaQuery('(max-width: 800px)');
   const estimateReward = type === 'TURN_DOWN';
@@ -125,203 +271,232 @@ export function SessionHistory({
         ))}
       </div>
       <div role="tabpanel" id={id + '-panel'} aria-labelledby={id + '-' + type} tabIndex={0}>
+        {mobileExploration && (
+          <label className="mobile-layout-picker">
+            Explore mobile layout
+            <select
+              aria-label="Mobile results layout"
+              value={layout}
+              onChange={(e) => setLayout(e.target.value as MobileLayout)}
+            >
+              <option value="list">A · Stacked list</option>
+              <option value="cards">B · Comparison cards</option>
+              <option value="compact">C · Compact list</option>
+            </select>
+          </label>
+        )}
         {summary}
-        <div className="table-scroll history-scroll">
-          {/* Explicit roles preserve table navigation when the compact layout uses CSS grid. */}
-          <table className="history-table" role="table">
-            <caption className="sr-only">
-              {SESSION_TYPES.find((t) => t.value === type)!.label} session history
-            </caption>
-            <thead role="rowgroup">
-              <tr role="row">
-                <th role="columnheader" scope="col" className="sticky-date">
-                  Date
-                </th>
-                <th role="columnheader" scope="col">
-                  <Tooltip
-                    label={happy ? 'Calculated usage' : 'Calculated result'}
-                    text="Estimated figures produced by looking at your smart meter data. May differ to the actual figures from Octopus Energy."
-                  />
-                </th>
-                <th role="columnheader" scope="col">
-                  <Tooltip
-                    label={happy ? 'Usage' : 'Result'}
-                    text="Actual figures from Octopus Energy."
-                  />
-                </th>
-                {!compact && estimateReward && (
-                  <th role="columnheader" scope="col" className="reward-column">
+        {mobileExploration ? (
+          <MobileResults
+            results={results}
+            type={type}
+            layout={layout}
+            id={id}
+            expanded={expanded}
+            toggle={toggle}
+          />
+        ) : (
+          <div className="table-scroll history-scroll">
+            {/* Explicit roles preserve table navigation when the compact layout uses CSS grid. */}
+            <table className="history-table" role="table">
+              <caption className="sr-only">
+                {SESSION_TYPES.find((t) => t.value === type)!.label} session history
+              </caption>
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th role="columnheader" scope="col" className="sticky-date">
+                    Date
+                  </th>
+                  <th role="columnheader" scope="col">
                     <Tooltip
-                      label="Calculated reward"
-                      text="Estimated Octopoints from shifted energy and the session rate."
+                      label={happy ? 'Calculated usage' : 'Calculated result'}
+                      text="Estimated figures produced by looking at your smart meter data. May differ to the actual figures from Octopus Energy."
                     />
                   </th>
-                )}
-                {!compact && (
-                  <th role="columnheader" scope="col" className="reward-column">
-                    <Tooltip label="Reward" text="Actual figures from Octopus Energy." />
+                  <th role="columnheader" scope="col">
+                    <Tooltip
+                      label={happy ? 'Usage' : 'Result'}
+                      text="Actual figures from Octopus Energy."
+                    />
                   </th>
-                )}
-                <th role="columnheader" scope="col" className="readings-column">
-                  <span className="sr-only">Readings</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody role="rowgroup">
-              {results.map((result, index) => {
-                const session = result.session,
-                  done = status(session),
-                  officialShifted = reportedShifted(session),
-                  outcome = sessionOutcome(result),
-                  open = expanded.has(session.eventId);
+                  {!compact && estimateReward && (
+                    <th role="columnheader" scope="col" className="reward-column">
+                      <Tooltip
+                        label="Calculated reward"
+                        text="Estimated Octopoints from shifted energy and the session rate."
+                      />
+                    </th>
+                  )}
+                  {!compact && (
+                    <th role="columnheader" scope="col" className="reward-column">
+                      <Tooltip label="Reward" text="Actual figures from Octopus Energy." />
+                    </th>
+                  )}
+                  <th role="columnheader" scope="col" className="readings-column">
+                    <span className="sr-only">Readings</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody role="rowgroup">
+                {results.map((result, index) => {
+                  const session = result.session,
+                    done = status(session),
+                    officialShifted = reportedShifted(session),
+                    outcome = sessionOutcome(result),
+                    open = expanded.has(session.eventId);
 
-                const date = formatLocal(session.startAt, {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: '2-digit',
-                });
+                  const date = formatLocal(session.startAt, {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: '2-digit',
+                  });
 
-                const startTime = sessionTime(session.startAt);
-                const endTime = sessionTime(session.endAt);
-                const fullTimeRange = `${startTime} – ${endTime}`;
-                const samePeriod = startTime.slice(-2) === endTime.slice(-2);
-                const visibleTimeRange = compact
-                  ? `${samePeriod ? startTime.slice(0, -2) : startTime}–${endTime}`
-                  : fullTimeRange;
+                  const startTime = sessionTime(session.startAt);
+                  const endTime = sessionTime(session.endAt);
+                  const fullTimeRange = `${startTime} – ${endTime}`;
+                  const samePeriod = startTime.slice(-2) === endTime.slice(-2);
+                  const visibleTimeRange = compact
+                    ? `${samePeriod ? startTime.slice(0, -2) : startTime}–${endTime}`
+                    : fullTimeRange;
 
-                const label =
-                  SESSION_TYPES.find((t) => t.value === session.eventType)!.label + ' ' + date;
+                  const label =
+                    SESSION_TYPES.find((t) => t.value === session.eventType)!.label + ' ' + date;
 
-                return (
-                  <Fragment key={session.eventId}>
-                    <tr
-                      role="row"
-                      className={
-                        'history-row ' +
-                        (index % 2 ? 'stripe ' : '') +
-                        (outcome.attention ? 'row-attention' : '')
-                      }
-                    >
-                      <th role="rowheader" scope="row" className="session-date">
-                        <span className="session-time">
-                          <span className="sr-only">{fullTimeRange}</span>
-                          <span aria-hidden="true">{visibleTimeRange}</span>
-                        </span>
-                        <time dateTime={session.startAt}>{date}</time>
-                      </th>
-                      <td role="cell" className="outcome-cell">
-                        <div className="result-summary">
-                          {happy ? (
-                            <span className="numeric">
-                              {result.rewarded === null
-                                ? PLACEHOLDER
-                                : result.rewarded.toFixed(2) + ' kWh'}
-                              {result.provisional && <ProvisionalIndicator />}
-                            </span>
-                          ) : (
-                            <>
-                              <span className={'outcome-label outcome-' + outcome.tone}>
-                                {outcome.label}
-                                {result.provisional && <ProvisionalIndicator />}
-                              </span>
-                              <ShiftedEnergy value={result.rewarded} />
-                            </>
-                          )}
-                        </div>
-                        {compact && estimateReward && (
-                          <span className="mobile-reward">
-                            <span className="mobile-reward-label">Octopoints</span>
-                            {calculatedReward(result)}
-                          </span>
-                        )}
-                        {outcome.attention && (
-                          <span className="reward-query">
-                            Possible missed reward
-                            <small>
-                              Your readings suggest you qualify, but Octopus has awarded no reward.
-                            </small>
-                          </span>
-                        )}
-                      </td>
-                      <td role="cell" className="outcome-cell">
-                        <div className="result-summary">
-                          {happy ? (
-                            <span className="numeric">
-                              {officialShifted === null
-                                ? PLACEHOLDER
-                                : officialShifted.toFixed(2) + ' kWh'}
-                            </span>
-                          ) : (
-                            <>
-                              <span className={'outcome-label outcome-' + done.tone}>
-                                {session.resultsStatus === 'MISSING_READINGS' ? (
-                                  <Tooltip label={done.label} text={MISSING_SESSION_EXPLANATION} />
-                                ) : (
-                                  done.label
-                                )}
-                              </span>
-                              <ShiftedEnergy value={officialShifted} />
-                            </>
-                          )}
-                        </div>
-                        {compact && (
-                          <span className="mobile-reward">
-                            <span className="mobile-reward-label">
-                              {happy ? 'Bill credit' : 'Octopoints'}
-                            </span>
-                            {reward(session)}
-                          </span>
-                        )}
-                      </td>
-                      {!compact && estimateReward && (
-                        <td role="cell" className="numeric reward-cell reward-column">
-                          {calculatedReward(result)}
-                        </td>
-                      )}
-                      {!compact && (
-                        <td role="cell" className="numeric reward-cell reward-column">
-                          {reward(session)}
-                        </td>
-                      )}
-                      <td role="cell" className="readings-column">
-                        <button
-                          type="button"
-                          className="row-toggle"
-                          aria-label={'Readings for ' + label}
-                          aria-expanded={open}
-                          aria-controls={id + '-details-' + session.eventId}
-                          onClick={() =>
-                            setExpanded((previous) => {
-                              const next = new Set(previous);
-
-                              if (next.has(session.eventId)) next.delete(session.eventId);
-                              else next.add(session.eventId);
-
-                              return next;
-                            })
-                          }
-                        >
-                          <ChevronDown size={20} aria-hidden="true" focusable="false" />
-                        </button>
-                      </td>
-                    </tr>
-                    {open && (
+                  return (
+                    <Fragment key={session.eventId}>
                       <tr
                         role="row"
-                        className="details-row"
-                        id={id + '-details-' + session.eventId}
+                        className={
+                          'history-row ' +
+                          (index % 2 ? 'stripe ' : '') +
+                          (outcome.attention ? 'row-attention' : '')
+                        }
                       >
-                        <td role="cell" colSpan={columns} aria-colspan={columns}>
-                          <SessionDetails result={result} />
+                        <th role="rowheader" scope="row" className="session-date">
+                          <span className="session-time">
+                            <span className="sr-only">{fullTimeRange}</span>
+                            <span aria-hidden="true">{visibleTimeRange}</span>
+                          </span>
+                          <time dateTime={session.startAt}>{date}</time>
+                        </th>
+                        <td role="cell" className="outcome-cell">
+                          <div className="result-summary">
+                            {happy ? (
+                              <span className="numeric">
+                                {result.rewarded === null
+                                  ? PLACEHOLDER
+                                  : result.rewarded.toFixed(2) + ' kWh'}
+                                {result.provisional && <ProvisionalIndicator />}
+                              </span>
+                            ) : (
+                              <>
+                                <span className={'outcome-label outcome-' + outcome.tone}>
+                                  {outcome.label}
+                                  {result.provisional && <ProvisionalIndicator />}
+                                </span>
+                                <ShiftedEnergy value={result.rewarded} />
+                              </>
+                            )}
+                          </div>
+                          {compact && estimateReward && (
+                            <span className="mobile-reward">
+                              <span className="mobile-reward-label">Octopoints</span>
+                              {calculatedReward(result)}
+                            </span>
+                          )}
+                          {outcome.attention && (
+                            <span className="reward-query">
+                              Possible missed reward
+                              <small>
+                                Your readings suggest you qualify, but Octopus has awarded no
+                                reward.
+                              </small>
+                            </span>
+                          )}
+                        </td>
+                        <td role="cell" className="outcome-cell">
+                          <div className="result-summary">
+                            {happy ? (
+                              <span className="numeric">
+                                {officialShifted === null
+                                  ? PLACEHOLDER
+                                  : officialShifted.toFixed(2) + ' kWh'}
+                              </span>
+                            ) : (
+                              <>
+                                <span className={'outcome-label outcome-' + done.tone}>
+                                  {session.resultsStatus === 'MISSING_READINGS' ? (
+                                    <Tooltip
+                                      label={done.label}
+                                      text={MISSING_SESSION_EXPLANATION}
+                                    />
+                                  ) : (
+                                    done.label
+                                  )}
+                                </span>
+                                <ShiftedEnergy value={officialShifted} />
+                              </>
+                            )}
+                          </div>
+                          {compact && (
+                            <span className="mobile-reward">
+                              <span className="mobile-reward-label">
+                                {happy ? 'Bill credit' : 'Octopoints'}
+                              </span>
+                              {reward(session)}
+                            </span>
+                          )}
+                        </td>
+                        {!compact && estimateReward && (
+                          <td role="cell" className="numeric reward-cell reward-column">
+                            {calculatedReward(result)}
+                          </td>
+                        )}
+                        {!compact && (
+                          <td role="cell" className="numeric reward-cell reward-column">
+                            {reward(session)}
+                          </td>
+                        )}
+                        <td role="cell" className="readings-column">
+                          <button
+                            type="button"
+                            className="row-toggle"
+                            aria-label={'Readings for ' + label}
+                            aria-expanded={open}
+                            aria-controls={id + '-details-' + session.eventId}
+                            onClick={() =>
+                              setExpanded((previous) => {
+                                const next = new Set(previous);
+
+                                if (next.has(session.eventId)) next.delete(session.eventId);
+                                else next.add(session.eventId);
+
+                                return next;
+                              })
+                            }
+                          >
+                            <ChevronDown size={20} aria-hidden="true" focusable="false" />
+                          </button>
                         </td>
                       </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      {open && (
+                        <tr
+                          role="row"
+                          className="details-row"
+                          id={id + '-details-' + session.eventId}
+                        >
+                          <td role="cell" colSpan={columns} aria-colspan={columns}>
+                            <SessionDetails result={result} />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
         {!results.length && (
           <div className="empty">
             <h3>No sessions in this view</h3>
