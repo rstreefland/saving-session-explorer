@@ -496,7 +496,6 @@
 .mobile-comparison {
   position: relative;
   margin-top: 14px;
-  border-top: 1px solid #ddd3e2;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -511,11 +510,20 @@
   transform: translateX(-50%);
 }
 .mobile-source {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px 12px 12px 0;
   align-items: start;
+}
+.mobile-source::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 12px;
+  border-top: 1px solid #ddd3e2;
 }
 .mobile-source-label {
   text-transform: uppercase;
@@ -566,6 +574,10 @@
 }
 .mobile-source + .mobile-source {
   padding: 12px 0 12px 12px;
+}
+.mobile-source + .mobile-source::before {
+  left: 12px;
+  right: 0;
 }
 .mobile-results .reward-unit-full {
   display: inline;
