@@ -53,7 +53,11 @@ async function fitsViewport(page: Page) {
         (!energy ||
           (unitStyle.color === expectedStyle.color &&
             unitStyle.fontWeight === expectedStyle.fontWeight)) &&
-        Number(amountStyle.fontWeight) >= 700
+        (value.closest('.mobile-results')
+          ? amountStyle.fontSize === unitStyle.fontSize &&
+            amountStyle.fontWeight === unitStyle.fontWeight &&
+            unitStyle.fontWeight === '400'
+          : Number(amountStyle.fontWeight) >= 700)
       );
     }),
   );

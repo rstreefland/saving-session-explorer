@@ -527,7 +527,10 @@
   padding-top: 3px;
 }
 .mobile-energy,
-.mobile-source-reward .points-unit {
+.mobile-source-reward,
+.mobile-results .octopoints-value,
+.mobile-results .octopoints-value strong,
+.mobile-results .octopoints-value .points-unit {
   font-size: var(--results-secondary-size);
   font-weight: 400;
   color: #65526d;
@@ -537,7 +540,6 @@
   margin-top: 3px;
 }
 .mobile-source-reward {
-  font-weight: 700;
   text-align: left;
   margin-top: auto;
   font-variant-numeric: tabular-nums;
