@@ -9,7 +9,7 @@ import {
   type SessionType,
 } from '../domain/session';
 import { sessionOutcome, type SessionOutcome } from '../domain/outcome';
-import { formatLocal } from '../domain/time';
+import { formatLocal, formatTimeRange } from '../domain/time';
 import { SessionDetails } from './SessionDetails';
 import { ProvisionalIndicator } from './ProvisionalIndicator';
 import { Tooltip } from './Tooltip';
@@ -45,13 +45,6 @@ function reward(session: Session) {
 
 function sessionDate(value: string) {
   return formatLocal(value, { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function sessionTime(value: string) {
-  return formatLocal(value, { hour: 'numeric', minute: '2-digit', hourCycle: 'h12' }).replace(
-    /\s(?=[ap]m)/g,
-    '',
-  );
 }
 
 function UpcomingSessionIndicator({ session }: { session: Session }) {
@@ -149,7 +142,7 @@ function MobileResults({
             <div className="mobile-session-heading">
               <div>
                 <span className="mobile-session-time">
-                  {sessionTime(session.startAt)} – {sessionTime(session.endAt)}
+                  {formatTimeRange(session.startAt, session.endAt)}
                   <UpcomingSessionIndicator session={session} />
                 </span>
                 <time dateTime={session.startAt}>{date}</time>
@@ -310,13 +303,7 @@ export function SessionHistory({
 
                   const date = sessionDate(session.startAt);
 
-                  const startTime = sessionTime(session.startAt);
-                  const endTime = sessionTime(session.endAt);
-                  const fullTimeRange = `${startTime} – ${endTime}`;
-                  const samePeriod = startTime.slice(-2) === endTime.slice(-2);
-                  const visibleTimeRange = compact
-                    ? `${samePeriod ? startTime.slice(0, -2) : startTime}–${endTime}`
-                    : fullTimeRange;
+                  const timeRange = formatTimeRange(session.startAt, session.endAt);
 
                   const label =
                     SESSION_TYPES.find((t) => t.value === session.eventType)!.label + ' ' + date;
@@ -332,10 +319,7 @@ export function SessionHistory({
                         }
                       >
                         <th role="rowheader" scope="row" className="session-date">
-                          <span className="session-time">
-                            <span className="sr-only">{fullTimeRange}</span>
-                            <span aria-hidden="true">{visibleTimeRange}</span>
-                          </span>
+                          <span className="session-time">{timeRange}</span>
                           <time dateTime={session.startAt}>
                             {date}
                             <UpcomingSessionIndicator session={session} />

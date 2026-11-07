@@ -1,5 +1,5 @@
 import type { readingCoverage } from '../domain/coverage';
-import { formatLocal } from '../domain/time';
+import { clockTime, formatLocal } from '../domain/time';
 
 export function MeterDataNotes({
   coverage,
@@ -15,10 +15,9 @@ export function MeterDataNotes({
       day: 'numeric',
       month: 'short',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short',
-    });
+    }) +
+    ', ' +
+    clockTime(value, true);
   return (
     <details className="data-notes">
       <summary>Missing data?</summary>

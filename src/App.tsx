@@ -6,7 +6,7 @@ import { createQueryClient } from './api/queryClient';
 import { dataWarnings } from './domain/availability';
 import { calculateAll } from './domain/calculate';
 import { last30Days, validRange, type Preset } from './domain/dateRange';
-import { day, formatLocal, milliseconds, todayInLondon } from './domain/time';
+import { day, clockTime, formatLocal, milliseconds, todayInLondon } from './domain/time';
 import { readingCoverage } from './domain/coverage';
 import { demoDataset } from './domain/demo';
 import type { Dataset } from './domain/types';
@@ -182,7 +182,8 @@ function SessionLens({ load }: AppProps) {
               />
               <MeterDataNotes coverage={coverage} warnings={warnings} />
               <p className="fine-print">
-                Fetched {formatLocal(data.fetchedAt, { dateStyle: 'short', timeStyle: 'short' })}.
+                Fetched {formatLocal(data.fetchedAt, { dateStyle: 'short' })},{' '}
+                {clockTime(data.fetchedAt)}.
                 {data.meterSerials && (
                   <>
                     {' '}

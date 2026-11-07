@@ -701,7 +701,7 @@ it.each(['TURN_DOWN', 'TURN_UP'] as const)(
       await user.click(screen.getByRole('button', { name: 'Apply dates' }));
       if (eventType === 'TURN_UP') await user.click(screen.getByRole('tab', { name: 'Power up' }));
       const toggle = await screen.findByRole('button', {
-        name: /Readings for Power (down|up) 02\/11\/26/,
+        name: /Readings for Power (down|up) 2 Nov 2026/,
       });
       const row = toggle.closest('tr')!;
       const indicator = within(row).getByRole('button', { name: 'Session has not ended yet' });

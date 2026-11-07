@@ -51,7 +51,7 @@ for (const width of [320, 375, 390, 600, 800, 1280]) {
     expect(number.y).toBeLessThan(name.y);
 
     for (const row of await page.locator('.history-row').all()) {
-      const time = row.locator('.session-time > [aria-hidden]');
+      const time = row.locator('.session-time');
 
       expect(
         await time.evaluate((element) => {

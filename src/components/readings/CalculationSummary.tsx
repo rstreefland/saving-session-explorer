@@ -2,8 +2,7 @@ import { ProvisionalIndicator } from '../ProvisionalIndicator';
 import { PLACEHOLDER } from '../placeholder';
 import type { Calculation } from '../../domain/types';
 import { isHappyHour } from '../../domain/session';
-import { clockTime } from '../../domain/time';
-import { halfHourEnd, number } from './format';
+import { halfHourRange, number } from './format';
 
 function EnergyCard({
   label,
@@ -56,7 +55,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
       )}
       <p className="reading-note">Times are UK local time.</p>
       {result.slots.map((slot) => {
-        const time = `${clockTime(slot.start)} to ${halfHourEnd(slot.start)}`;
+        const time = halfHourRange(slot.start);
         const change =
           slot.baseline === null || slot.actual === null
             ? null

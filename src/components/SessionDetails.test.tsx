@@ -32,6 +32,8 @@ it('shows half-hour formulas and the rewarded total without an overall-change su
   });
 
   expect(equations).toHaveLength(2);
+  expect(within(summary).getByRole('heading', { name: '5:00pm – 5:30pm' })).toBeVisible();
+  expect(within(summary).getByRole('heading', { name: '5:30pm – 6:00pm' })).toBeVisible();
   expect(
     within(equations[0])
       .getAllByRole('definition')
@@ -157,6 +159,8 @@ it('shows the actual reference dates and lets the user inspect each half-hour se
   expect(within(table).getByText('0.123')).toBeInTheDocument();
   expect(within(table).getAllByRole('row')).toHaveLength(result.days.length + 2);
 
+  expect(screen.getByRole('option', { name: '5:00pm – 5:30pm' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: '5:30pm – 6:00pm' })).toBeInTheDocument();
   await user.selectOptions(screen.getByRole('combobox', { name: 'Half-hour to inspect' }), '1');
 
   expect(within(table).getByText('0.456')).toBeInTheDocument();
