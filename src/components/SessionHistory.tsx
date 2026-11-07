@@ -91,7 +91,7 @@ function MobileResults({
 }) {
   const happy = type === 'WEEKEND_HAPPY_HOUR';
   return (
-    <ol className="mobile-results mobile-results-cards" aria-label="Session results">
+    <ol className="mobile-results" aria-label="Session results">
       {results.map((result) => {
         const session = result.session;
         const outcome = sessionOutcome(result);

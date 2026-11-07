@@ -454,16 +454,15 @@
   padding: 0;
   margin: 0;
   list-style: none;
-  border: 1px solid var(--line);
-  background: var(--paper);
+  display: grid;
+  gap: 14px;
   font-size: 14px;
 }
 .mobile-session {
   padding: 16px;
-  border-bottom: 1px solid #c5b6ce;
-}
-.mobile-session:last-child {
-  border-bottom: 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
 }
 .mobile-session-heading {
   display: flex;
@@ -497,17 +496,22 @@
 }
 .mobile-comparison {
   margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 .mobile-source {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   padding: 12px 0;
   align-items: start;
   border-top: 1px solid #ddd3e2;
 }
 .mobile-source-label {
-  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  font-size: 11px;
   font-weight: 700;
   color: #65526d;
   padding-top: 3px;
@@ -523,11 +527,12 @@
 }
 .mobile-source-reward {
   font-weight: 700;
-  text-align: right;
+  text-align: left;
+  margin-top: auto;
   font-variant-numeric: tabular-nums;
 }
 .mobile-source-reward .points-unit {
-  display: block;
+  display: inline;
   font-weight: 500;
   font-size: 12px;
   color: #65526d;
@@ -550,42 +555,9 @@
   padding: 0;
   border: 0;
 }
-.mobile-results-cards {
-  border: 0;
-  background: transparent;
-  display: grid;
-  gap: 14px;
-}
-.mobile-results-cards .mobile-session {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-}
-.mobile-results-cards .mobile-comparison {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.mobile-results-cards .mobile-source {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.mobile-results-cards .mobile-source + .mobile-source {
+.mobile-source + .mobile-source {
   padding-left: 12px;
   border-left: 1px solid #ddd3e2;
-}
-.mobile-results-cards .mobile-source-reward {
-  text-align: left;
-  margin-top: auto;
-}
-.mobile-results-cards .mobile-source-label {
-  text-transform: uppercase;
-  letter-spacing: 0.7px;
-  font-size: 11px;
-}
-.mobile-results-cards .mobile-source-reward .points-unit {
-  display: inline;
 }
 .mobile-results .reward-unit-full {
   display: inline;
