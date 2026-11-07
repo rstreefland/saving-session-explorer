@@ -43,6 +43,10 @@ function reward(session: Session) {
   return <OctopointsValue value={value} />;
 }
 
+function sessionDate(value: string) {
+  return formatLocal(value, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 function sessionTime(value: string) {
   return formatLocal(value, { hour: 'numeric', minute: '2-digit', hourCycle: 'h12' }).replace(
     /\s(?=[ap]m)/g,
@@ -97,11 +101,7 @@ function MobileResults({
         const outcome = sessionOutcome(result);
         const done = status(session);
         const open = expanded.has(session.eventId);
-        const date = formatLocal(session.startAt, {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        });
+        const date = sessionDate(session.startAt);
         const detailId = id + '-mobile-details-' + session.eventId;
         const comparison = (
           <div className="mobile-comparison">
@@ -308,11 +308,7 @@ export function SessionHistory({
                     outcome = sessionOutcome(result),
                     open = expanded.has(session.eventId);
 
-                  const date = formatLocal(session.startAt, {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: '2-digit',
-                  });
+                  const date = sessionDate(session.startAt);
 
                   const startTime = sessionTime(session.startAt);
                   const endTime = sessionTime(session.endAt);

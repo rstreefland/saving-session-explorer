@@ -79,11 +79,6 @@
   white-space: nowrap;
 }
 
-.session-date time {
-  margin-top: 7px;
-  color: #65526d;
-}
-
 .history-row {
   background: var(--paper);
 }
@@ -472,13 +467,16 @@
 .mobile-session-heading > div:first-child {
   flex: 1;
 }
-.mobile-session-time {
+.mobile-session-time,
+.history-table .session-time {
   display: block;
   font-weight: 700;
   font-size: 16px;
 }
-.mobile-session-heading time {
+.mobile-session-heading time,
+.history-table .session-date time {
   display: block;
+  font-weight: 400;
   color: #65526d;
   font-size: 13px;
   margin-top: 4px;
