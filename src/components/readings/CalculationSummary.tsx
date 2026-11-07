@@ -53,7 +53,6 @@ export function CalculationSummary({ result }: { result: Calculation }) {
           {PLACEHOLDER}.
         </p>
       )}
-      <p className="reading-note">Times are UK local time.</p>
       {result.slots.map((slot) => {
         const time = halfHourRange(slot.start);
         const change =

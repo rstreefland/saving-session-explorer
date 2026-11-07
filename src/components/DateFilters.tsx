@@ -45,7 +45,7 @@ export function DateFilters({
         </button>
       </div>
       <span className="range-caption">
-        {formatDate(from)} → {formatDate(to)}
+        {formatDate(from)} → {formatDate(to)} (inclusive)
       </span>
       <dialog
         ref={dialog}

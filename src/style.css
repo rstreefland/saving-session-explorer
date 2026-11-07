@@ -269,12 +269,6 @@ summary {
   cursor: pointer;
 }
 
-.filter-help {
-  font-size: 14px;
-  color: #65526d;
-  margin: 9px 0 18px;
-}
-
 .notice {
   padding: 13px 15px;
   background: #eee7f1;
@@ -1021,7 +1015,6 @@ footer {
 }
 
 /* Secondary text stays readable instead of shrinking to make the layout fit. */
-.filter-help,
 .fine-print,
 .data-notes,
 .connection p,
