@@ -56,6 +56,7 @@ function SessionLens({ load }: AppProps) {
 
   const data = demo ?? remote.data;
   const { from, to } = range;
+  const today = todayInLondon().toString();
   const results = useMemo(() => (data ? calculateAll(data) : []), [data]);
 
   const coverage = useMemo(
@@ -149,7 +150,9 @@ function SessionLens({ load }: AppProps) {
             <h2>Session history</h2>
           </div>
           <DateFilters from={from} to={to} selected={selected} onChange={changeRange} />
-          <p className="filter-help">Includes today. All times are UK local time.</p>
+          <p className="filter-help">
+            {from <= today && to >= today && 'Includes today. '}All times are UK local time.
+          </p>
           {error && (
             <div role="alert" className="notice error">
               {error}

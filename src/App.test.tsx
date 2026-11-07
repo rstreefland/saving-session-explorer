@@ -56,7 +56,8 @@ describe('Session history', () => {
     await u.click(screen.getByRole('button', { name: 'Try demo' }));
 
     expect(screen.getByText(/Demo account/)).toBeInTheDocument();
-    expect(rows()).toHaveLength(4);
+    expect(rows()).toHaveLength(5);
+    expect(within(rows()[0]).getByText('Upcoming')).toBeInTheDocument();
 
     const summary = screen.getByRole('region', { name: 'Session summary' });
     const tabs = screen.getByRole('tablist', { name: 'Session type' });
