@@ -9,7 +9,7 @@ import {
   type SessionType,
 } from '../domain/session';
 import { sessionOutcome, type SessionOutcome } from '../domain/outcome';
-import { formatLocal, formatTimeRange } from '../domain/time';
+import { formatDate, formatTimeRange } from '../domain/time';
 import { SessionDetails } from './SessionDetails';
 import { ProvisionalIndicator } from './ProvisionalIndicator';
 import { Tooltip } from './Tooltip';
@@ -41,10 +41,6 @@ function reward(session: Session) {
   if (isHappyHour(session)) return value + 'p';
 
   return <OctopointsValue value={value} />;
-}
-
-function sessionDate(value: string) {
-  return formatLocal(value, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function UpcomingSessionIndicator({ session }: { session: Session }) {
@@ -94,7 +90,7 @@ function MobileResults({
         const outcome = sessionOutcome(result);
         const done = status(session);
         const open = expanded.has(session.eventId);
-        const date = sessionDate(session.startAt);
+        const date = formatDate(session.startAt);
         const detailId = id + '-mobile-details-' + session.eventId;
         const comparison = (
           <div className="mobile-comparison">
@@ -301,7 +297,7 @@ export function SessionHistory({
                     outcome = sessionOutcome(result),
                     open = expanded.has(session.eventId);
 
-                  const date = sessionDate(session.startAt);
+                  const date = formatDate(session.startAt);
 
                   const timeRange = formatTimeRange(session.startAt, session.endAt);
 

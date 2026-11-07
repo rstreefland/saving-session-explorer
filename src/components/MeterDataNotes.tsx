@@ -1,5 +1,5 @@
 import type { readingCoverage } from '../domain/coverage';
-import { clockTime, formatLocal } from '../domain/time';
+import { clockTime, formatDate } from '../domain/time';
 
 export function MeterDataNotes({
   coverage,
@@ -10,14 +10,7 @@ export function MeterDataNotes({
 }) {
   if (!coverage?.gaps.length && !warnings.length) return null;
   const showMeter = coverage?.gaps.some((gap) => gap.meters !== 'import');
-  const date = (value: string) =>
-    formatLocal(value, {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }) +
-    ', ' +
-    clockTime(value, true);
+  const date = (value: string) => `${formatDate(value)}, ${clockTime(value, true)}`;
   return (
     <details className="data-notes">
       <summary>Missing data?</summary>

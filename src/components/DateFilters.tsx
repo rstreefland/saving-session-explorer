@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { formatDate } from '../domain/time';
 import { last30Days, validRange, type Preset } from '../domain/dateRange';
 
 export function DateFilters({
@@ -44,7 +45,7 @@ export function DateFilters({
         </button>
       </div>
       <span className="range-caption">
-        {from} → {to}
+        {formatDate(from)} → {formatDate(to)}
       </span>
       <dialog
         ref={dialog}
