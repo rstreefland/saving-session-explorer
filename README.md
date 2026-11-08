@@ -5,6 +5,8 @@ Power up, and Happy Hours.
 
 This project is an AI experiment, built using AI with human guidance and feedback.
 
+Not affiliated with or endorsed by Octopus Energy.
+
 [Open the app](https://saving-session-explorer.streefland.co.uk) and choose **Try demo**, or connect
 with your Octopus API key and account number. Independent estimates require a smart meter sharing
 half-hourly electricity readings. Credentials are saved in your browser; **Forget account** removes them.
