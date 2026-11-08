@@ -1,8 +1,8 @@
 import DecimalBase from 'decimal.js-light';
 
-// 40 significant digits, truncating division: terminating input arithmetic stays
-// exact at meter scales; display and reward rounding are always explicit.
-export const Decimal = DecimalBase.clone({ precision: 40, rounding: DecimalBase.ROUND_DOWN });
+// Arithmetic truncates at 40 significant digits independently of the rounding default.
+// Display and reward rounding modes remain explicit at their respective boundaries.
+export const Decimal = DecimalBase.clone({ precision: 40, rounding: DecimalBase.ROUND_HALF_UP });
 export type Decimal = DecimalBase;
 export type Numeric = number | string;
 export const decimal = (value: Numeric | Decimal) => new Decimal(value);
