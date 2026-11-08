@@ -38,7 +38,7 @@ contributors and repository code, including tests and tooling unless an exceptio
   Date/time arithmetic belongs to Temporal. Preserve decimal strings at input boundaries where
   supplied; keep Decimal values through calculations and comparisons, converting only at explicit
   display/serialization or library boundaries. Centralize precision and rounding configuration,
-  document it in the ADR, and test boundary cases. Decimal division still needs a deliberate
+  document it in the methodology, and test boundary cases. Decimal division still needs a deliberate
   precision policy. See ADR-004 for migration status.
 - **No type casts/assertions outside test code.** This includes `as T`, double assertions,
   angle-bracket assertions, and `as const`. Use inference, annotations, discriminated unions,
@@ -174,12 +174,13 @@ do not claim otherwise or change deployment gating incidentally.
 
 - Keep [README.md](README.md) lightweight: purpose, quick start, essential privacy/limitations,
   and links. Do not append feature announcements or edit it for every feature.
-- Keep important decisions in the table in [docs/ADR.md](docs/ADR.md): stable ID, date, status,
-  decision, rationale/tradeoff, and implementation follow-up. Update it when a durable decision
-  changes, not for routine edits. Preserve superseded decisions and link their replacements.
+- Keep [docs/ADR.md](docs/ADR.md) short and high level. Record only significant architectural
+  choices whose reversal would materially change the app: ID, date, status, decision, rationale,
+  and consequences. Coding conventions, routine refactors, test policies, and task lists do not
+  belong there. Preserve genuine architectural decisions when superseded and link replacements.
 - Keep calculation assumptions, evidence classification, and focused examples in
   [docs/methodology.md](docs/methodology.md). Update affected explanations/tests with methodology
   changes. Promote a rule to supplier-confirmed only with an exact source and verification date.
 - Only explicitly shared docs are tracked. Keep private local research ignored; never force-add
-  it incidentally. Record intentional standards changes in the ADR rather than adding silent
-  exceptions throughout the code.
+  it incidentally. Make intentional standards changes explicit in this guide rather than adding
+  silent exceptions throughout the code.

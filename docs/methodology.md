@@ -68,4 +68,5 @@ combinatorial snapshots. Neither fixture agreement nor coverage thresholds prove
 The Decimal migration is accepted but pending. Existing code still contains native floating-point
 arithmetic and compensating epsilons. Preserve intended business outcomes with explicit Decimal
 precision/rounding choices; distinguish numerical artifacts from intentional tolerances such as
-0.01 kWh. Record changes to methodology or numerical policy in [ADR.md](ADR.md).
+0.01 kWh. Maintain assumptions and numerical policy in this document; use [ADR.md](ADR.md) only
+for significant architectural choices.
