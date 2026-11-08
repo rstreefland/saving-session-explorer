@@ -3,7 +3,7 @@
 Compare estimates from your smart meter readings with Octopus Energy's results for Power down,
 Power up, and Happy Hours.
 
-This project is an AI experiment, built using AI with human guidance and feedback.
+This project is built entirely using AI as an experiment to understand the limits of frontier models and learn how we can work with them more effectively.
 
 Not affiliated with or endorsed by Octopus Energy.
 
