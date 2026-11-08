@@ -6,8 +6,10 @@ coverage/
 
 *.tsbuildinfo
 
-# Private local research and review notes.
-docs/
+# Private local research and review notes; allow only shared engineering references.
+docs/*
+!docs/ADR.md
+!docs/methodology.md
 
 # Browser test artifacts may contain rendered account information.
 test-results/
