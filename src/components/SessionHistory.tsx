@@ -1,3 +1,5 @@
+import { decimal, fixed, type Decimal } from '../domain/decimal';
+import { Temporal, milliseconds, formatDate, formatTimeRange } from '../domain/time';
 import { Fragment, useId, useState, type ReactNode } from 'react';
 import { CalendarClock, ChevronDown } from 'lucide-react';
 import type { Calculation, Session } from '../domain/types';
@@ -9,7 +11,6 @@ import {
   type SessionType,
 } from '../domain/session';
 import { sessionOutcome, type SessionOutcome } from '../domain/outcome';
-import { formatDate, formatTimeRange } from '../domain/time';
 import { SessionDetails } from './SessionDetails';
 import { ProvisionalIndicator } from './ProvisionalIndicator';
 import { Tooltip } from './Tooltip';
@@ -38,13 +39,13 @@ function reward(session: Session) {
   const value = isHappyHour(session) ? session.rewardGivenInPence : session.rewardGivenInOctoPoints;
 
   if (value == null) return PLACEHOLDER;
-  if (isHappyHour(session)) return value + 'p';
+  if (isHappyHour(session)) return decimal(value).toString() + 'p';
 
   return <OctopointsValue value={value} />;
 }
 
 function UpcomingSessionIndicator({ session }: { session: Session }) {
-  if (Date.parse(session.endAt) <= Date.now()) return null;
+  if (milliseconds(session.endAt) <= Temporal.Now.instant().epochMilliseconds) return null;
 
   return (
     <Tooltip
@@ -55,10 +56,10 @@ function UpcomingSessionIndicator({ session }: { session: Session }) {
   );
 }
 
-function ShiftedEnergy({ value }: { value: number | null }) {
+function ShiftedEnergy({ value }: { value: Decimal | null }) {
   return (
     <small className="shifted-energy">
-      {value === null ? PLACEHOLDER : `${value.toFixed(2)} kWh shifted`}
+      {value === null ? PLACEHOLDER : `${fixed(value, 2)} kWh shifted`}
     </small>
   );
 }
@@ -116,7 +117,7 @@ function MobileResults({
                     <span className="mobile-energy">
                       {energy === null
                         ? PLACEHOLDER
-                        : energy.toFixed(2) + (happy ? ' kWh used' : ' kWh shifted')}
+                        : fixed(energy, 2) + (happy ? ' kWh used' : ' kWh shifted')}
                       {happy && estimated && result.provisional && <ProvisionalIndicator />}
                     </span>
                   </div>
@@ -199,7 +200,8 @@ export function SessionHistory({
   const columns = compact ? 4 : estimateReward ? 6 : 5;
 
   function changeTab(index: number) {
-    const next = SESSION_TYPES[(index + SESSION_TYPES.length) % SESSION_TYPES.length].value;
+    const next = SESSION_TYPES[index < 0 ? 2 : index > 2 ? 0 : index]?.value;
+    if (!next) return;
 
     onTypeChange(next);
     document.getElementById(id + '-' + next)?.focus();
@@ -230,7 +232,9 @@ export function SessionHistory({
                     ? 0
                     : e.key === 'End'
                       ? 2
-                      : index + (e.key === 'ArrowRight' ? 1 : -1),
+                      : decimal(index)
+                          .plus(e.key === 'ArrowRight' ? 1 : -1)
+                          .toNumber(),
                 );
               }
             }}
@@ -254,7 +258,7 @@ export function SessionHistory({
             {/* Explicit roles preserve table navigation when the compact layout uses CSS grid. */}
             <table className="history-table" role="table">
               <caption className="sr-only">
-                {SESSION_TYPES.find((t) => t.value === type)!.label} session history
+                {SESSION_TYPES.find((t) => t.value === type)?.label} session history
               </caption>
               <thead role="rowgroup">
                 <tr role="row">
@@ -304,7 +308,10 @@ export function SessionHistory({
                   const timeRange = formatTimeRange(session.startAt, session.endAt);
 
                   const label =
-                    SESSION_TYPES.find((t) => t.value === session.eventType)!.label + ' ' + date;
+                    (SESSION_TYPES.find((t) => t.value === session.eventType)?.label ??
+                      session.eventType) +
+                    ' ' +
+                    date;
 
                   return (
                     <Fragment key={session.eventId}>
@@ -312,7 +319,7 @@ export function SessionHistory({
                         role="row"
                         className={
                           'history-row ' +
-                          (index % 2 ? 'stripe ' : '') +
+                          (decimal(index).div(2).isInteger() === false ? 'stripe ' : '') +
                           (outcome.attention ? 'row-attention' : '')
                         }
                       >
@@ -329,7 +336,7 @@ export function SessionHistory({
                               <span className="numeric">
                                 {result.rewarded === null
                                   ? PLACEHOLDER
-                                  : result.rewarded.toFixed(2) + ' kWh'}
+                                  : fixed(result.rewarded, 2) + ' kWh'}
                                 {result.provisional && <ProvisionalIndicator />}
                               </span>
                             ) : (
@@ -364,7 +371,7 @@ export function SessionHistory({
                               <span className="numeric">
                                 {officialShifted === null
                                   ? PLACEHOLDER
-                                  : officialShifted.toFixed(2) + ' kWh'}
+                                  : fixed(officialShifted, 2) + ' kWh'}
                               </span>
                             ) : (
                               <>

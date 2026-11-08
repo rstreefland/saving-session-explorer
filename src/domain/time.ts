@@ -49,3 +49,23 @@ export function referenceTime(date: string, time: Temporal.PlainTime): number | 
     throw error;
   }
 }
+
+/** UTC aligned half-hours, independent of civil-day length. */
+export const alignedHalfHour = (value: string) => {
+  const instant = Temporal.Instant.from(value);
+  return instant.equals(
+    instant.round({ smallestUnit: 'minute', roundingIncrement: 30, roundingMode: 'floor' }),
+  );
+};
+export const elapsedHalfHour = (start: string, end: string) =>
+  Temporal.Instant.from(start).add({ minutes: 30 }).equals(Temporal.Instant.from(end));
+export const instantString = (milliseconds: number) =>
+  Temporal.Instant.fromEpochMilliseconds(milliseconds).toString({ fractionalSecondDigits: 3 });
+export const addMilliseconds = (value: number, milliseconds: number) =>
+  Temporal.Instant.fromEpochMilliseconds(value).add({ milliseconds }).epochMilliseconds;
+export const roundHalfHour = (value: number, roundingMode: 'floor' | 'ceil') =>
+  Temporal.Instant.fromEpochMilliseconds(value).round({
+    smallestUnit: 'minute',
+    roundingIncrement: 30,
+    roundingMode,
+  }).epochMilliseconds;

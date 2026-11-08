@@ -65,8 +65,54 @@ reward outputs. Derive expected values independently; do not call the calculator
 own expected answers. Extend focused examples for the behavior changing rather than growing
 combinatorial snapshots. Neither fixture agreement nor coverage thresholds prove supplier parity.
 
-The Decimal migration is accepted but pending. Existing code still contains native floating-point
-arithmetic and compensating epsilons. Preserve intended business outcomes with explicit Decimal
-precision/rounding choices; distinguish numerical artifacts from intentional tolerances such as
-0.01 kWh. Maintain assumptions and numerical policy in this document; use [ADR.md](ADR.md) only
-for significant architectural choices.
+## Numerical precision
+
+[ADR-004](ADR.md) is implemented using a single configured `decimal.js-light` constructor
+([decimal.ts](../src/domain/decimal.ts)). Arithmetic uses 40 significant digits. The library
+truncates arithmetic, including nonterminating division, at that precision; it does not provide
+unlimited exact rational arithmetic. For example, 1/3 is 40 threes after the decimal point.
+Reference means divide by four or ten, Mini conversion by 1,000, and points conversion by eight;
+these terminate exactly when the result fits 40 significant digits. Inputs requiring more precision
+can still lose low-order digits during calculation. This is a numerical policy, not a supplier rule.
+
+API boundaries validate finite numbers and decimal strings with Zod, retaining supplied strings;
+JSON numeric tokens have already been parsed by the browser, so precision lost upstream cannot
+be recovered. Numeric strings outside the finite Number range or Decimal exponent range are
+rejected. Mini Wh conversion serializes exact kWh as a decimal string in the dataset. Datasets
+remain plain serializable inputs suitable for the existing in-memory cache and demo cloning;
+calculated energy, references and reward values remain Decimal through comparison and rendering.
+Counts, indexes and DOM geometry convert at their presentation or library boundaries.
+
+Display rounding is explicitly half-up, preserving the established two-decimal summary,
+three-decimal reading and up-to-six-decimal points-breakdown formats. Grouping uses `en-GB`
+without converting decimal amounts to binary numbers. Reward arithmetic still rounds upward
+once per session to a whole penny (eight points), then applies the inferred 16-point minimum
+only to a positive reward. The existing supported reward limit (raw points at most
+`Number.MAX_SAFE_INTEGER - 8`) remains in place.
+
+The absolute 0.01 kWh comparison tolerance is preserved. The existing achievement threshold
+(strictly greater than 0.000000001 kWh) and neutral change colour threshold (absolute change
+strictly below 0.000000001 kWh) are also retained as separate presentation policies. The former
+binary epsilon guards around zero energy, whole-penny boundaries and the 0.01 comparison have
+been removed. A tiny positive independently calculated reward can therefore receive the minimum
+even below the achievement-label threshold, as required by the positive-reward rule.
+
+The following precision corrections are intentional; selection, missing data, publication,
+provenance, reward rules and interaction do not change:
+
+| Independent example                                                | Earlier result                                       | Current result                                                         |
+| ------------------------------------------------------------------ | ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| Five 0.100 and five 0.101 kWh reference readings: total 1.005 / 10 | 0.10049999999999999, displayed 0.100                 | Exact 0.1005, displayed 0.101; agrees with ten uniform 0.1005 readings |
+| Display 1.005 to two decimals                                      | 1.00 from native `toFixed`                           | 1.01 under half-up rounding                                            |
+| 0.3000000000000001 kWh × 80 points/kWh                             | Snapped to 24 points by the penny epsilon guard      | Raw 24.000000000000008; round up to 32 points                          |
+| 0.0000000000000001 kWh × 80 points/kWh                             | Snapped to zero energy, zero points                  | Raw 0.000000000000008; penny-rounded eight, minimum 16 points          |
+| Absolute difference 0.0100000001 kWh                               | Match due to the extra 0.000000001 guard             | Difference; exactly 0.01 remains a match                               |
+| UTC interval 00:00:00.000000001–00:30:00.000000001                 | Accepted after truncating timestamps to milliseconds | Rejected as misaligned using full Temporal instant precision           |
+| Mini 100.00000000000001 Wh / 1,000                                 | 0.10000000000000002 kWh after Number conversion      | Exact 0.10000000000000001 kWh                                          |
+
+[Exact numerical tests](../src/domain/decimal.test.ts),
+[validated Mini tests](../src/api/numericSchema.test.ts),
+[default App/API tests](../src/api/client.test.ts) and
+[production browser tests](../tests/browser/decimal.spec.ts) cover these boundaries alongside the
+existing independently worked session examples. Invalid/nonfinite energy can no longer inhabit
+a calculated Decimal value; boundary validation tests cover those inputs instead.

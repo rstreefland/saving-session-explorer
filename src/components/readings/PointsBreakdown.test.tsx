@@ -1,3 +1,4 @@
+import { decimal } from '../../domain/decimal';
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import { calculateAll } from '../../domain/calculate';
@@ -10,7 +11,7 @@ const base = calculateAll(demoDataset())[1];
 function calculation(shifted = 0.1952, rate = 75, actual: number | null = 16): Calculation {
   return {
     ...base,
-    rewarded: shifted,
+    rewarded: decimal(shifted),
     session: { ...base.session, rewardPerKwhInOctoPoints: rate, rewardGivenInOctoPoints: actual },
   };
 }
@@ -104,4 +105,12 @@ it('hides reward estimates for Power up and Happy Hours', () => {
   );
 
   expect(screen.queryByRole('region')).not.toBeInTheDocument();
+});
+
+it('preserves the existing grouping distinction in penny-rounding steps', () => {
+  render(<PointsBreakdown result={calculation(12.5, 80, 1000)} />);
+  expect(screen.getByRole('list')).toHaveTextContent('1,000 → 1000 points (8 points = 1p).');
+  expect(screen.getByRole('region', { name: 'Octopoints estimate' })).toHaveTextContent(
+    '1,000 Octopoints',
+  );
 });

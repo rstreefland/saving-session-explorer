@@ -1,7 +1,8 @@
-export function OctopointsValue({ value }: { value: number }) {
+import { formatNumeric, type Numeric, type Decimal } from '../domain/decimal';
+export function OctopointsValue({ value }: { value: Numeric | Decimal }) {
   return (
     <span className="octopoints-value">
-      <strong>{value.toLocaleString('en-GB')}</strong>{' '}
+      <strong>{formatNumeric(value)}</strong>{' '}
       <small className="points-unit">
         <span className="reward-unit-full" aria-hidden="true">
           Octopoints

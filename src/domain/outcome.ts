@@ -1,3 +1,4 @@
+import { decimal } from './decimal';
 import type { Calculation } from './types';
 import { isHappyHour } from './session';
 
@@ -42,7 +43,7 @@ export function sessionOutcome(result: Calculation): SessionOutcome {
       tone: 'neutral',
     };
 
-  const achieved = rewarded > 1e-9;
+  const achieved = rewarded.gt('0.000000001');
   const officialReward = session.rewardGivenInOctoPoints;
 
   // This flags the calculated side for review; the actual reward separately
@@ -50,14 +51,18 @@ export function sessionOutcome(result: Calculation): SessionOutcome {
   const attention =
     !result.provisional &&
     achieved &&
-    ((session.resultsStatus === 'FAIL' && (officialReward === 0 || officialReward === null)) ||
-      (session.resultsStatus === 'MISSING_READINGS' && officialReward === 0));
+    ((session.resultsStatus === 'FAIL' &&
+      ((officialReward !== null && decimal(officialReward).isZero()) || officialReward === null)) ||
+      (session.resultsStatus === 'MISSING_READINGS' &&
+        officialReward !== null &&
+        decimal(officialReward).isZero()));
 
   const direction = session.eventType === 'TURN_UP' ? -1 : 1;
   // Overall success concerns the net change across the whole window. Individual
   // half-hours can miss their target while the session still succeeds overall.
   // Rewarded energy remains the sum of positive half-hour shifts, not this net change.
-  const achievedOverall = result.netSaved !== null && result.netSaved * direction > 1e-9;
+  const achievedOverall =
+    result.netSaved !== null && result.netSaved.times(direction).gt('0.000000001');
   const code = achieved ? (achievedOverall ? 'achieved' : 'partly-achieved') : 'not-achieved';
 
   const labels = {

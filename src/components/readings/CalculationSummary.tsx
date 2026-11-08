@@ -1,3 +1,4 @@
+import { positive, type Decimal } from '../../domain/decimal';
 import { ProvisionalIndicator } from '../ProvisionalIndicator';
 import { PLACEHOLDER } from '../placeholder';
 import type { Calculation } from '../../domain/types';
@@ -12,7 +13,7 @@ function EnergyCard({
   provisional,
 }: {
   label: string;
-  value: number | null;
+  value: Decimal | null;
   note?: string;
   tone?: 'positive' | 'negative';
   provisional?: boolean;
@@ -58,8 +59,8 @@ export function CalculationSummary({ result }: { result: Calculation }) {
         const change =
           slot.baseline === null || slot.actual === null
             ? null
-            : (slot.baseline - slot.actual) * (up ? -1 : 1);
-        const shift = change === null ? null : Math.max(0, change);
+            : slot.baseline.minus(slot.actual).times(up ? -1 : 1);
+        const shift = change === null ? null : positive(change);
         const baseline = <EnergyCard label="Baseline" value={slot.baseline} />;
         const usage = (
           <EnergyCard
@@ -105,9 +106,9 @@ export function CalculationSummary({ result }: { result: Calculation }) {
                     label="Change"
                     value={change}
                     tone={
-                      change === null || Math.abs(change) < 1e-9
+                      change === null || change.abs().lt('0.000000001')
                         ? undefined
-                        : change > 0
+                        : change.gt(0)
                           ? 'positive'
                           : 'negative'
                     }
