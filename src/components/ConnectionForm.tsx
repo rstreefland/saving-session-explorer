@@ -53,7 +53,8 @@ export function ConnectionForm({
     try {
       forgetAccount();
     } catch (error) {
-      setError((error as Error).message);
+      if (!(error instanceof Error)) throw error;
+      setError(error.message);
     }
   }
 
@@ -148,7 +149,8 @@ export function ConnectionForm({
                 saveAccount(account.trim());
                 onConnect(key.trim(), account.trim());
               } catch (error) {
-                setError((error as Error).message);
+                if (!(error instanceof Error)) throw error;
+                setError(error.message);
               }
             }}
           >

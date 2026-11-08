@@ -1,9 +1,12 @@
+import { precisionFixture } from '../test/precisionFixture';
+import type { Reading } from '../domain/types';
+import { decimal } from '../domain/decimal';
 import { createElement } from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
 import { demoDataset } from '../domain/demo';
-import { iso, midnight, todayInLondon } from '../domain/time';
+import { Temporal, iso, midnight, todayInLondon } from '../domain/time';
 import { describe, it, expect, vi } from 'vitest';
 import { dataWarnings } from '../domain/availability';
 import { calculateAll } from '../domain/calculate';
@@ -116,7 +119,7 @@ function setup({
   region = true,
   exportFailure = '' as '' | 'discovery' | 'readings',
   holidayFailure = false,
-  meterReadings = {} as Record<string, (typeof reading)[]>,
+  meterReadings = {} as Record<string, Reading[]>,
 } = {}) {
   const calls: string[] = [];
 
@@ -403,7 +406,14 @@ describe('meter selection', () => {
       vi.fn(async (url: string) => {
         const next = new URL(url);
 
-        next.searchParams.set('page', String(Number(next.searchParams.get('page') ?? 1) + 1));
+        next.searchParams.set(
+          'page',
+          String(
+            decimal(next.searchParams.get('page') ?? 1)
+              .plus(1)
+              .toNumber(),
+          ),
+        );
 
         return response({ results: [], next: next.toString() });
       }),
@@ -546,8 +556,8 @@ it.each(['discovery', 'readings'] as const)(
     const results = calculateAll(data);
 
     expect(results.find((r) => r.session.eventId === 2)).toMatchObject({
-      actual: 0.2,
-      rewarded: 0.2,
+      actual: decimal(0.2),
+      rewarded: decimal(0.2),
       state: 'match',
     });
     expect(results.find((r) => r.session.eventId === 3)?.rewarded).toBeNull();
@@ -561,7 +571,11 @@ it('preserves Happy Hours when the holiday service is unavailable', async () => 
   const data = await loadDataset(options, signal());
 
   expect(dataWarnings(data).join()).toContain('Bank holidays could not be verified');
-  expect(calculateAll(data)[0]).toMatchObject({ actual: 0.2, rewarded: 0.2, state: 'match' });
+  expect(calculateAll(data)[0]).toMatchObject({
+    actual: decimal(0.2),
+    rewarded: decimal(0.2),
+    state: 'match',
+  });
 });
 
 it('propagates cancellation of an optional dependency instead of returning partial data', async () => {
@@ -640,8 +654,9 @@ it('keeps estimates stable when the range starts before the oldest event in a co
 it.each(['TURN_DOWN', 'TURN_UP'] as const)(
   'loads and displays an upcoming %s baseline for a connected account',
   async (eventType) => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-11-01T17:00:00Z'));
+    vi.spyOn(Temporal.Now, 'instant').mockReturnValue(
+      Temporal.Instant.from('2026-11-01T17:00:00Z'),
+    );
     try {
       const base: Session = {
         ...demoDataset().sessions[0],
@@ -654,7 +669,12 @@ it.each(['TURN_DOWN', 'TURN_UP'] as const)(
         ['2026-11-01T18:00:00Z', '2026-11-01T19:00:00Z'],
         ['2026-11-02T18:00:00Z', '2026-11-02T19:00:00Z'],
         ['2026-11-03T18:00:00Z', '2026-11-03T19:00:00Z'],
-      ].map(([startAt, endAt], index) => ({ ...base, eventId: 10 + index, startAt, endAt }));
+      ].map(([startAt, endAt], index) => ({
+        ...base,
+        eventId: decimal(10).plus(index).toNumber(),
+        startAt,
+        endAt,
+      }));
       const referenceDates = [
         '2026-10-30',
         '2026-10-29',
@@ -684,7 +704,7 @@ it.each(['TURN_DOWN', 'TURN_UP'] as const)(
       );
       expect(data.sessions.map((s) => s.eventId)).toEqual([10, 11, 12, 13]);
       const upcoming = calculateAll(data).find((r) => r.session.eventId === 13)!;
-      expect(upcoming.baseline).toBeCloseTo(1.2);
+      expect(upcoming.baseline?.toNumber()).toBeCloseTo(1.2);
       expect(upcoming.actual).toBeNull();
       expect(upcoming.rewarded).toBeNull();
       expect(upcoming.issues).toEqual(['2 session half-hour reading(s) missing or invalid.']);
@@ -715,5 +735,36 @@ it.each(['TURN_DOWN', 'TURN_UP'] as const)(
     } finally {
       vi.useRealTimers();
     }
+  },
+);
+
+it.each([false, true])(
+  'renders exact reference means via the default App/API path (%s)',
+  async (uniform) => {
+    vi.spyOn(Temporal.Now, 'instant').mockReturnValue(
+      Temporal.Instant.from('2026-11-06T12:00:00Z'),
+    );
+    vi.spyOn(Temporal.Now, 'plainDateISO').mockReturnValue(Temporal.PlainDate.from('2026-11-06'));
+    const data = precisionFixture(uniform);
+    setup({ joinedEvents: data.sessions, meterReadings: { ABC: data.imports }, rewardRate: '80' });
+    localStorage.setItem('session-lens.api-key', 'synthetic-key');
+    localStorage.setItem('session-lens.account-number', 'A-123');
+    render(createElement(App));
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /Readings for/ }));
+    const summary = screen.getByRole('region', { name: 'Calculation summary' });
+    expect(summary).toHaveTextContent('Baseline0.101 kWh');
+    expect(summary).toHaveTextContent('Total shifted for rewards0.101 kWh');
+    await user.click(screen.getByText('Days used for baseline (10)', { exact: true }));
+    const references = screen.getByRole('table', { name: 'Readings used for baseline' });
+    expect(
+      within(references).getByRole('row', { name: 'Average for this half-hour 0.101' }),
+    ).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Octopoints estimate' })).toHaveTextContent(
+      '0.1005 kWh × 80 points/kWh = 8.04 points.',
+    );
+    expect(screen.getByRole('region', { name: 'Octopoints estimate' })).toHaveTextContent(
+      '0 Octopoints. Matches Octopus.',
+    );
   },
 );

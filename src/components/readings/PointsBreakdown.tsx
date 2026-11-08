@@ -1,3 +1,4 @@
+import { formatNumeric, type Decimal } from '../../domain/decimal';
 import type { Calculation } from '../../domain/types';
 import {
   actualOctopoints,
@@ -10,7 +11,7 @@ import { isHappyHour } from '../../domain/session';
 import { PLACEHOLDER } from '../placeholder';
 import { OctopointsValue } from '../OctopointsValue';
 
-const precise = (value: number) => value.toLocaleString('en-GB', { maximumFractionDigits: 6 });
+const precise = (value: Decimal) => formatNumeric(value, 6);
 
 export function PointsBreakdown({ result }: { result: Calculation }) {
   if (isHappyHour(result.session) || result.session.eventType === 'TURN_UP') return null;
@@ -34,17 +35,17 @@ export function PointsBreakdown({ result }: { result: Calculation }) {
             <li>
               <strong>Round up to a whole penny</strong>
               <p>
-                {precise(estimate.raw)} → {estimate.pennyRounded} points ({POINTS_PER_PENNY} points
-                = 1p).
+                {precise(estimate.raw)} → {estimate.pennyRounded.toString()} points (
+                {POINTS_PER_PENNY} points = 1p).
               </p>
             </li>
             <li>
               <strong>Apply the assumed 2p minimum</strong>
               <p>
-                {estimate.raw === 0
+                {estimate.raw.isZero()
                   ? 'No points earned, so no minimum applies.'
-                  : estimate.pennyRounded < ASSUMED_MINIMUM_POINTS
-                    ? `${estimate.pennyRounded} → ${ASSUMED_MINIMUM_POINTS} points.`
+                  : estimate.pennyRounded.lt(ASSUMED_MINIMUM_POINTS)
+                    ? `${estimate.pennyRounded.toString()} → ${ASSUMED_MINIMUM_POINTS} points.`
                     : 'Already at or above 16 points, so no change.'}
               </p>
             </li>
@@ -73,9 +74,9 @@ export function PointsBreakdown({ result }: { result: Calculation }) {
           <dd>
             {estimate.state !== 'ready' || estimate.difference === null
               ? PLACEHOLDER
-              : estimate.difference === 0
+              : estimate.difference.isZero()
                 ? '0 Octopoints. Matches Octopus.'
-                : `${estimate.difference > 0 ? '+' : ''}${estimate.difference.toLocaleString('en-GB')} Octopoints (calculated minus Octopus).`}
+                : `${estimate.difference.gt(0) ? '+' : ''}${formatNumeric(estimate.difference)} Octopoints (calculated minus Octopus).`}
           </dd>
         </div>
       </dl>

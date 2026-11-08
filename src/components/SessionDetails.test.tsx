@@ -1,3 +1,5 @@
+import { Temporal, milliseconds } from '../domain/time';
+import { decimal } from '../domain/decimal';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it } from 'vitest';
@@ -11,10 +13,16 @@ function mixed(first: number, second: number, up = false) {
 
   session.eventType = up ? 'TURN_UP' : 'TURN_DOWN';
 
-  const start = Date.parse(session.startAt);
+  const start = milliseconds(session.startAt);
 
   for (const reading of data.imports) {
-    const offset = (Date.parse(reading.interval_start) - start) / 1_800_000;
+    const offset = decimal(
+      Temporal.Instant.fromEpochMilliseconds(start)
+        .until(Temporal.Instant.from(reading.interval_start))
+        .total('minutes'),
+    )
+      .div(30)
+      .toNumber();
 
     if (offset === 0) reading.consumption = first;
     if (offset === 1) reading.consumption = second;
@@ -57,9 +65,14 @@ it('shows half-hour formulas and the rewarded total without an overall-change su
 it('uses rewarded half-hours rather than the net session reduction in the screenshot example', () => {
   const result = mixed(0.196, 0.125);
 
-  result.slots[0].baseline = 0.194;
-  result.slots[1].baseline = 0.202;
-  Object.assign(result, { baseline: 0.396, actual: 0.321, netSaved: 0.075, rewarded: 0.077 });
+  result.slots[0].baseline = decimal(0.194);
+  result.slots[1].baseline = decimal(0.202);
+  Object.assign(result, {
+    baseline: decimal(0.396),
+    actual: decimal(0.321),
+    netSaved: decimal(0.075),
+    rewarded: decimal(0.077),
+  });
   render(<SessionDetails result={result} />);
 
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
@@ -146,8 +159,8 @@ it('adds Happy Hour import readings without baseline equations or a promise of c
 it('shows the actual reference dates and lets the user inspect each half-hour separately', async () => {
   const result = calculateAll(demoDataset())[1];
 
-  result.slots[0].references[0].value = 0.123;
-  result.slots[1].references[0].value = 0.456;
+  result.slots[0].references[0].value = decimal(0.123);
+  result.slots[1].references[0].value = decimal(0.456);
   render(<SessionDetails result={result} />);
 
   const user = userEvent.setup();
@@ -157,7 +170,9 @@ it('shows the actual reference dates and lets the user inspect each half-hour se
   const table = screen.getByRole('table', { name: 'Readings used for baseline' });
 
   expect(within(table).getByText('0.123')).toBeInTheDocument();
-  expect(within(table).getAllByRole('row')).toHaveLength(result.days.length + 2);
+  expect(within(table).getAllByRole('row')).toHaveLength(
+    decimal(result.days.length).plus(2).toNumber(),
+  );
 
   expect(screen.getByRole('option', { name: '5:00pm – 5:30pm' })).toBeInTheDocument();
   expect(screen.getByRole('option', { name: '5:30pm – 6:00pm' })).toBeInTheDocument();
@@ -212,10 +227,13 @@ it('keeps Octopus figures and neutral differences inside their own disclosure', 
 
 it('explains an empty reference history without displaying a made-up average', async () => {
   const data = demoDataset();
-  const start = Date.parse(data.sessions[1].startAt);
+  const start = milliseconds(data.sessions[1].startAt);
 
   data.eventDays = Array.from({ length: 60 }, (_, i) =>
-    new Date(start - (i + 1) * 86_400_000).toISOString().slice(0, 10),
+    Temporal.Instant.fromEpochMilliseconds(start)
+      .subtract({ hours: decimal(i).plus(1).times(24).toNumber() })
+      .toString()
+      .slice(0, 10),
   );
   render(<SessionDetails result={calculateAll(data)[1]} />);
 
@@ -273,8 +291,8 @@ it('explains provisional Mini inputs without suggesting a missed reward', async 
 
 it('marks only usage boxes whose half-hour comes from the Mini', async () => {
   const data = demoDataset();
-  const start = Date.parse(data.sessions[1].startAt);
-  data.imports.find((r) => Date.parse(r.interval_start) === start)!.source = 'home-mini';
+  const start = milliseconds(data.sessions[1].startAt);
+  data.imports.find((r) => milliseconds(r.interval_start) === start)!.source = 'home-mini';
   const result = calculateAll(data)[1];
   expect(result.slots.map((slot) => slot.actualProvisional)).toEqual([true, false]);
   render(<SessionDetails result={result} />);

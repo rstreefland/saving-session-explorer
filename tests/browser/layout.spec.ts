@@ -1,3 +1,4 @@
+import { decimal } from '../../src/domain/decimal';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { connectedAccount } from './fixtures';
 
@@ -13,11 +14,11 @@ async function fitsViewport(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
-  expect(
-    await page
-      .locator('.history-scroll, .mobile-results')
-      .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
-  ).toBe(true);
+  const widths = await page.locator('.history-scroll, .mobile-results').evaluate((element) => ({
+    scroll: element.scrollWidth,
+    client: element.clientWidth,
+  }));
+  expect(decimal(widths.scroll).lte(decimal(widths.client).plus(1))).toBe(true);
   const sizesMatch = await page.evaluate(() => {
     const time = document.querySelector('.mobile-session-time, .history-table .session-time');
     const outcomes = document.querySelectorAll(
@@ -84,8 +85,10 @@ for (const width of [320, 375, 390, 600, 800, 1280]) {
     for (const button of await summary.getByRole('button').all()) {
       const bounds = await box(button);
 
-      expect(bounds.x).toBeGreaterThanOrEqual(container.x - 1);
-      expect(bounds.x + bounds.width).toBeLessThanOrEqual(container.x + container.width + 1);
+      expect(bounds.x).toBeGreaterThanOrEqual(decimal(container.x).minus(1).toNumber());
+      expect(decimal(bounds.x).plus(bounds.width).toNumber()).toBeLessThanOrEqual(
+        decimal(container.x).plus(container.width).plus(1).toNumber(),
+      );
       expect(bounds.height).toBeGreaterThanOrEqual(40);
     }
 
@@ -113,20 +116,22 @@ for (const width of [320, 375, 390, 600, 800, 1280]) {
       const timeBox = await box(time);
       const dateBox = await box(row.locator('.session-date'));
 
-      expect(timeBox.x + timeBox.width).toBeLessThanOrEqual(dateBox.x + dateBox.width + 1);
+      expect(decimal(timeBox.x).plus(timeBox.width).toNumber()).toBeLessThanOrEqual(
+        decimal(dateBox.x).plus(dateBox.width).plus(1).toNumber(),
+      );
 
       if (width <= 800) {
         const energies = row.locator('.shifted-energy');
         const estimates = await box(energies.nth(0));
         const actual = await box(energies.nth(1));
 
-        expect(Math.abs(estimates.y - actual.y)).toBeLessThanOrEqual(1);
+        expect(decimal(estimates.y).minus(actual.y).abs().toNumber()).toBeLessThanOrEqual(1);
 
         const rewards = row.locator('.mobile-reward');
         const a = await box(rewards.nth(0));
         const b = await box(rewards.nth(1));
 
-        expect(Math.abs(a.y - b.y)).toBeLessThanOrEqual(1);
+        expect(decimal(a.y).minus(b.y).abs().toNumber()).toBeLessThanOrEqual(1);
 
         const toggle = await box(row.getByRole('button'));
 
@@ -158,32 +163,38 @@ for (const width of [320, 375, 390, 600, 800, 1280]) {
     await expect(calculation.getByText('Overall change', { exact: true })).toHaveCount(0);
 
     // Read geometry in one browser evaluation rather than a round-trip for every card.
-    const equationsFit = await calculation.evaluate((element) => {
+    const geometry = await calculation.evaluate((element) => {
       const outer = element.getBoundingClientRect();
-      const cards = [...element.querySelectorAll('.calculation-card')];
-      const operators = [...element.querySelectorAll('.calculation-operator')];
-
-      return (
-        cards.length === 6 &&
-        operators.length === 4 &&
-        cards.every((card) => {
+      return {
+        outer: { x: outer.x, right: outer.right },
+        cards: [...element.querySelectorAll('.calculation-card')].map((card) => {
           const bounds = card.getBoundingClientRect();
-
-          return bounds.x >= outer.x - 1 && bounds.right <= outer.right + 1;
-        }) &&
-        operators.every((operator) => {
+          return { x: bounds.x, right: bounds.right };
+        }),
+        operators: [...element.querySelectorAll('.calculation-operator')].map((operator) => {
           const bounds = operator.getBoundingClientRect();
-
-          return (
-            bounds.width > 0 &&
-            bounds.height > 0 &&
-            getComputedStyle(operator).visibility === 'visible'
-          );
-        })
-      );
+          return {
+            width: bounds.width,
+            height: bounds.height,
+            visibility: getComputedStyle(operator).visibility,
+          };
+        }),
+      };
     });
-
-    expect(equationsFit).toBe(true);
+    expect(geometry.cards).toHaveLength(6);
+    expect(geometry.operators).toHaveLength(4);
+    expect(
+      geometry.cards.every(
+        (bounds) =>
+          decimal(bounds.x).gte(decimal(geometry.outer.x).minus(1)) &&
+          decimal(bounds.right).lte(decimal(geometry.outer.right).plus(1)),
+      ),
+    ).toBe(true);
+    expect(
+      geometry.operators.every(
+        (bounds) => bounds.width > 0 && bounds.height > 0 && bounds.visibility === 'visible',
+      ),
+    ).toBe(true);
     await fitsViewport(page);
     await page.getByRole('tab', { name: 'Happy Hours' }).click();
 

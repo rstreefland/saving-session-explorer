@@ -1,3 +1,4 @@
+import { decimal, minimum, maximum } from '../domain/decimal';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -12,15 +13,21 @@ export function Tooltip({ label, text, icon }: { label: string; text: string; ic
   function show() {
     clearTimeout(hideTimer.current);
 
-    const bounds = trigger.current!.getBoundingClientRect();
-    const width = Math.min(320, window.innerWidth - 24);
+    const target = trigger.current;
+    if (!target) return;
+    const bounds = target.getBoundingClientRect();
+    const width = minimum(320, decimal(window.innerWidth).minus(24));
     const height = popup.current?.getBoundingClientRect().height ?? 0;
-    const below = bounds.bottom + 8;
+    const below = decimal(bounds.bottom).plus(8);
 
     setPosition({
-      top:
-        below + height <= window.innerHeight - 12 ? below : Math.max(12, bounds.top - height - 8),
-      left: Math.max(12, Math.min(bounds.left, window.innerWidth - width - 12)),
+      top: below.plus(height).lte(decimal(window.innerHeight).minus(12))
+        ? below.toNumber()
+        : maximum(12, decimal(bounds.top).minus(height).minus(8)).toNumber(),
+      left: maximum(
+        12,
+        minimum(bounds.left, decimal(window.innerWidth).minus(width).minus(12)),
+      ).toNumber(),
     });
   }
 
@@ -29,10 +36,11 @@ export function Tooltip({ label, text, icon }: { label: string; text: string; ic
 
     const anchor = trigger.current.getBoundingClientRect();
     const height = popup.current.getBoundingClientRect().height;
-    const below = anchor.bottom + 8;
+    const below = decimal(anchor.bottom).plus(8);
 
-    const top =
-      below + height <= window.innerHeight - 12 ? below : Math.max(12, anchor.top - height - 8);
+    const top = below.plus(height).lte(decimal(window.innerHeight).minus(12))
+      ? below.toNumber()
+      : maximum(12, decimal(anchor.top).minus(height).minus(8)).toNumber();
 
     setPosition((previous) => (previous && previous.top !== top ? { ...previous, top } : previous));
   }, [open, text]);

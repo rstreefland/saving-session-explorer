@@ -1,12 +1,21 @@
+import { decimal, type Decimal } from '../domain/decimal';
+import {
+  Temporal,
+  milliseconds,
+  instantString,
+  addMilliseconds,
+  roundHalfHour,
+  alignedHalfHour,
+} from '../domain/time';
+import { numericSchema } from './numericSchema';
 import { z } from 'zod';
-import { AUTH, graphql } from './client';
+import { AUTH, graphql } from './transport';
 import type { Reading } from '../domain/types';
 
 // Configure before constructing schemas: this module loads before client.ts.
 z.config({ jitless: true });
 
 const HALF_HOUR = 1_800_000;
-const DAY = 86_400_000;
 export const DEVICE_QUERY = `query HomeMiniDevices($account: String!) {
   account(accountNumber: $account) {
     electricityAgreements(active: true) {
@@ -54,38 +63,38 @@ export function mergeHomeMini(
   start: number,
   end: number,
 ): Reading[] {
-  const occupied = new Set(readings.map((r) => Date.parse(r.interval_start)));
+  const occupied = new Set(readings.map((r) => milliseconds(r.interval_start)));
   const telemetry = telemetrySchema.parse(raw).smartMeterTelemetry;
-  const counts = new Map<number, number>();
+  const counts = new Map<number, Decimal>();
   // Count raw timestamps before discarding unusable values: an invalid duplicate
   // still makes the interval ambiguous, including equivalent timestamp offsets.
   for (const row of telemetry) {
-    const time = Date.parse(row.readAt);
-    counts.set(time, (counts.get(time) ?? 0) + 1);
+    const time = milliseconds(row.readAt);
+    counts.set(time, decimal(counts.get(time) ?? 0).plus(1));
   }
-  const candidates: Reading[] = telemetry.flatMap((row) => {
-    const time = Date.parse(row.readAt);
-    const value =
-      row.consumptionDelta === null || String(row.consumptionDelta).trim() === ''
-        ? NaN
-        : Number(row.consumptionDelta) / 1000;
+  const candidates: Reading[] = telemetry.flatMap<Reading>((row) => {
+    const time = milliseconds(row.readAt);
+    const parsed = numericSchema.safeParse(
+      typeof row.consumptionDelta === 'string' ? row.consumptionDelta.trim() : row.consumptionDelta,
+    );
+    const value = parsed.success ? decimal(parsed.data).div(1000) : null;
     return time >= start &&
-      time + HALF_HOUR <= end &&
-      time % HALF_HOUR === 0 &&
-      counts.get(time) === 1 &&
-      Number.isFinite(value) &&
-      value >= 0
+      addMilliseconds(time, HALF_HOUR) <= end &&
+      alignedHalfHour(row.readAt) &&
+      counts.get(time)?.eq(1) === true &&
+      value !== null &&
+      value.gte(0)
       ? [
           {
-            interval_start: new Date(time).toISOString(),
-            interval_end: new Date(time + HALF_HOUR).toISOString(),
-            consumption: value,
-            source: 'home-mini' as const,
+            interval_start: instantString(time),
+            interval_end: instantString(addMilliseconds(time, HALF_HOUR)),
+            consumption: value.toString(),
+            source: 'home-mini',
           },
         ]
       : [];
   });
-  return [...readings, ...candidates.filter((r) => !occupied.has(Date.parse(r.interval_start)))];
+  return [...readings, ...candidates.filter((r) => !occupied.has(milliseconds(r.interval_start)))];
 }
 
 export async function fillHomeMiniGaps(options: {
@@ -100,18 +109,27 @@ export async function fillHomeMiniGaps(options: {
   now?: number;
 }): Promise<{ readings: Reading[]; unavailable: boolean }> {
   const { signal } = options;
-  const now = options.now ?? Date.now();
+  const now = options.now ?? Temporal.Now.instant().epochMilliseconds;
   // Stay inside the rolling 30-day retention boundary, including during requests.
-  const start =
-    Math.ceil(Math.max(Date.parse(options.from), now - 29 * DAY) / HALF_HOUR) * HALF_HOUR;
-  const end = Math.floor(Math.min(Date.parse(options.to), now) / HALF_HOUR) * HALF_HOUR;
+  const oldest = Temporal.Instant.fromEpochMilliseconds(now).subtract({
+    hours: 696,
+  }).epochMilliseconds;
+  const fromTime = milliseconds(options.from);
+  const toTime = milliseconds(options.to);
+  const start = roundHalfHour(fromTime > oldest ? fromTime : oldest, 'ceil');
+  const end = roundHalfHour(toTime < now ? toTime : now, 'floor');
   let readings = options.readings;
-  const occupied = new Set(readings.map((r) => Date.parse(r.interval_start)));
+  const occupied = new Set(readings.map((r) => milliseconds(r.interval_start)));
   const windows: [number, number][] = [];
-  for (let day = Math.floor(start / DAY) * DAY; day < end; day += DAY) {
-    const from = Math.max(start, day),
-      to = Math.min(end, day + DAY);
-    for (let time = from; time < to; time += HALF_HOUR) {
+  for (
+    let day = Temporal.Instant.fromEpochMilliseconds(start).toZonedDateTimeISO('UTC').startOfDay();
+    day.epochMilliseconds < end;
+    day = day.add({ days: 1 })
+  ) {
+    const from = start > day.epochMilliseconds ? start : day.epochMilliseconds,
+      nextDay = day.add({ days: 1 }).epochMilliseconds,
+      to = end < nextDay ? end : nextDay;
+    for (let time = from; time < to; time = addMilliseconds(time, HALF_HOUR)) {
       if (!occupied.has(time)) {
         windows.push([from, to]);
         break;
@@ -142,7 +160,7 @@ export async function fillHomeMiniGaps(options: {
       const raw = await graphql(
         AUTH,
         TELEMETRY_QUERY,
-        { device, start: new Date(from).toISOString(), end: new Date(to).toISOString() },
+        { device, start: instantString(from), end: instantString(to) },
         signal,
         options.token,
       );

@@ -1,15 +1,28 @@
+import { precisionFixture } from '../../src/test/precisionFixture';
+import {
+  addMilliseconds,
+  Temporal as Clock,
+  instantString,
+  milliseconds,
+} from '../../src/domain/time';
+import { decimal } from '../../src/domain/decimal';
 import type { Page } from '@playwright/test';
 import type { Temporal } from 'temporal-polyfill';
 
 // Entirely synthetic account and meter data. No requests reach external services.
-export async function connectedAccount(page: Page, homeMini = false, missingResult = false) {
-  await page.clock.setFixedTime(new Date('2026-11-05T12:00:00Z'));
-  await page.addInitScript(() => {
+export async function connectedAccount(
+  page: Page,
+  homeMini = false,
+  missingResult = false,
+  clock = '2026-11-05T12:00:00Z',
+) {
+  await page.clock.setFixedTime(milliseconds(clock));
+  await page.addInitScript((clock) => {
     // The ponyfill uses native Temporal when available, whose clock is independent of Date.
     const native = (globalThis as typeof globalThis & { Temporal?: typeof Temporal }).Temporal;
 
     if (native) {
-      const instant = native.Instant.from('2026-11-05T12:00:00Z');
+      const instant = native.Instant.from(clock);
       native.Now.instant = () => instant;
       native.Now.plainDateISO = (zone) =>
         instant.toZonedDateTimeISO(zone ?? native.Now.timeZoneId()).toPlainDate();
@@ -23,7 +36,7 @@ export async function connectedAccount(page: Page, homeMini = false, missingResu
         event.violatedDirective,
       );
     });
-  });
+  }, clock);
 
   const sessions = [
     { id: 1, date: '2026-11-04', hour: 14, status: 'CALCULATING' },
@@ -34,7 +47,10 @@ export async function connectedAccount(page: Page, homeMini = false, missingResu
   ].map((s) => ({
     eventId: s.id,
     startAt: s.id === 4 ? `${s.date}T11:30:00Z` : `${s.date}T${s.hour}:00:00Z`,
-    endAt: s.id === 4 ? `${s.date}T12:30:00Z` : `${s.date}T${s.hour + 1}:00:00Z`,
+    endAt:
+      s.id === 4
+        ? `${s.date}T12:30:00Z`
+        : Clock.Instant.from(`${s.date}T${s.hour}:00:00Z`).add({ hours: 1 }).toString(),
     eventType: s.happy ? 'WEEKEND_HAPPY_HOUR' : 'TURN_DOWN',
     resultsStatus: missingResult && s.id === 3 ? 'MISSING_READINGS' : s.status,
     resultsSetAt: null,
@@ -49,19 +65,19 @@ export async function connectedAccount(page: Page, homeMini = false, missingResu
   const readings = [];
 
   for (
-    let time = Date.parse('2026-08-01T00:00:00Z');
-    time < Date.parse('2026-11-05T00:00:00Z');
-    time += 1_800_000
+    let time = milliseconds('2026-08-01T00:00:00Z');
+    time < milliseconds('2026-11-05T00:00:00Z');
+    time = addMilliseconds(time, 1_800_000)
   ) {
     const session = sessions.find(
-      (s) => time >= Date.parse(s.startAt) && time < Date.parse(s.endAt),
+      (s) => time >= milliseconds(s.startAt) && time < milliseconds(s.endAt),
     );
 
     if (session?.eventId === 1) continue;
 
     readings.push({
-      interval_start: new Date(time).toISOString(),
-      interval_end: new Date(time + 1_800_000).toISOString(),
+      interval_start: instantString(time),
+      interval_end: instantString(addMilliseconds(time, 1_800_000)),
       consumption: session && session.eventId !== 3 ? 0.1 : 0.6,
     });
   }
@@ -101,9 +117,11 @@ export async function connectedAccount(page: Page, homeMini = false, missingResu
           json: {
             data: {
               smartMeterTelemetry: [0, 1].map((offset) => ({
-                readAt: new Date(
-                  Date.parse(sessions[0].startAt) + offset * 1_800_000,
-                ).toISOString(),
+                readAt: instantString(
+                  Clock.Instant.from(sessions[0].startAt).add({
+                    minutes: decimal(offset).times(30).toNumber(),
+                  }).epochMilliseconds,
+                ),
                 consumptionDelta: '100',
               })),
             },
@@ -157,7 +175,7 @@ export async function connectedAccount(page: Page, homeMini = false, missingResu
                 rewardPerKwhInOctoPoints: 80,
               })),
             ],
-            eventCount: sessions.length + 1,
+            eventCount: decimal(sessions.length).plus(1).toNumber(),
             account: {
               signedUpMeterPoint: { mpan: '123', gspGroupId: '_A' },
               joinedEvents: sessions,
@@ -169,5 +187,34 @@ export async function connectedAccount(page: Page, homeMini = false, missingResu
   );
   await page.route('https://www.gov.uk/**', (route) =>
     route.fulfill({ json: { 'england-and-wales': { events: [{ date: '2026-08-31' }] } } }),
+  );
+}
+
+export async function precisionAccount(page: Page, uniform: boolean) {
+  await connectedAccount(page, false, false, '2026-11-06T12:00:00Z');
+  const data = precisionFixture(uniform);
+  await page.route('https://api.oegb-kraken.energy/v1/electricity-meter-points/**', (route) =>
+    route.fulfill({ json: { next: null, results: data.imports } }),
+  );
+  await page.route('https://api.backend.octopus.energy/**', (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          savingSessions: {
+            events: data.sessions.map((session) => ({
+              id: session.eventId,
+              startAt: session.startAt,
+              endAt: session.endAt,
+              rewardPerKwhInOctoPoints: session.rewardPerKwhInOctoPoints,
+            })),
+            eventCount: 1,
+            account: {
+              signedUpMeterPoint: { mpan: '123', gspGroupId: '_A' },
+              joinedEvents: data.sessions,
+            },
+          },
+        },
+      },
+    }),
   );
 }

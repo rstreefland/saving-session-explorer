@@ -1,3 +1,4 @@
+import { decimal } from '../domain/decimal';
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import { SessionSummary } from './SessionSummary';
@@ -12,7 +13,11 @@ it('counts estimated and official achievement independently, including estimates
       ...base,
       session: { ...base.session, resultsStatus: 'CALCULATING', rewardGivenInOctoPoints: 0 },
     },
-    { ...base, netSaved: 0, session: { ...base.session, resultsStatus: 'PARTIAL_SUCCESS' } },
+    {
+      ...base,
+      netSaved: decimal(0),
+      session: { ...base.session, resultsStatus: 'PARTIAL_SUCCESS' },
+    },
     base,
     { ...base, rewarded: null, netSaved: null },
     { ...base, session: { ...base.session, resultsStatus: 'FAIL', rewardGivenInOctoPoints: 0 } },
@@ -31,7 +36,11 @@ it('includes partly achieved sessions in both actual and estimated counts', () =
   render(
     <SessionSummary
       results={[
-        { ...base, netSaved: 0, session: { ...base.session, resultsStatus: 'PARTIAL_SUCCESS' } },
+        {
+          ...base,
+          netSaved: decimal(0),
+          session: { ...base.session, resultsStatus: 'PARTIAL_SUCCESS' },
+        },
       ]}
       type="TURN_DOWN"
     />,
@@ -48,7 +57,7 @@ it('uses the Power up direction for the estimated count', () => {
       results={[
         {
           ...base,
-          netSaved: -0.5,
+          netSaved: decimal(-0.5),
           session: { ...base.session, eventType: 'TURN_UP', resultsStatus: 'FAIL' },
         },
       ]}

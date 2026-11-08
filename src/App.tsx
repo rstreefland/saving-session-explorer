@@ -1,3 +1,12 @@
+import { decimal } from './domain/decimal';
+import {
+  Temporal,
+  elapsedHalfHour,
+  day,
+  clockTime,
+  formatDate,
+  todayInLondon,
+} from './domain/time';
 import { useEffect, useMemo, useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Activity } from 'lucide-react';
@@ -6,7 +15,6 @@ import { createQueryClient } from './api/queryClient';
 import { dataWarnings } from './domain/availability';
 import { calculateAll } from './domain/calculate';
 import { last30Days, validRange, type Preset } from './domain/dateRange';
-import { day, clockTime, formatDate, milliseconds, todayInLondon } from './domain/time';
 import { readingCoverage } from './domain/coverage';
 import { demoDataset } from './domain/demo';
 import type { Dataset } from './domain/types';
@@ -79,8 +87,8 @@ function SessionLens({ load }: AppProps) {
     )
     .sort(
       (a, b) =>
-        milliseconds(b.session.startAt) - milliseconds(a.session.startAt) ||
-        b.session.eventId - a.session.eventId,
+        Temporal.Instant.compare(b.session.startAt, a.session.startAt) ||
+        decimal(b.session.eventId).comparedTo(a.session.eventId),
     );
 
   const warnings = data ? (type !== 'WEEKEND_HAPPY_HOUR' ? dataWarnings(data) : data.warnings) : [];
@@ -158,9 +166,7 @@ function SessionLens({ load }: AppProps) {
           {demo && <div className="notice demo">Demo account (sample data).</div>}
           {data && (
             <>
-              {!data.imports.some(
-                (r) => milliseconds(r.interval_end) - milliseconds(r.interval_start) === 1_800_000,
-              ) && (
+              {!data.imports.some((r) => elapsedHalfHour(r.interval_start, r.interval_end)) && (
                 <div className="notice">
                   <h3>Half-hourly readings are needed</h3>
                   <p>

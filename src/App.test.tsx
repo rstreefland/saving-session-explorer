@@ -1,9 +1,9 @@
+import { Temporal, todayInLondon, formatDate } from './domain/time';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { StrictMode } from 'react';
 import App from './App';
-import { todayInLondon, formatDate } from './domain/time';
 import { demoDataset } from './domain/demo';
 
 const loadDataset = vi.fn<typeof import('./api/client').loadDataset>();
@@ -500,6 +500,6 @@ it('filters and orders sessions before passing them to the history table', async
     data.sessions
       .filter((session) => session.eventType === 'TURN_DOWN')
       .map((session) => session.startAt)
-      .sort((a, b) => Date.parse(b) - Date.parse(a)),
+      .sort((a, b) => Temporal.Instant.compare(b, a)),
   );
 });
