@@ -3,17 +3,18 @@
 Compare estimates from your smart meter readings with Octopus Energy's results for Power down,
 Power up, and Happy Hours.
 
-This project is built entirely using AI as an experiment to understand the limits of frontier models and learn how we can work with them more effectively.
+I built this project entirely using AI to explore the limits of frontier models and how we can work with them more effectively.
 
-Not affiliated with or endorsed by Octopus Energy.
+It's not affiliated with or endorsed by Octopus Energy. Differences between estimates and
+published results don't prove underpayment; the calculation assumptions and limits are in
+[the methodology](docs/methodology.md).
 
-[Open the app](https://saving-session-explorer.streefland.co.uk) and choose **Try demo**, or connect
-with your Octopus API key and account number. Independent estimates require a smart meter sharing
-half-hourly electricity readings. Credentials are saved in your browser; **Forget account** removes them.
+Open https://saving-session-explorer.streefland.co.uk and choose **Try demo**, or connect with your
+Octopus API key and account number. Independent estimates need a smart meter sharing half-hourly
+electricity readings. The app runs in your browser: credentials are saved there, while readings
+and results stay in memory. **Forget account** removes your saved credentials.
 
-## Run locally
-
-Use Node.js 24 and npm 10 or later:
+To run locally, use Node.js 24 and npm 10 or later:
 
 ```sh
 git clone https://github.com/rstreefland/saving-session-explorer.git
@@ -22,6 +23,5 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed in the terminal.
-
-[Documentation](docs/)
+Open the local URL printed in the terminal. For development, read the
+[working agreement](AGENTS.md) and [architecture decisions](docs/ADR.md).
