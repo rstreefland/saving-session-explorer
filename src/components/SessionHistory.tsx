@@ -1,4 +1,4 @@
-import { Fragment, useId, useState, type ReactNode } from 'react';
+import { Fragment, useId, useState } from 'react';
 import { CalendarClock, ChevronDown } from 'lucide-react';
 import type { Calculation, Session } from '../domain/types';
 import {
@@ -173,13 +173,11 @@ export function SessionHistory({
   results,
   type,
   onTypeChange,
-  summary,
   totals,
 }: {
   results: Calculation[];
   type: SessionType;
   onTypeChange: (type: SessionType) => void;
-  summary?: ReactNode;
   totals?: SessionTotals;
 }) {
   const id = useId(),
@@ -241,7 +239,6 @@ export function SessionHistory({
         ))}
       </div>
       <div role="tabpanel" id={id + '-panel'} aria-labelledby={id + '-' + type} tabIndex={0}>
-        {summary}
         {phone ? (
           <MobileResults
             results={results}

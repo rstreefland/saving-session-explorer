@@ -11,6 +11,7 @@ for (const width of [393, 768, 1280]) {
       .getByRole('button', { name: /Readings for/ })
       .first()
       .click();
+    await expect(page.getByRole('region', { name: 'Session summary' })).toHaveCount(0);
     const footer = page.locator('.history-totals');
     await expect(footer).toBeVisible();
     await page

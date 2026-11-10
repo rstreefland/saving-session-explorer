@@ -15,7 +15,6 @@ import { LoadingState } from './components/LoadingState';
 import { ConnectionForm } from './components/ConnectionForm';
 import { DateFilters } from './components/DateFilters';
 import { SessionHistory } from './components/SessionHistory';
-import { SessionSummary } from './components/SessionSummary';
 import { MeterDataNotes } from './components/MeterDataNotes';
 import { PublicIntro } from './components/PublicIntro';
 import { Methodology } from './components/Methodology';
@@ -176,7 +175,6 @@ function SessionLens({ load }: AppProps) {
                 totals={sessionTotals(visible)}
                 type={type}
                 onTypeChange={setType}
-                summary={<SessionSummary results={visible} type={type} />}
               />
               <MeterDataNotes coverage={coverage} warnings={warnings} />
               <p className="fine-print">
