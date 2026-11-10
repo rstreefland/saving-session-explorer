@@ -16,6 +16,8 @@ import { Tooltip } from './Tooltip';
 import { OctopointsValue } from './OctopointsValue';
 import { estimateOctopoints } from '../domain/points';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { HistoryTotals } from './HistoryTotals';
+import { officialRewardValue, type SessionTotals } from '../domain/totals';
 import { PLACEHOLDER } from './placeholder';
 
 const statuses: Record<string, { label: string; tone: SessionOutcome['tone'] }> = {
@@ -32,10 +34,7 @@ function status(session: Session) {
 }
 
 function reward(session: Session) {
-  if (['CALCULATING', 'UPCOMING'].includes(session.resultsStatus ?? '') || !session.resultsStatus)
-    return PLACEHOLDER;
-
-  const value = isHappyHour(session) ? session.rewardGivenInPence : session.rewardGivenInOctoPoints;
+  const value = officialRewardValue(session);
 
   if (value == null) return PLACEHOLDER;
   if (isHappyHour(session)) return value + 'p';
@@ -175,11 +174,13 @@ export function SessionHistory({
   type,
   onTypeChange,
   summary,
+  totals,
 }: {
   results: Calculation[];
   type: SessionType;
   onTypeChange: (type: SessionType) => void;
   summary?: ReactNode;
+  totals?: SessionTotals;
 }) {
   const id = useId(),
     [expanded, setExpanded] = useState<Set<number>>(() => new Set());
@@ -438,8 +439,14 @@ export function SessionHistory({
                   );
                 })}
               </tbody>
+              {totals && results.length > 0 && (
+                <HistoryTotals totals={totals} type={type} compact={compact} />
+              )}
             </table>
           </div>
+        )}
+        {phone && totals && results.length > 0 && (
+          <HistoryTotals totals={totals} type={type} mobile />
         )}
         {!results.length && (
           <div className="empty">

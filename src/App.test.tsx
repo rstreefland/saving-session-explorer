@@ -12,7 +12,7 @@ const user = () => userEvent.setup();
 const rows = () =>
   within(screen.getByRole('table', { name: 'Power down session history' }))
     .getAllByRole('row')
-    .slice(1);
+    .filter((row) => row.classList.contains('history-row'));
 
 async function credentials() {
   const u = user();
@@ -91,7 +91,8 @@ describe('Session history', () => {
     const table = screen.getByRole('table', { name: 'Happy Hours session history' });
 
     expect(within(table).getByRole('columnheader', { name: 'Usage' })).toBeInTheDocument();
-    expect(within(table).getByText('8p')).toBeInTheDocument();
+    expect(within(table.querySelector('tbody')!).getByText('8p')).toBeInTheDocument();
+    expect(within(table.querySelector('tfoot')!).getByText('8p')).toBeInTheDocument();
   });
 
   it('persists a key, loads an account and forgets its results', async () => {

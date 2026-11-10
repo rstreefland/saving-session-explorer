@@ -4,6 +4,7 @@ import { Activity } from 'lucide-react';
 import { loadDataset } from './api/client';
 import { createQueryClient } from './api/queryClient';
 import { dataWarnings } from './domain/availability';
+import { sessionTotals } from './domain/totals';
 import { calculateAll } from './domain/calculate';
 import { last30Days, validRange, type Preset } from './domain/dateRange';
 import { day, clockTime, formatDate, milliseconds, todayInLondon } from './domain/time';
@@ -172,6 +173,7 @@ function SessionLens({ load }: AppProps) {
               )}
               <SessionHistory
                 results={visible}
+                totals={sessionTotals(visible)}
                 type={type}
                 onTypeChange={setType}
                 summary={<SessionSummary results={visible} type={type} />}

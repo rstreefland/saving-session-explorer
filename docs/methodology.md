@@ -70,3 +70,18 @@ arithmetic and compensating epsilons. Preserve intended business outcomes with e
 precision/rounding choices; distinguish numerical artifacts from intentional tolerances such as
 0.01 kWh. Maintain assumptions and numerical policy in this document; use [ADR.md](ADR.md) only
 for significant architectural choices.
+
+## Visible-history totals
+
+Totals sum each column independently over the visible session type and date range. Missing and
+pending values are excluded, not replaced by zero; a column with no available values shows the
+usual placeholder. Each total shows “2 of 3 results included” (for example), since calculated and Octopus
+columns may cover different sessions. Provisional inputs mark the corresponding calculated totals.
+Happy Hours sum import usage and cash credit; Power up has no estimated reward total.
+
+The totals path uses `decimal.js-light` with a shared 40-significant-digit precision and half-up
+rounding configuration. There is no division in this path. Values enter from the existing numeric
+calculation boundary; they remain Decimal through summation, then energy is displayed to two
+places. Rewards sum the already rounded per-session awards, without rounding or repricing the
+aggregate. The legacy reading and reward calculators still use native arithmetic pending the
+wider ADR-004 migration; this change does not migrate or certify those calculations.
