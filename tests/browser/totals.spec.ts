@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 for (const width of [393, 768, 1280]) {
-  test(`totals stay visible and follow the selected type at ${width}px`, async ({ page }) => {
+  test(`totals follow the selected layout and session type at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 852 });
     await page.route('https://**/*', (route) => route.abort());
     await page.goto('/');
@@ -17,9 +17,23 @@ for (const width of [393, 768, 1280]) {
     await page
       .locator('.session-tabs')
       .evaluate((element) => element.scrollIntoView({ block: 'start' }));
-    await expect
-      .poll(() => footer.evaluate((element) => element.getBoundingClientRect().bottom))
-      .toBe(852);
+    if (width === 393) {
+      const totalsCard = page.getByRole('region', { name: 'Session totals' });
+      await expect(totalsCard).toHaveCSS('position', 'static');
+      expect(
+        await totalsCard.evaluate(
+          (element) =>
+            element.parentElement?.firstElementChild === element &&
+            element.nextElementSibling?.classList.contains('mobile-results'),
+        ),
+      ).toBe(true);
+      await page.locator('.mobile-session').last().scrollIntoViewIfNeeded();
+      await expect(totalsCard).not.toBeInViewport();
+    } else {
+      await expect
+        .poll(() => footer.evaluate((element) => element.getBoundingClientRect().bottom))
+        .toBe(852);
+    }
     await expect(footer).toContainText('results included');
     const typographyMatchesRows = await page.evaluate(() => {
       const energy = document.querySelector('.mobile-energy, .history-row .shifted-energy');

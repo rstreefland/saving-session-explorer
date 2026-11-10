@@ -239,6 +239,9 @@ export function SessionHistory({
         ))}
       </div>
       <div role="tabpanel" id={id + '-panel'} aria-labelledby={id + '-' + type} tabIndex={0}>
+        {phone && totals && results.length > 0 && (
+          <HistoryTotals totals={totals} type={type} mobile />
+        )}
         {phone ? (
           <MobileResults
             results={results}
@@ -441,9 +444,6 @@ export function SessionHistory({
               )}
             </table>
           </div>
-        )}
-        {phone && totals && results.length > 0 && (
-          <HistoryTotals totals={totals} type={type} mobile />
         )}
         {!results.length && (
           <div className="empty">
