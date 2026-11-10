@@ -19,7 +19,7 @@ all contributors and repository code, including tests and tooling unless an exce
   a local task into an unrequested repository rewrite. ADR status distinguishes accepted
   decisions from completed migrations.
 
-## Mandatory language and data rules
+## Dates and times
 
 - **Use Temporal exclusively for dates and times. Never use JavaScript `Date`**, including
   `new Date`, `Date.now`, `Date.parse`, and test fixtures. Use the explicit `temporal-polyfill`
@@ -33,6 +33,9 @@ all contributors and repository code, including tests and tooling unless an exce
   `en-GB` and `Europe/London`; use the existing zone-qualified form when needed. ISO transport
   values and native date-input values remain machine formats. Keep display formatting in
   shared helpers, with regression examples.
+
+## Numbers and data validation
+
 - **Use `decimal.js-light` for all numeric arithmetic**, including tests and tooling, not only
   money. Don't compute with native numeric arithmetic or `Math` and wrap the result afterward.
   Date/time arithmetic belongs to Temporal. Preserve decimal strings at input boundaries where
@@ -96,7 +99,7 @@ all contributors and repository code, including tests and tooling unless an exce
   reward arithmetic and round at the specified stage. Document supplier evidence, inferred rules,
   and app heuristics separately; never present discrepancies as proof of incorrect settlement.
 
-## Account safety and asynchronous work
+## Account safety
 
 - Keep credentials and personal account data out of logs, raw error messages, query keys, public
   HTML, committed fixtures, screenshots, and recordings. Results/readings stay in memory.
@@ -105,6 +108,9 @@ all contributors and repository code, including tests and tooling unless an exce
 - Account changes clear account-scoped data and cancel work. Forgetting must disconnect and clear
   memory even if storage removal fails; attempt all removals and show the storage failure.
   Late responses must never restore stale or previous-account results.
+
+## Requests and cancellation
+
 - Pass cancellation through every request and optional dependency. Rethrow cancellation rather
   than converting it to a warning or successful partial result. Clean up effects, subscriptions,
   and timers; preserve correct behaviour under React Strict Mode.
@@ -132,7 +138,7 @@ all contributors and repository code, including tests and tooling unless an exce
   preview assets change, synchronise canonical/social URLs, robots, sitemap, CNAME, and the
   editable sharing-card source with its published image.
 
-## Verification proportional to risk
+## Tests and verification
 
 - Prefer a small set of representative, anonymous API contract fixtures and independently worked
   end-to-end calculation examples. Cover supported session types, missing data, publication,
@@ -152,6 +158,8 @@ all contributors and repository code, including tests and tooling unless an exce
 - CI runs formatting, coverage, build, and browser checks. Never lower thresholds, disable failing
   tests, or inflate timeouts merely to get green. Report checks actually run, failures, and gaps.
   Remove redundant tests only when equivalent behavioural coverage is clear.
+
+## Development commands
 
 Use Node 24 and npm 10+ for development, matching CI. The broader Node range in `package.json`
 doesn't establish that older versions are tested. Commands:

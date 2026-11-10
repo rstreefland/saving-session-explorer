@@ -1,116 +1,212 @@
 # Calculation methodology and evidence
 
-This describes the app's current model and its limits. It doesn't reproduce or certify Octopus
-settlement. Independent estimates use readings and published event rates, and official results
-are used for comparison rather than filling gaps. A discrepancy alone doesn't establish underpayment.
+The app estimates usage and rewards from meter readings and published event rates, then compares
+those estimates with Octopus's results. It doesn't use official results to fill gaps in its own
+calculations. A difference doesn't prove underpayment, because this model doesn't reproduce or
+certify Octopus's settlement process.
 
-## Evidence classes
+## What the evidence means
 
-- **Supplier-confirmed:** supported by an exact supplier source, verification date, and applicable
-  session/rule period. A passing application test is not supplier confirmation.
-- **Implemented model:** behaviour encoded in this repository, with local regression evidence.
-- **Inferred:** an empirical assumption whose supplier confirmation is outstanding.
-- **App policy:** a deliberate safety, display, or support limit rather than a supplier rule.
+The rules below describe the implementation. None is promoted to supplier-confirmed solely
+because the app has a passing test.
 
-The table records evidence from the implementation. It doesn't independently verify supplier
-sources, so it doesn't promote assumptions to supplier-confirmed rules. When upstream behaviour
-changes, record the source and date, revise a minimal anonymous contract fixture, and update an
-independently worked example before changing the model.
+- **Supplier-confirmed** needs an exact supplier source, a verification date, and the session or
+  rule period it applies to.
+- **Implemented model** means the repository implements the rule and has regression evidence.
+- **Inferred** means an empirical assumption still needs supplier confirmation.
+- **App policy** means a safety, display, or support choice made by this app.
 
-## Rules and assumptions
+## Which sessions the app supports
 
-| Topic                | Current behaviour                                                                                                                                                                                              | Evidence class                                          | Local evidence                                                                                                 |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Reference days       | Ordinary weekdays use ten eligible weekdays; weekends and bank holidays use four eligible weekend days. Exclude holidays and known event days. Select dates before inspecting readings.                        | Implemented model                                       | [Baseline tests](../src/domain/calculate.test.ts), `baseline date selection`                                   |
-| History              | Search at most 60 days for references. Incomplete API event counts block baseline estimates; the oldest event date alone does not establish coverage.                                                          | App policy / API contract                               | [Calculation](../src/domain/calculate.ts), [API tests](../src/api/client.test.ts)                              |
-| Intervals and time   | Complete, aligned half-hours; London wall time for matching references; reject ambiguous/nonexistent reference times. Zero is valid; invalid or duplicate intervals are unavailable.                           | App policy                                              | [Calculation tests](../src/domain/calculate.test.ts), [time tests](../src/domain/time.test.ts)                 |
-| Net consumption      | Power down/up use import minus linked export. A missing linked export reading blocks the estimate; no linked export meter is distinct. Never combine serials.                                                  | Implemented model                                       | [Calculation tests](../src/domain/calculate.test.ts), [API tests](../src/api/client.test.ts)                   |
-| Qualifying change    | For each half-hour, Power down counts positive baseline-minus-actual; Power up counts positive actual-minus-baseline. Sum qualifying changes, keeping whole-session net change separate.                       | Implemented model                                       | [Calculation tests](../src/domain/calculate.test.ts), `calculates turn up and clips each half-hour separately` |
-| Happy Hours          | Sum imported usage without a baseline or exports. Do not clip the energy total to a reward cap. Cash credit is not independently priced.                                                                       | Implemented model / support limit                       | [Happy Hours tests](../src/domain/calculate.test.ts)                                                           |
-| Power down points    | Multiply total qualifying kWh by the published event rate. Using eight points per penny, round upward to a whole penny once for the session; assume a 16-point minimum for a positive reward. Zero earns zero. | Inferred reward model; rounding and minimum unconfirmed | [Points](../src/domain/points.ts), [points tests](../src/domain/points.test.ts)                                |
-| Power up rewards     | Show energy estimates, but withhold independent reward pricing because required tariff inputs are absent.                                                                                                      | Support limit                                           | [Points tests](../src/domain/points.test.ts), `does not invent Octopoints`                                     |
-| Official results     | Keep unpublished results pending; a pending zero can be a placeholder. Compare supplied final values independently. Energy and points publication handling have distinct cases.                                | API interpretation                                      | [Session semantics](../src/domain/session.ts), [points tests](../src/domain/points.test.ts)                    |
-| Comparison tolerance | An absolute 0.01 kWh threshold determines energy mismatch; baseline/actual comparisons can also reveal a mismatch. It is not a supplier settlement tolerance.                                                  | App policy                                              | [Calculation tests](../src/domain/calculate.test.ts), `zero is a published result, and tolerance is absolute`  |
-| Missing-data age     | Completed reading gaps older than seven days are labelled presumed missing; late data can still replace them. Future intervals are excluded.                                                                   | App heuristic, not a delivery deadline                  | [Coverage](../src/domain/coverage.ts), [coverage tests](../src/domain/coverage.test.ts)                        |
-| Supported windows    | Recognised session types from 29 Nov 2024, aligned positive windows of at most 24 elapsed hours within one London calendar date; custom ranges include at most 366 dates.                                      | App support limit                                       | [Calculation](../src/domain/calculate.ts), [date ranges](../src/domain/dateRange.ts)                           |
-| Home Mini            | Fill only absent import intervals, matching MPAN and serial. Use completed, aligned telemetry within the conservative 29-day window and convert Wh to kWh. Preserve existing standard rows even if invalid.    | App fallback policy                                     | [Home Mini](../src/api/homeMini.ts), [Home Mini tests](../src/api/homeMini.test.ts)                            |
-| Provisional results  | Mini inputs in either session usage or baseline make the estimate provisional and suppress missed-reward alerts. Standard data replaces fallback inputs on refresh.                                            | App policy                                              | [Calculation tests](../src/domain/calculate.test.ts), [outcome tests](../src/domain/outcome.test.ts)           |
-| Dependency failure   | Holiday, linked-export, and event-history failures block dependent baseline calculations; import-only Happy Hours remain usable. Informational warnings never change eligibility.                              | App policy                                              | [Calculation tests](../src/domain/calculate.test.ts), `explains the unavailable` and `informational warnings`  |
+The app supports recognised session types from 29 Nov 2024. A session must start and end on
+aligned half-hour boundaries, have positive duration, last no more than 24 elapsed hours, and
+fit within one London calendar date. Custom date ranges can include up to 366 dates. These are
+app support limits, recorded in [calculate.ts](../src/domain/calculate.ts) and
+[dateRange.ts](../src/domain/dateRange.ts).
 
-## Independently worked examples
+## How Power down and Power up estimates work
 
-These inputs and expected outputs are small enough to inspect without running the implementation.
-The named tests cover these scenarios and retain independently calculated expectations.
+First, the app chooses the dates used to estimate normal usage, called the baseline. Ordinary
+weekdays use ten eligible weekdays. Weekends and bank holidays use four eligible weekend days.
+Holidays and known event days are excluded. The app chooses these dates before looking for
+readings, so missing readings can't cause it to substitute older dates. This is the implemented
+model, covered by `baseline date selection` in [calculate.test.ts](../src/domain/calculate.test.ts).
 
-| Example               | Inputs and reasoning                                                                                                                                 | Expected result                                                                                                                                                        | Regression evidence                                                                                                               |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Bank holiday baseline | Four selected weekend days provide 1, 2, 3, and 4 kWh for each matching half-hour. The mean is 2.5 kWh per slot. Two session slots each use 0.5 kWh. | Baseline 5 kWh; actual 1 kWh; Power down qualifying change 4 kWh. Removing one selected day's readings makes the baseline unavailable without changing selected dates. | [calculate.test.ts](../src/domain/calculate.test.ts): `calculates a bank holiday from four known weekend days, not weekday usage` |
-| Power up clipping     | Baseline slots are 0.6 and 0.6 kWh; actual slots are 1.6 and 0.15 kWh. Qualifying increases are 1 and 0 kWh.                                         | Rewarded energy 1 kWh; baseline-minus-actual over the whole session is -0.55 kWh.                                                                                      | [calculate.test.ts](../src/domain/calculate.test.ts): `calculates turn up and clips each half-hour separately`                    |
-| Points rounding       | 0.21 kWh at 80 points/kWh gives 16.8 raw points, or 2.1p. Round upward to 3p.                                                                        | 24 points under the inferred model.                                                                                                                                    | [points.test.ts](../src/domain/points.test.ts): `estimates %s kWh at %s points/kWh without rounding energy first`                 |
-| Minimum reward        | 0.1471 kWh at 16 points/kWh gives 2.3536 raw points; penny rounding gives 8 points, below the assumed 16-point minimum.                              | 16 points under the inferred model.                                                                                                                                    | Same points table                                                                                                                 |
-| Exact boundary        | 0.3 kWh at 80 points/kWh is exactly 24 points; 0.300001 kWh yields 24.00008 raw points.                                                              | Respectively 24 and 32 points after whole-penny rounding. Equal baseline and actual readings must earn zero, without a spurious minimum.                               | Points table and `does not award minimum points for floating-point noise in identical baseline and session readings`              |
-| Import-only usage     | Happy Hour import slots are 10 and 10 kWh; linked export is 1 kWh per slot. A separately supplied reward-related energy figure is 16 kWh.            | Imported usage remains 20 kWh, with no export subtraction or reward-cap clipping.                                                                                      | [calculate.test.ts](../src/domain/calculate.test.ts): `does not clip imported usage to the reward cap or subtract export`         |
+The search stops after 60 days. The app also checks API event counts, because an incomplete
+calendar could cause it to use an event day as a reference. Incomplete counts block baseline
+estimates; the oldest event date alone doesn't establish coverage. These are app policy and API
+contract checks in [calculate.ts](../src/domain/calculate.ts) and
+[client.test.ts](../src/api/client.test.ts).
 
-## Maintaining useful evidence
+Next, the app matches each session half-hour to the same London wall time on the selected dates.
+Readings must cover complete, aligned half-hours. Zero is valid, but invalid or duplicate
+intervals are unavailable. Ambiguous or nonexistent reference times are rejected rather than
+guessed. These are app policies covered by [calculate.test.ts](../src/domain/calculate.test.ts)
+and [time.test.ts](../src/domain/time.test.ts).
 
-For API changes, keep a small set of representative, minimal, anonymous response fixtures with
-the contract shape and expected validation behaviour. Never preserve credentials, account IDs,
-addresses, names, or meter identifiers from real accounts. Include malformed and optional-data
-cases where they affect the contract; reject unexpected network access in tests.
+Both Power down and Power up use import minus linked export. A missing reading from a linked
+export meter blocks the estimate; having no linked export meter is a different case. Readings
+from different meter serials are never combined. This implemented model is covered by
+[calculate.test.ts](../src/domain/calculate.test.ts) and [client.test.ts](../src/api/client.test.ts).
 
-For methodology changes, exercise the path from validated dataset inputs through calculation and
-reward outputs. Derive expected values independently; do not call the calculator to generate its
-own expected answers. Extend focused examples for the behaviour changing rather than growing
-combinatorial snapshots. Neither fixture agreement nor coverage thresholds prove supplier parity.
+The app then calculates the qualifying change separately for each half-hour:
 
-## Numerical precision
+- Power down counts baseline minus actual usage when the result is positive.
+- Power up counts actual usage minus baseline when the result is positive.
 
-[ADR-004](ADR.md) is implemented using a single configured `decimal.js-light` constructor
-([decimal.ts](../src/domain/decimal.ts)). Arithmetic uses 40 significant digits. The library
-truncates arithmetic, including non-terminating division, at that precision; it does not provide
-unlimited exact rational arithmetic. For example, 1/3 is 40 threes after the decimal point.
-Reference means divide by four or ten, Mini conversion by 1,000, and points conversion by eight;
-these terminate exactly when the result fits 40 significant digits. Inputs requiring more precision
-can still lose low-order digits during calculation. This is a numerical policy, not a supplier rule.
+It adds those qualifying changes for the reward estimate. It keeps the whole-session net change
+separate, because a change in the wrong direction in one half-hour doesn't cancel a qualifying
+change in another. See `calculates turn up and clips each half-hour separately` in
+[calculate.test.ts](../src/domain/calculate.test.ts).
 
-API boundaries validate finite numbers and decimal strings with Zod, retaining supplied strings;
-JSON numeric tokens have already been parsed by the browser, so precision lost upstream cannot
-be recovered. Numeric strings outside the finite Number range or Decimal exponent range are
-rejected. Mini Wh conversion serialises exact kWh as a decimal string in the dataset. Datasets
-remain plain serialisable inputs suitable for the existing in-memory cache and demo cloning;
-calculated energy, references and reward values remain Decimal through comparison and rendering.
-Counts, indexes and DOM geometry convert at their presentation or library boundaries.
+For example, a bank holiday's four reference days supply 1, 2, 3, and 4 kWh for each matching
+half-hour. Their mean is 2.5 kWh per half-hour. If a two-slot Power down session uses 0.5 kWh in
+each slot, its baseline is 5 kWh, actual usage is 1 kWh, and qualifying reduction is 4 kWh.
+Removing a selected day's readings makes the baseline unavailable without changing the selected
+dates. See `calculates a bank holiday from four known weekend days, not weekday usage` in
+[calculate.test.ts](../src/domain/calculate.test.ts).
 
-Display rounding is explicitly half-up, preserving the established two-decimal summary,
-three-decimal reading and up-to-six-decimal points-breakdown formats. Grouping uses `en-GB`
-without converting decimal amounts to binary numbers. Reward arithmetic still rounds upward
-once per session to a whole penny (eight points), then applies the inferred 16-point minimum
-only to a positive reward. The existing supported reward limit (raw points at most
-`Number.MAX_SAFE_INTEGER - 8`) remains in place.
+For Power up, baseline slots of 0.6 and 0.6 kWh and actual slots of 1.6 and 0.15 kWh give qualifying
+increases of 1 and 0 kWh. Rewarded energy is therefore 1 kWh, while baseline minus actual over
+the whole session is -0.55 kWh. The clipping test above covers this independently worked example.
 
-The absolute 0.01 kWh comparison tolerance is preserved. The existing achievement threshold
-(strictly greater than 0.000000001 kWh) and neutral change colour threshold (absolute change
-strictly below 0.000000001 kWh) are also retained as separate presentation policies. The former
-binary epsilon guards around zero energy, whole-penny boundaries and the 0.01 comparison have
-been removed. A tiny positive independently calculated reward can therefore receive the minimum
-even below the achievement-label threshold, as required by the positive-reward rule.
+## How Happy Hours differ
 
-The following precision corrections are intentional; selection, missing data, publication,
-provenance, reward rules and interaction do not change:
+Happy Hours add imported usage without a baseline or export subtraction. The app doesn't cap
+that energy total using a reward-related figure, and it doesn't independently price the cash
+credit. This is the implemented model and a reward-pricing support limit.
 
-| Independent example                                                | Earlier result                                       | Current result                                                         |
-| ------------------------------------------------------------------ | ---------------------------------------------------- | ---------------------------------------------------------------------- |
-| Five 0.100 and five 0.101 kWh reference readings: total 1.005 / 10 | 0.10049999999999999, displayed 0.100                 | Exact 0.1005, displayed 0.101; agrees with ten uniform 0.1005 readings |
-| Display 1.005 to two decimals                                      | 1.00 from native `toFixed`                           | 1.01 under half-up rounding                                            |
-| 0.3000000000000001 kWh × 80 points/kWh                             | Snapped to 24 points by the penny epsilon guard      | Raw 24.000000000000008; round up to 32 points                          |
-| 0.0000000000000001 kWh × 80 points/kWh                             | Snapped to zero energy, zero points                  | Raw 0.000000000000008; penny-rounded eight, minimum 16 points          |
-| Absolute difference 0.0100000001 kWh                               | Match due to the extra 0.000000001 guard             | Difference; exactly 0.01 remains a match                               |
-| UTC interval 00:00:00.000000001–00:30:00.000000001                 | Accepted after truncating timestamps to milliseconds | Rejected as misaligned using full Temporal instant precision           |
-| Mini 100.00000000000001 Wh / 1,000                                 | 0.10000000000000002 kWh after Number conversion      | Exact 0.10000000000000001 kWh                                          |
+For example, import slots of 10 and 10 kWh still give 20 kWh of usage when export is 1 kWh per
+slot and a separately supplied reward-related figure is 16 kWh. See `does not clip imported
+usage to the reward cap or subtract export` in [calculate.test.ts](../src/domain/calculate.test.ts).
 
-[Exact numerical tests](../src/domain/decimal.test.ts),
-[validated Mini tests](../src/api/numericSchema.test.ts),
-[default App/API tests](../src/api/client.test.ts) and
+## How rewards are estimated
+
+Power down multiplies total qualifying kWh by the published event rate. Under the inferred reward
+model, eight points equal one penny. The app rounds upward to a whole penny once for the session,
+then applies an assumed 16-point minimum to a positive reward. Zero earns zero. The rounding and
+minimum still need supplier confirmation. See [points.ts](../src/domain/points.ts) and
+[points.test.ts](../src/domain/points.test.ts).
+
+These examples calculate the expected results independently:
+
+- 0.21 kWh at 80 points/kWh gives 16.8 points, or 2.1p. Rounding upward to 3p gives 24 points.
+- 0.1471 kWh at 16 points/kWh gives 2.3536 points. Penny rounding gives eight points, so the
+  assumed minimum raises the reward to 16 points.
+- 0.3 kWh at 80 points/kWh gives exactly 24 points. At 0.300001 kWh, the raw result is 24.00008
+  points, which rounds upward to 32 points.
+- Equal baseline and actual readings earn zero, without triggering the minimum.
+
+The points table test `estimates %s kWh at %s points/kWh without rounding energy first` and
+`does not award minimum points for floating-point noise in identical baseline and session
+readings` cover these cases in [points.test.ts](../src/domain/points.test.ts).
+
+Power up shows energy estimates but doesn't independently price rewards because the required
+tariff inputs are absent. This support limit is covered by `does not invent Octopoints` in
+[points.test.ts](../src/domain/points.test.ts).
+
+## What missing and provisional data mean
+
+Completed reading gaps older than seven days are labelled presumed missing. That's an app
+heuristic, not a supplier delivery deadline: late readings can still replace them. Future
+intervals are excluded. See [coverage.ts](../src/domain/coverage.ts) and
+[coverage.test.ts](../src/domain/coverage.test.ts).
+
+Home Mini can fill absent import intervals using completed, aligned telemetry within a
+conservative 29-day window. It must match both MPAN and serial and converts Wh to kWh. It never
+replaces an existing standard row, even if that row is invalid. This fallback policy is covered
+by [homeMini.ts](../src/api/homeMini.ts) and [homeMini.test.ts](../src/api/homeMini.test.ts).
+
+Mini data in either session usage or the baseline makes the estimate provisional. The app
+suppresses missed-reward alerts for provisional estimates; standard data replaces fallback
+inputs on refresh. See [calculate.test.ts](../src/domain/calculate.test.ts) and
+[outcome.test.ts](../src/domain/outcome.test.ts).
+
+Holiday, linked-export, and event-history failures block the baseline calculations that depend
+on them. Import-only Happy Hours remain usable. Informational warnings never change eligibility.
+These app policies are covered by `explains the unavailable` and `informational warnings` in
+[calculate.test.ts](../src/domain/calculate.test.ts).
+
+## How official results are compared
+
+Unpublished results stay pending, because a pending zero can be a placeholder. The app compares
+supplied final values independently and handles energy and points publication separately.
+This is an API interpretation, covered by [session.ts](../src/domain/session.ts) and
+[points.test.ts](../src/domain/points.test.ts).
+
+An absolute difference greater than 0.01 kWh counts as an energy mismatch; exactly 0.01 kWh is a
+match. Differences in baseline or actual usage can also reveal a mismatch. This threshold is an
+app policy, not a supplier settlement tolerance. See `zero is a published result, and tolerance
+is absolute` in [calculate.test.ts](../src/domain/calculate.test.ts).
+
+## Precision and rounding
+
+The app uses one configured `decimal.js-light` constructor for numeric arithmetic, as recorded
+in [ADR-004](ADR.md) and [decimal.ts](../src/domain/decimal.ts). It keeps Decimal values through
+calculations and comparisons so binary floating-point artefacts don't affect energy or rewards.
+
+Arithmetic uses 40 significant digits. The library truncates at that precision, including for
+non-terminating division: 1/3 becomes 40 threes after the decimal point. Reference means divide
+by four or ten, Mini conversion by 1,000, and points conversion by eight. Those divisions
+terminate exactly when the result fits 40 significant digits. Larger inputs can still lose
+low-order digits. This is a numerical policy, not a supplier rule.
+
+Zod validates finite numbers and decimal strings at API boundaries and preserves supplied
+strings. The browser has already parsed JSON numeric tokens, so the app can't recover precision
+lost there. Numeric strings outside the finite Number range or Decimal exponent range are
+rejected. Mini conversion stores exact kWh as a decimal string.
+
+Datasets remain plain serialisable inputs for the in-memory cache and demo cloning. Calculated
+energy, references, and rewards stay as Decimal values through comparison and rendering.
+Counts, indexes, and DOM geometry convert at presentation or library boundaries.
+
+Display rounding is half-up: summaries use two decimal places, readings use three, and points
+breakdowns use up to six. Grouping uses `en-GB` without converting decimal amounts to binary
+numbers. Reward rounding follows the separate whole-penny rule above. Raw rewards must be at
+most `Number.MAX_SAFE_INTEGER - 8` points.
+
+An achievement label requires energy strictly greater than 0.000000001 kWh. Change colours are
+neutral when the absolute change is strictly below 0.000000001 kWh. These are separate
+presentation policies, so a tiny positive reward can receive the minimum even when it's below
+the achievement-label threshold.
+
+Decimal arithmetic removed the earlier binary epsilon guards around zero energy, whole-penny
+boundaries, and the 0.01 kWh comparison. These corrections are intentional; date selection,
+missing-data rules, publication, provenance, reward rules, and interaction are unchanged:
+
+- Five 0.100 and five 0.101 kWh readings total 1.005 kWh. Dividing by ten now gives exactly
+  0.1005, displayed as 0.101, matching ten uniform 0.1005 readings. The previous result was
+  0.10049999999999999, displayed as 0.100.
+- Displaying 1.005 to two decimals gives 1.01 under half-up rounding. Native `toFixed` gave 1.00.
+- 0.3000000000000001 kWh at 80 points/kWh gives 24.000000000000008 raw points and rounds upward
+  to 32 points. The old penny epsilon guard snapped it to 24 points.
+- 0.0000000000000001 kWh at 80 points/kWh gives 0.000000000000008 raw points. Penny rounding
+  gives eight points, then the minimum gives 16. The old guard snapped the energy and points to zero.
+- An absolute difference of 0.0100000001 kWh is a mismatch. The old extra 0.000000001 guard
+  treated it as a match; exactly 0.01 kWh remains a match.
+- A UTC interval from 00:00:00.000000001 to 00:30:00.000000001 is rejected as misaligned using
+  full Temporal precision. Truncating timestamps to milliseconds previously accepted it.
+- 100.00000000000001 Wh divided by 1,000 gives exactly 0.10000000000000001 kWh. Number conversion
+  previously gave 0.10000000000000002 kWh.
+
+[decimal.test.ts](../src/domain/decimal.test.ts),
+[numericSchema.test.ts](../src/api/numericSchema.test.ts),
+[client.test.ts](../src/api/client.test.ts), and the
 [production browser tests](../tests/browser/decimal.spec.ts) cover these boundaries alongside the
-existing independently worked session examples. Invalid or non-finite energy can't enter a
-calculated Decimal value; boundary validation tests cover those inputs instead.
+worked session examples. Invalid or non-finite energy can't become a calculated Decimal value;
+boundary validation tests cover those inputs instead.
+
+## Updating the evidence
+
+When upstream behaviour changes, record the source and verification date, update a minimal
+anonymous contract fixture, and revise an independently worked example before changing the
+model. Tests alone don't establish supplier confirmation.
+
+API fixtures should preserve the response shape and expected validation behaviour, including
+malformed or optional data where it affects the contract. Don't retain real credentials, account
+IDs, addresses, names, or meter identifiers. Reject unexpected network access in tests.
+
+For methodology changes, test the path from validated dataset inputs through calculation and
+reward outputs. Calculate expectations independently rather than using the calculator to produce
+its own answers. Extend focused examples for the changed behaviour instead of adding combinatorial
+snapshots. Fixture agreement and coverage thresholds don't prove agreement with Octopus.
