@@ -1,26 +1,25 @@
 # Calculation methodology and evidence
 
-This describes the app's current model and its limits. It is not a reproduction or certification
-of Octopus settlement. Independent estimates use readings and published event rates; official
-results are comparison inputs, never substitutes for missing estimates. A discrepancy alone
-does not establish underpayment.
+This describes the app's current model and its limits. It doesn't reproduce or certify Octopus
+settlement. Independent estimates use readings and published event rates, and official results
+are used for comparison rather than filling gaps. A discrepancy alone doesn't establish underpayment.
 
 ## Evidence classes
 
 - **Supplier-confirmed:** supported by an exact supplier source, verification date, and applicable
   session/rule period. A passing application test is not supplier confirmation.
-- **Implemented model:** behavior encoded in this repository, with local regression evidence.
+- **Implemented model:** behaviour encoded in this repository, with local regression evidence.
 - **Inferred:** an empirical assumption whose supplier confirmation is outstanding.
 - **App policy:** a deliberate safety, display, or support limit rather than a supplier rule.
 
-The table below records implementation evidence. This documentation change does not independently
-verify supplier sources, so it does not promote existing assumptions to supplier-confirmed rules.
-When upstream behavior changes, record the source/date, revise a minimal anonymous contract fixture,
-and update an independently worked example before changing the model.
+The table records evidence from the implementation. It doesn't independently verify supplier
+sources, so it doesn't promote assumptions to supplier-confirmed rules. When upstream behaviour
+changes, record the source and date, revise a minimal anonymous contract fixture, and update an
+independently worked example before changing the model.
 
 ## Rules and assumptions
 
-| Topic                | Current behavior                                                                                                                                                                                               | Evidence class                                          | Local evidence                                                                                                 |
+| Topic                | Current behaviour                                                                                                                                                                                              | Evidence class                                          | Local evidence                                                                                                 |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | Reference days       | Ordinary weekdays use ten eligible weekdays; weekends and bank holidays use four eligible weekend days. Exclude holidays and known event days. Select dates before inspecting readings.                        | Implemented model                                       | [Baseline tests](../src/domain/calculate.test.ts), `baseline date selection`                                   |
 | History              | Search at most 60 days for references. Incomplete API event counts block baseline estimates; the oldest event date alone does not establish coverage.                                                          | App policy / API contract                               | [Calculation](../src/domain/calculate.ts), [API tests](../src/api/client.test.ts)                              |
@@ -32,8 +31,8 @@ and update an independently worked example before changing the model.
 | Power up rewards     | Show energy estimates, but withhold independent reward pricing because required tariff inputs are absent.                                                                                                      | Support limit                                           | [Points tests](../src/domain/points.test.ts), `does not invent Octopoints`                                     |
 | Official results     | Keep unpublished results pending; a pending zero can be a placeholder. Compare supplied final values independently. Energy and points publication handling have distinct cases.                                | API interpretation                                      | [Session semantics](../src/domain/session.ts), [points tests](../src/domain/points.test.ts)                    |
 | Comparison tolerance | An absolute 0.01 kWh threshold determines energy mismatch; baseline/actual comparisons can also reveal a mismatch. It is not a supplier settlement tolerance.                                                  | App policy                                              | [Calculation tests](../src/domain/calculate.test.ts), `zero is a published result, and tolerance is absolute`  |
-| Missing-data age     | Completed reading gaps older than seven days are labeled presumed missing; late data can still replace them. Future intervals are excluded.                                                                    | App heuristic, not a delivery deadline                  | [Coverage](../src/domain/coverage.ts), [coverage tests](../src/domain/coverage.test.ts)                        |
-| Supported windows    | Recognized session types from 29 Nov 2024, aligned positive windows of at most 24 elapsed hours within one London calendar date; custom ranges include at most 366 dates.                                      | App support limit                                       | [Calculation](../src/domain/calculate.ts), [date ranges](../src/domain/dateRange.ts)                           |
+| Missing-data age     | Completed reading gaps older than seven days are labelled presumed missing; late data can still replace them. Future intervals are excluded.                                                                   | App heuristic, not a delivery deadline                  | [Coverage](../src/domain/coverage.ts), [coverage tests](../src/domain/coverage.test.ts)                        |
+| Supported windows    | Recognised session types from 29 Nov 2024, aligned positive windows of at most 24 elapsed hours within one London calendar date; custom ranges include at most 366 dates.                                      | App support limit                                       | [Calculation](../src/domain/calculate.ts), [date ranges](../src/domain/dateRange.ts)                           |
 | Home Mini            | Fill only absent import intervals, matching MPAN and serial. Use completed, aligned telemetry within the conservative 29-day window and convert Wh to kWh. Preserve existing standard rows even if invalid.    | App fallback policy                                     | [Home Mini](../src/api/homeMini.ts), [Home Mini tests](../src/api/homeMini.test.ts)                            |
 | Provisional results  | Mini inputs in either session usage or baseline make the estimate provisional and suppress missed-reward alerts. Standard data replaces fallback inputs on refresh.                                            | App policy                                              | [Calculation tests](../src/domain/calculate.test.ts), [outcome tests](../src/domain/outcome.test.ts)           |
 | Dependency failure   | Holiday, linked-export, and event-history failures block dependent baseline calculations; import-only Happy Hours remain usable. Informational warnings never change eligibility.                              | App policy                                              | [Calculation tests](../src/domain/calculate.test.ts), `explains the unavailable` and `informational warnings`  |
@@ -41,8 +40,7 @@ and update an independently worked example before changing the model.
 ## Independently worked examples
 
 These inputs and expected outputs are small enough to inspect without running the implementation.
-The named tests contain the regression scenarios; preserve their independent expectations when
-migrating arithmetic to Decimal.
+The named tests cover these scenarios and retain independently calculated expectations.
 
 | Example               | Inputs and reasoning                                                                                                                                 | Expected result                                                                                                                                                        | Regression evidence                                                                                                               |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -56,20 +54,20 @@ migrating arithmetic to Decimal.
 ## Maintaining useful evidence
 
 For API changes, keep a small set of representative, minimal, anonymous response fixtures with
-the contract shape and expected validation behavior. Never preserve credentials, account IDs,
+the contract shape and expected validation behaviour. Never preserve credentials, account IDs,
 addresses, names, or meter identifiers from real accounts. Include malformed and optional-data
 cases where they affect the contract; reject unexpected network access in tests.
 
 For methodology changes, exercise the path from validated dataset inputs through calculation and
 reward outputs. Derive expected values independently; do not call the calculator to generate its
-own expected answers. Extend focused examples for the behavior changing rather than growing
+own expected answers. Extend focused examples for the behaviour changing rather than growing
 combinatorial snapshots. Neither fixture agreement nor coverage thresholds prove supplier parity.
 
 ## Numerical precision
 
 [ADR-004](ADR.md) is implemented using a single configured `decimal.js-light` constructor
 ([decimal.ts](../src/domain/decimal.ts)). Arithmetic uses 40 significant digits. The library
-truncates arithmetic, including nonterminating division, at that precision; it does not provide
+truncates arithmetic, including non-terminating division, at that precision; it does not provide
 unlimited exact rational arithmetic. For example, 1/3 is 40 threes after the decimal point.
 Reference means divide by four or ten, Mini conversion by 1,000, and points conversion by eight;
 these terminate exactly when the result fits 40 significant digits. Inputs requiring more precision
@@ -78,8 +76,8 @@ can still lose low-order digits during calculation. This is a numerical policy, 
 API boundaries validate finite numbers and decimal strings with Zod, retaining supplied strings;
 JSON numeric tokens have already been parsed by the browser, so precision lost upstream cannot
 be recovered. Numeric strings outside the finite Number range or Decimal exponent range are
-rejected. Mini Wh conversion serializes exact kWh as a decimal string in the dataset. Datasets
-remain plain serializable inputs suitable for the existing in-memory cache and demo cloning;
+rejected. Mini Wh conversion serialises exact kWh as a decimal string in the dataset. Datasets
+remain plain serialisable inputs suitable for the existing in-memory cache and demo cloning;
 calculated energy, references and reward values remain Decimal through comparison and rendering.
 Counts, indexes and DOM geometry convert at their presentation or library boundaries.
 
@@ -114,5 +112,5 @@ provenance, reward rules and interaction do not change:
 [validated Mini tests](../src/api/numericSchema.test.ts),
 [default App/API tests](../src/api/client.test.ts) and
 [production browser tests](../tests/browser/decimal.spec.ts) cover these boundaries alongside the
-existing independently worked session examples. Invalid/nonfinite energy can no longer inhabit
-a calculated Decimal value; boundary validation tests cover those inputs instead.
+existing independently worked session examples. Invalid or non-finite energy can't enter a
+calculated Decimal value; boundary validation tests cover those inputs instead.

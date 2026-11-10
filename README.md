@@ -3,13 +3,14 @@
 Compare estimates from your smart meter readings with Octopus Energy's results for Power down,
 Power up, and Happy Hours.
 
-This project is built entirely using AI as an experiment to understand the limits of frontier models and learn how we can work with them more effectively.
+I built this project entirely using AI to explore the limits of frontier models and how we can work with them more effectively.
 
-Not affiliated with or endorsed by Octopus Energy.
+It's not affiliated with or endorsed by Octopus Energy.
 
 [Open the app](https://saving-session-explorer.streefland.co.uk) and choose **Try demo**, or connect
-with your Octopus API key and account number. Independent estimates require a smart meter sharing
-half-hourly electricity readings. Credentials are saved in your browser; **Forget account** removes them.
+with your Octopus API key and account number. You'll need a smart meter sharing half-hourly
+electricity readings for independent estimates. Your credentials are saved in your browser;
+**Forget account** removes them.
 
 ## Run locally
 
