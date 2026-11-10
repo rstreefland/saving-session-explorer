@@ -42,7 +42,7 @@ all contributors and repository code, including tests and tooling unless an exce
   supplied; keep Decimal values through calculations and comparisons, converting only at explicit
   display/serialisation or library boundaries. Centralise precision and rounding configuration,
   document it in the methodology, and test boundary cases. Decimal division still needs a deliberate
-  precision policy. See ADR-004 for migration status.
+  precision policy. See ADR-003 for migration status.
 - **No type casts/assertions outside test code.** This includes `as T`, double assertions,
   angle-bracket assertions, and `as const`. Use inference, annotations, discriminated unions,
   narrowing, or `satisfies`. Don't bypass this rule with `any`, non-null assertions, or TypeScript

@@ -142,7 +142,7 @@ is absolute` in [calculate.test.ts](../src/domain/calculate.test.ts).
 ## Precision and rounding
 
 The app uses one configured `decimal.js-light` constructor for numeric arithmetic, as recorded
-in [ADR-004](ADR.md) and [decimal.ts](../src/domain/decimal.ts). It keeps Decimal values through
+in [ADR-003](ADR.md) and [decimal.ts](../src/domain/decimal.ts). It keeps Decimal values through
 calculations and comparisons so binary floating-point artefacts don't affect energy or rewards.
 
 Arithmetic uses 40 significant digits. The library truncates at that precision, including for
