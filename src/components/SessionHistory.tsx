@@ -177,12 +177,14 @@ export function SessionHistory({
   onTypeChange,
   summary,
   happyHourTokens,
+  happyHourTokensLoading = false,
 }: {
   results: Calculation[];
   type: SessionType;
   onTypeChange: (type: SessionType) => void;
   summary?: ReactNode;
   happyHourTokens?: number | null;
+  happyHourTokensLoading?: boolean;
 }) {
   const id = useId(),
     [expanded, setExpanded] = useState<Set<number>>(() => new Set());
@@ -204,7 +206,9 @@ export function SessionHistory({
   const tokenUnit = happyHourTokens === 1 ? 'token' : 'tokens';
   const tokenDescription =
     tokenCount === null
-      ? 'Happy Hours token balance unavailable. Refresh results to try again.'
+      ? happyHourTokensLoading
+        ? 'Loading Happy Hours token balance.'
+        : 'Happy Hours token balance unavailable. Refresh results to try again.'
       : `${tokenCount} Happy Hours ${tokenUnit} available. Account balance, independent of the selected dates.`;
 
   function changeTab(index: number) {

@@ -785,9 +785,11 @@ it.each([0, 1, 1234])(
     render(createElement(App));
 
     const tab = await screen.findByRole('tab', { name: 'Happy Hours' });
-    expect(
-      within(tab).getByText(tokenBalance === 1234 ? '1,234' : String(tokenBalance)),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        within(tab).getByText(tokenBalance === 1234 ? '1,234' : String(tokenBalance)),
+      ).toBeInTheDocument(),
+    );
     expect(tab).toHaveAccessibleDescription(
       `${tokenBalance === 1234 ? '1,234' : String(tokenBalance)} Happy Hours ${tokenBalance === 1 ? 'token' : 'tokens'} available. Account balance, independent of the selected dates.`,
     );
@@ -807,26 +809,43 @@ it('keeps session results usable when loading tokens fails', async () => {
   localStorage.setItem('session-lens.account-number', 'A-123');
   render(createElement(App));
 
-  expect(await screen.findByRole('tab', { name: 'Happy Hours' })).toHaveAccessibleDescription(
-    'Happy Hours token balance unavailable. Refresh results to try again.',
+  const tab = await screen.findByRole('tab', { name: 'Happy Hours' });
+  await waitFor(() =>
+    expect(tab).toHaveAccessibleDescription(
+      'Happy Hours token balance unavailable. Refresh results to try again.',
+    ),
   );
   expect(screen.getByRole('table', { name: 'Power down session history' })).toBeInTheDocument();
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(screen.getByRole('tab', { name: 'Happy Hours' })).toHaveTextContent('••• tokens');
 });
 
-it('propagates cancellation while the optional token balance is loading', async () => {
-  setup();
-  const controller = new AbortController();
+it('renders session results while the Happy Hours token request is stalled', async () => {
+  setup({ joinedEvents: demoDataset().sessions });
   const ordinaryFetch = vi.mocked(fetch).getMockImplementation();
   if (!ordinaryFetch) throw new Error('Expected fetch fixture');
+  let finish: (response: Response) => void = () => {
+    throw new Error('Expected token request');
+  };
   vi.mocked(fetch).mockImplementation(async (input, init) => {
-    if (String(init?.body).includes('HappyHourTokens')) {
-      controller.abort();
-      throw new DOMException('Cancelled', 'AbortError');
-    }
+    if (String(init?.body).includes('HappyHourTokens'))
+      return new Promise<Response>((resolve) => {
+        finish = resolve;
+      });
     return ordinaryFetch(input, init);
   });
+  localStorage.setItem('session-lens.api-key', 'test-key');
+  localStorage.setItem('session-lens.account-number', 'A-123');
+  render(createElement(App));
 
-  await expect(loadDataset(options, controller.signal)).rejects.toThrow('Cancelled');
+  expect(
+    await screen.findByRole('table', { name: 'Power down session history' }),
+  ).toBeInTheDocument();
+  const tab = screen.getByRole('tab', { name: 'Happy Hours' });
+  expect(tab).toHaveAccessibleDescription('Loading Happy Hours token balance.');
+  expect(tab).toHaveTextContent('••• tokens');
+  expect(screen.getByRole('button', { name: 'Refresh results' })).toBeEnabled();
+
+  finish(Response.json({ data: { savingSessions: { account: { tokenBalance: 4 } } } }));
+  await waitFor(() => expect(tab).toHaveTextContent('4 tokens'));
 });

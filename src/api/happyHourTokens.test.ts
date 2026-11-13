@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { fetchHappyHourTokens } from './happyHourTokens';
-import { GRAPHQL } from './transport';
+import { AUTH, GRAPHQL } from './transport';
 
 it.each([0, 1, 1234])(
   'validates a token balance of %s and passes authentication and cancellation',
@@ -10,16 +10,20 @@ it.each([0, 1, 1234])(
       'fetch',
       vi
         .fn()
-        .mockResolvedValue(
+        .mockResolvedValueOnce(
+          Response.json({ data: { obtainKrakenToken: { token: 'test-token' } } }),
+        )
+        .mockResolvedValueOnce(
           Response.json({ data: { savingSessions: { account: { tokenBalance } } } }),
         ),
     );
 
-    expect(await fetchHappyHourTokens({ account: 'A-TEST', token: 'test-token', signal })).toBe(
+    expect(await fetchHappyHourTokens({ account: 'A-TEST', key: 'test-key', signal })).toBe(
       tokenBalance,
     );
-    expect(fetch).toHaveBeenCalledOnce();
-    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(AUTH);
+    const [url, init] = vi.mocked(fetch).mock.calls[1];
     expect(url).toBe(GRAPHQL);
     expect(init?.signal).toBe(signal);
     expect(init?.headers).toEqual({
@@ -39,7 +43,10 @@ it.each([null, undefined, -1, 1.5, '3', true, 9007199254740992])(
       'fetch',
       vi
         .fn()
-        .mockResolvedValue(
+        .mockResolvedValueOnce(
+          Response.json({ data: { obtainKrakenToken: { token: 'test-token' } } }),
+        )
+        .mockResolvedValueOnce(
           Response.json({ data: { savingSessions: { account: { tokenBalance } } } }),
         ),
     );
@@ -47,7 +54,7 @@ it.each([null, undefined, -1, 1.5, '3', true, 9007199254740992])(
     await expect(
       fetchHappyHourTokens({
         account: 'A-TEST',
-        token: 'test-token',
+        key: 'test-key',
         signal: new AbortController().signal,
       }),
     ).rejects.toThrow();

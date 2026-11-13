@@ -1,17 +1,28 @@
 import { z } from 'zod';
-import { GRAPHQL, graphql } from './transport';
+import { AUTH, GRAPHQL, graphql } from './transport';
 
 z.config({ jitless: true });
 
 export async function fetchHappyHourTokens({
   account,
-  token,
+  key,
   signal,
 }: {
   account: string;
-  token: string;
+  key: string;
   signal: AbortSignal;
 }): Promise<number> {
+  const auth = z
+    .object({ obtainKrakenToken: z.object({ token: z.string() }) })
+    .parse(
+      await graphql(
+        AUTH,
+        'mutation Token($key: String!) { obtainKrakenToken(input: { APIKey: $key }) { token } }',
+        { key },
+        signal,
+      ),
+    );
+
   const data = z
     .object({
       savingSessions: z.object({
@@ -32,7 +43,7 @@ export async function fetchHappyHourTokens({
         `,
         { account },
         signal,
-        token,
+        auth.obtainKrakenToken.token,
       ),
     );
 

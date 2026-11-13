@@ -12,7 +12,6 @@ import {
 import { numericSchema } from './numericSchema';
 import { z } from 'zod';
 import { fillHomeMiniGaps } from './homeMini';
-import { fetchHappyHourTokens } from './happyHourTokens';
 import { inferHolidayRegion } from '../domain/region';
 import type { BaselineIssue, Dataset, Reading } from '../domain/types';
 
@@ -256,7 +255,7 @@ export async function loadDataset(options: LoadOptions, signal: AbortSignal): Pr
       ),
     );
 
-  const [rawSessions, details, rawHolidays, profile, happyHourTokens] = await Promise.all([
+  const [rawSessions, details, rawHolidays, profile] = await Promise.all([
     graphql(GRAPHQL, SESSION_QUERY, { account }, signal, auth.obtainKrakenToken.token),
     fetchAccount(key, account, signal),
     optionalDependency(
@@ -267,10 +266,6 @@ export async function loadDataset(options: LoadOptions, signal: AbortSignal): Pr
       signal,
     ),
     fetchAccountProfile(account, auth.obtainKrakenToken.token, signal),
-    optionalDependency(
-      () => fetchHappyHourTokens({ account, token: auth.obtainKrakenToken.token, signal }),
-      signal,
-    ),
   ]);
 
   const data = z
@@ -400,7 +395,6 @@ export async function loadDataset(options: LoadOptions, signal: AbortSignal): Pr
   );
 
   return {
-    happyHourTokens: happyHourTokens.available ? happyHourTokens.value : null,
     sessions: data.account.joinedEvents
       .filter(
         (s) =>

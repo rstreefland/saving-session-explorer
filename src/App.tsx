@@ -178,7 +178,8 @@ function SessionLens({ load }: AppProps) {
               )}
               <SessionHistory
                 results={visible}
-                happyHourTokens={data.happyHourTokens}
+                happyHourTokens={demo ? 3 : remote.happyHourTokens}
+                happyHourTokensLoading={!demo && remote.happyHourTokensLoading}
                 type={type}
                 onTypeChange={setType}
                 summary={<SessionSummary results={visible} type={type} />}

@@ -102,7 +102,6 @@ export function demoDataset(allTypes = false): Dataset {
   }
 
   const dataset: Dataset = {
-    happyHourTokens: 3,
     sessions,
     imports,
     exports: null,
