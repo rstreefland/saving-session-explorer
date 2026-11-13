@@ -1,3 +1,4 @@
+import { decimal } from '../domain/decimal';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
@@ -73,18 +74,22 @@ it('keeps a long explanation above its trigger when there is no space below', as
   ) {
     return this.getAttribute('role') === 'tooltip'
       ? new DOMRect(0, 0, 320, 160)
-      : new DOMRect(40, window.innerHeight - 50, 100, 30);
+      : new DOMRect(40, decimal(window.innerHeight).minus(50).toNumber(), 100, 30);
   });
   view();
   await userEvent.click(screen.getByRole('button'));
 
   const tooltip = screen.getByRole('tooltip');
 
-  expect(Number.parseFloat(tooltip.style.top) + 160).toBeLessThan(window.innerHeight - 50);
+  expect(decimal(Number.parseFloat(tooltip.style.top)).plus(160).toNumber()).toBeLessThan(
+    decimal(window.innerHeight).minus(50).toNumber(),
+  );
   expect(tooltip).toHaveTextContent(text);
 
   // Reopening while already focused must not move it back below the viewport.
   await userEvent.click(screen.getByRole('button'));
 
-  expect(Number.parseFloat(tooltip.style.top) + 160).toBeLessThan(window.innerHeight - 50);
+  expect(decimal(Number.parseFloat(tooltip.style.top)).plus(160).toNumber()).toBeLessThan(
+    decimal(window.innerHeight).minus(50).toNumber(),
+  );
 });

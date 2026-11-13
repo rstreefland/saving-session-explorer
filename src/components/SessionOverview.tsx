@@ -15,7 +15,7 @@ function OverviewValue({
 }) {
   let value: ReactNode = PLACEHOLDER;
   if (total.value !== null) {
-    if (unit === 'points') value = <OctopointsValue value={total.value.toNumber()} />;
+    if (unit === 'points') value = <OctopointsValue value={total.value} />;
     else if (unit === 'energy') value = <strong>{total.value.toFixed(2)} kWh</strong>;
     else if (unit === 'pence') value = <strong>{total.value.toString()}p</strong>;
     else value = <strong>{total.value.toString()} sessions</strong>;
@@ -116,7 +116,7 @@ export function SessionOverview({ totals, type }: { totals: SessionTotals; type:
         </div>
         <Tooltip
           label="About these totals"
-          text="Each count shows how many visible sessions contribute. Missing and pending values are excluded, never counted as zero. Columns can cover different sessions. Rewards sum individually rounded session awards; a difference is not proof of incorrect settlement."
+          text="Each count shows how many visible sessions contribute. Unavailable values and pending results are excluded, never counted as zero. Supplied Octopus average credits for sessions with missing readings can still contribute to reward totals. Columns can cover different sessions. Rewards sum individually rounded session awards; a difference is not proof of incorrect settlement."
         />
       </footer>
     </section>

@@ -1,3 +1,5 @@
+import { Temporal, milliseconds } from './time';
+import { decimal } from './decimal';
 import { expect, it } from 'vitest';
 import { sessionOutcome } from './outcome';
 import { calculateAll } from './calculate';
@@ -7,7 +9,11 @@ it('keeps awarded sessions positive regardless of differences in energy estimate
   const result = calculateAll(demoDataset())[1];
 
   for (const difference of [-0.2, -0.018, 0.26]) {
-    const outcome = sessionOutcome({ ...result, difference, state: 'difference' });
+    const outcome = sessionOutcome({
+      ...result,
+      difference: decimal(difference),
+      state: 'difference',
+    });
 
     expect(outcome.label).toBe('Achieved');
     expect(outcome.attention).toBe(false);
@@ -39,7 +45,7 @@ it('flags a possible missed reward only for a qualifying estimate with no final 
   expect(
     sessionOutcome({
       ...result,
-      rewarded: 0,
+      rewarded: decimal(0),
       session: { ...result.session, resultsStatus: 'FAIL', rewardGivenInOctoPoints: 0 },
     }).attention,
   ).toBe(false);
@@ -91,10 +97,16 @@ it.each([
     // Deliberately withhold Octopus's result: the estimate must be independent.
     session.resultsStatus = 'CALCULATING';
 
-    const start = Date.parse(session.startAt);
+    const start = milliseconds(session.startAt);
 
     for (const reading of data.imports) {
-      const offset = (Date.parse(reading.interval_start) - start) / 1_800_000;
+      const offset = decimal(
+        Temporal.Instant.fromEpochMilliseconds(start)
+          .until(Temporal.Instant.from(reading.interval_start))
+          .total('minutes'),
+      )
+        .div(30)
+        .toNumber();
 
       if (offset === 0 || offset === 1) reading.consumption = readings[offset];
     }

@@ -1,8 +1,10 @@
+import type { Decimal, Numeric } from './decimal';
+
 export interface Reading {
   source?: 'home-mini';
   interval_start: string;
   interval_end: string;
-  consumption: number;
+  consumption: Numeric;
 }
 
 export interface Session {
@@ -12,14 +14,14 @@ export interface Session {
   eventType: string;
   resultsStatus: string | null;
   resultsSetAt: string | null;
-  energyDeltaKwh: number | null;
-  baselineConsumptionDeltaKwh: number | null;
-  consumptionDeltaKwh: number | null;
-  rewardGivenInOctoPoints: number | null;
+  energyDeltaKwh: Numeric | null;
+  baselineConsumptionDeltaKwh: Numeric | null;
+  consumptionDeltaKwh: Numeric | null;
+  rewardGivenInOctoPoints: Numeric | null;
   /** Published event rate, matched by eventId, independent of the account reward. */
-  rewardPerKwhInOctoPoints?: number | null;
-  rewardGivenInPence?: number | null;
-  energyUsedInKwh?: number | null;
+  rewardPerKwhInOctoPoints?: Numeric | null;
+  rewardGivenInPence?: Numeric | null;
+  energyUsedInKwh?: Numeric | null;
 }
 
 export type BaselineIssue = 'holidays' | 'exports' | 'event-history';
@@ -46,9 +48,9 @@ export interface Dataset {
 export interface Slot {
   actualProvisional?: boolean;
   start: string;
-  baseline: number | null;
-  actual: number | null;
-  references: { date: string; value: number | null }[];
+  baseline: Decimal | null;
+  actual: Decimal | null;
+  references: { date: string; value: Decimal | null }[];
 }
 
 export interface Calculation {
@@ -58,11 +60,11 @@ export interface Calculation {
   slots: Slot[];
   days: string[];
   issues: string[];
-  baseline: number | null;
-  actual: number | null;
-  rewarded: number | null;
-  netSaved: number | null;
-  difference: number | null;
+  baseline: Decimal | null;
+  actual: Decimal | null;
+  rewarded: Decimal | null;
+  netSaved: Decimal | null;
+  difference: Decimal | null;
   unavailableReason:
     | 'session-readings'
     | 'baseline-readings'

@@ -1,10 +1,11 @@
+import { decimal } from './decimal';
 import type { Session } from './types';
 
 export const SESSION_TYPES = [
   { value: 'TURN_DOWN', label: 'Power down' },
   { value: 'TURN_UP', label: 'Power up' },
   { value: 'WEEKEND_HAPPY_HOUR', label: 'Happy Hours' },
-] as const;
+] satisfies { value: 'TURN_DOWN' | 'TURN_UP' | 'WEEKEND_HAPPY_HOUR'; label: string }[];
 
 export type SessionType = (typeof SESSION_TYPES)[number]['value'];
 
@@ -16,9 +17,10 @@ export const isPublished = (session: Session) =>
 export function reportedShifted(session: Session) {
   if (!isPublished(session)) return null;
 
-  return isHappyHour(session)
+  const value = isHappyHour(session)
     ? (session.energyUsedInKwh ?? session.energyDeltaKwh)
     : (session.energyDeltaKwh ?? (session.resultsStatus === 'FAIL' ? 0 : null));
+  return value === null ? null : decimal(value);
 }
 
 export const MISSING_SESSION_EXPLANATION =

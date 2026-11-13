@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest';
+import { decimal } from './decimal';
 import { sessionTotals } from './totals';
 import type { Calculation } from './types';
 
@@ -19,10 +20,10 @@ const base: Calculation = {
   slots: [],
   days: [],
   issues: [],
-  baseline: 1,
-  actual: 0.5,
-  rewarded: 0.5,
-  netSaved: 0.5,
+  baseline: decimal(1),
+  actual: decimal(0.5),
+  rewarded: decimal(0.5),
+  netSaved: decimal(0.5),
   difference: null,
   unavailableReason: null,
   state: 'pending',
@@ -32,7 +33,7 @@ it('sums exact decimal energy independently, excludes pending placeholders, and 
   const totals = sessionTotals([
     {
       ...base,
-      rewarded: 0.1,
+      rewarded: decimal(0.1),
       provisional: true,
       session: {
         ...base.session,
@@ -43,7 +44,7 @@ it('sums exact decimal energy independently, excludes pending placeholders, and 
     },
     {
       ...base,
-      rewarded: 0.2,
+      rewarded: decimal(0.2),
       session: {
         ...base.session,
         resultsStatus: 'CALCULATING',
@@ -65,7 +66,7 @@ it('sums exact decimal energy independently, excludes pending placeholders, and 
 it('keeps unavailable totals unknown and adds rounded session rewards rather than repricing', () => {
   const result = {
     ...base,
-    rewarded: 0.21,
+    rewarded: decimal(0.21),
     session: { ...base.session, rewardPerKwhInOctoPoints: 80 },
   };
   expect(sessionTotals([result, result]).reward.value?.toString()).toBe('48');
@@ -76,7 +77,7 @@ it('keeps unavailable totals unknown and adds rounded session rewards rather tha
 it('keeps Happy Hours cash credit separate and does not invent Power up reward estimates', () => {
   const happy = {
     ...base,
-    rewarded: 2,
+    rewarded: decimal(2),
     session: {
       ...base.session,
       eventType: 'WEEKEND_HAPPY_HOUR',
@@ -102,7 +103,11 @@ it('counts achievement independently from publication and suppresses provisional
     { ...base, provisional: true, session: failedSession },
     { ...base, session: failedSession },
     { ...base, rewarded: null, netSaved: null, state: 'incomplete' },
-    { ...base, netSaved: 0, session: { ...base.session, resultsStatus: 'PARTIAL_SUCCESS' } },
+    {
+      ...base,
+      netSaved: decimal(0),
+      session: { ...base.session, resultsStatus: 'PARTIAL_SUCCESS' },
+    },
   ]);
   expect(totals.overview.sessions).toBe('5');
   expect(totals.overview.calculatedAchievement.value?.toString()).toBe('4');

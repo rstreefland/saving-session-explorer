@@ -1,17 +1,26 @@
+import { AUTH, GRAPHQL, graphql, json } from './transport';
+export { AUTH, GRAPHQL, graphql } from './transport';
+import { decimal } from '../domain/decimal';
+import {
+  alignedHalfHour,
+  elapsedHalfHour,
+  Temporal,
+  midnight,
+  local,
+  milliseconds,
+} from '../domain/time';
+import { numericSchema } from './numericSchema';
 import { z } from 'zod';
 import { fillHomeMiniGaps } from './homeMini';
 import { inferHolidayRegion } from '../domain/region';
-import { Temporal, midnight, local, milliseconds } from '../domain/time';
 import type { BaselineIssue, Dataset, Reading } from '../domain/types';
 
 // Avoid runtime code generation, including Zod's eval probe, under the production CSP.
 z.config({ jitless: true });
 
-export const GRAPHQL = 'https://api.backend.octopus.energy/v1/graphql/';
-export const AUTH = 'https://api.oegb-kraken.energy/v1/graphql/';
 const REST = 'https://api.oegb-kraken.energy/v1/';
 
-const nullable = z.number().finite().nullable();
+const nullable = numericSchema.nullable();
 const iso = z.string().datetime({ offset: true });
 
 const sessionSchema = z.object({
@@ -32,7 +41,7 @@ const sessionSchema = z.object({
 const readingSchema = z.object({
   interval_start: iso,
   interval_end: iso,
-  consumption: z.number().finite(),
+  consumption: numericSchema,
 });
 
 const meterPoint = z.object({
@@ -62,61 +71,6 @@ export const SESSION_QUERY = `query Sessions($account: String!) {
     }
   }
 }`;
-
-async function json(url: string, init: RequestInit, signal: AbortSignal): Promise<unknown> {
-  let response: Response;
-
-  try {
-    response = await fetch(url, { ...init, signal });
-  } catch (e) {
-    if (signal.aborted) throw e;
-
-    throw new Error(
-      'Could not reach Octopus or GOV.UK. Check your connection; browser CORS restrictions may also block access.',
-    );
-  }
-
-  if (!response.ok)
-    throw new Error(
-      response.status === 401 || response.status === 403
-        ? 'Octopus rejected these credentials. Check your API key and account number.'
-        : response.status === 429
-          ? 'Octopus rate limit reached. Please wait before refreshing.'
-          : `Service returned HTTP ${response.status}. Please try again.`,
-    );
-
-  return response.json();
-}
-
-export async function graphql(
-  url: string,
-  query: string,
-  variables: Record<string, unknown>,
-  signal: AbortSignal,
-  token?: string,
-) {
-  const raw = await json(
-    url,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: token } : {}) },
-      body: JSON.stringify({ query, variables }),
-    },
-    signal,
-  );
-
-  const envelope = z
-    .object({ data: z.unknown().optional(), errors: z.array(z.unknown()).optional() })
-    .parse(raw);
-
-  // Never echo upstream error messages: these can contain personal data or credentials.
-  if (envelope.errors?.length || !envelope.data)
-    throw new Error(
-      'Octopus could not complete the query. Check credentials and account access; its API may have changed.',
-    );
-
-  return envelope.data;
-}
 
 export async function fetchAccount(
   key: string,
@@ -200,19 +154,19 @@ export async function selectMeter(
 
       for await (const page of readingPages(key, url, signal, 10)) {
         const valid = page.filter((reading) => {
-          const start = milliseconds(reading.interval_start);
-
           return (
-            reading.consumption >= 0 &&
-            start % 1_800_000 === 0 &&
-            milliseconds(reading.interval_end) - start === 1_800_000
+            decimal(reading.consumption).gte(0) &&
+            alignedHalfHour(reading.interval_start) &&
+            elapsedHalfHour(reading.interval_start, reading.interval_end)
           );
         });
 
         if (valid.length)
           return {
             serial,
-            latest: Math.max(...valid.map((reading) => milliseconds(reading.interval_end))),
+            latest: valid
+              .map((reading) => milliseconds(reading.interval_end))
+              .reduce((latest, time) => (time > latest ? time : latest)),
           };
       }
 
@@ -225,7 +179,8 @@ export async function selectMeter(
   // Sorting serials first makes ties deterministic, independent of API response order.
   const selected = candidates.reduce<(typeof candidates)[number] | null>(
     (best, candidate) =>
-      candidate.latest !== null && (best === null || candidate.latest > best.latest!)
+      candidate.latest !== null &&
+      (best === null || best.latest === null || candidate.latest > best.latest)
         ? candidate
         : best,
     null,
@@ -273,13 +228,16 @@ async function fetchAccountProfile(account: string, token: string, signal: Abort
 }
 
 /** A failed optional dependency must not hide usable import-only Happy Hour results. */
-async function optionalDependency<T>(load: () => Promise<T>, signal: AbortSignal) {
+async function optionalDependency<T>(
+  load: () => Promise<T>,
+  signal: AbortSignal,
+): Promise<{ available: true; value: T } | { available: false }> {
   try {
-    return { available: true as const, value: await load() };
+    return { available: true, value: await load() };
   } catch (error) {
     if (signal.aborted) throw error;
 
-    return { available: false as const };
+    return { available: false };
   }
 }
 
@@ -318,7 +276,15 @@ export async function loadDataset(options: LoadOptions, signal: AbortSignal): Pr
             id: z.number(),
             startAt: iso,
             endAt: iso,
-            rewardPerKwhInOctoPoints: z.number().finite().nonnegative().nullish().catch(null),
+            rewardPerKwhInOctoPoints: numericSchema
+              .pipe(
+                z.union([
+                  z.number().nonnegative(),
+                  z.string().refine((value) => decimal(value).gte(0)),
+                ]),
+              )
+              .nullish()
+              .catch(null),
           }),
         ),
         eventCount: z.number(),

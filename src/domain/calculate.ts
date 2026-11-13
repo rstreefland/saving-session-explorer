@@ -1,9 +1,22 @@
-import { Temporal, local, day, milliseconds, iso, referenceTime } from './time';
+import { decimal, Decimal, positive, total } from './decimal';
+import {
+  Temporal,
+  local,
+  day,
+  milliseconds,
+  iso,
+  referenceTime,
+  alignedHalfHour,
+  elapsedHalfHour,
+} from './time';
 import { BASELINE_ISSUES } from './availability';
 import { isHappyHour, reportedShifted } from './session';
 import type { Calculation, Dataset, Reading, Session } from './types';
 
 export { ZONE, local, day } from './time';
+
+const validConsumption = (value: number | string) =>
+  (typeof value === 'string' || Number.isFinite(value)) && decimal(value).gte(0);
 
 export const TOLERANCE = 0.01;
 
@@ -18,7 +31,11 @@ export function referenceDays(session: Session, excluded: Set<string>, holidays:
   const count = useWeekend ? 4 : 10;
   const days: string[] = [];
 
-  for (let offset = 1; offset <= 60 && days.length < count; offset++) {
+  for (
+    let offset = 1;
+    offset <= 60 && days.length < count;
+    offset = decimal(offset).plus(1).toNumber()
+  ) {
     const date = start.subtract({ days: offset });
     const key = date.toString();
 
@@ -30,18 +47,17 @@ export function referenceDays(session: Session, excluded: Set<string>, holidays:
 
 /** Index UTC intervals; duplicate/conflicting and non-half-hour values are unusable. */
 export function indexReadings(readings: Reading[]) {
-  const result = new Map<number, number | null>();
+  const result = new Map<number, Decimal | null>();
 
   for (const r of readings) {
     const start = milliseconds(r.interval_start);
 
     const valid =
-      Number.isFinite(r.consumption) &&
-      r.consumption >= 0 &&
-      milliseconds(r.interval_end) - start === 1_800_000 &&
-      start % 1_800_000 === 0;
+      validConsumption(r.consumption) &&
+      elapsedHalfHour(r.interval_start, r.interval_end) &&
+      alignedHalfHour(r.interval_start);
 
-    result.set(start, result.has(start) || !valid ? null : r.consumption);
+    result.set(start, result.has(start) || !valid ? null : decimal(r.consumption));
   }
 
   return result;
@@ -50,40 +66,25 @@ export function indexReadings(readings: Reading[]) {
 function isSupportedSession(session: Session): boolean {
   const start = local(session.startAt);
   const end = local(session.endAt);
-  const duration = end.epochMilliseconds - start.epochMilliseconds;
+  const duration = start.until(end, { largestUnit: 'hours' }).total('milliseconds');
 
   return (
     ['TURN_DOWN', 'TURN_UP', 'WEEKEND_HAPPY_HOUR'].includes(session.eventType) &&
     day(session.startAt) === end.subtract({ milliseconds: 1 }).toPlainDate().toString() &&
-    start.epochMilliseconds % 1_800_000 === 0 &&
-    end.epochMilliseconds % 1_800_000 === 0 &&
+    alignedHalfHour(session.startAt) &&
+    alignedHalfHour(session.endAt) &&
     duration > 0 &&
     duration <= 86_400_000 &&
     start.toPlainDate().toString() >= '2024-11-29'
   );
 }
 
-/** Null means at least one required reading is missing; zero is a valid total. */
-function total(values: (number | null)[]): number | null {
-  if (values.length === 0) return null;
-
-  let sum = 0;
-
-  for (const value of values) {
-    if (value === null) return null;
-
-    sum += value;
-  }
-
-  return sum;
-}
-
 function comparisonState(
   session: Session,
   reason: Calculation['unavailableReason'],
-  difference: number | null,
-  baseline: number | null,
-  actual: number | null,
+  difference: Decimal | null,
+  baseline: Decimal | null,
+  actual: Decimal | null,
 ): Calculation['state'] {
   if (reason === 'unsupported') return 'unsupported';
   if (reason !== null) return 'incomplete';
@@ -93,13 +94,13 @@ function comparisonState(
 
   if (!isHappyHour(session)) {
     if (baseline !== null && session.baselineConsumptionDeltaKwh !== null)
-      deltas.push(baseline - session.baselineConsumptionDeltaKwh);
+      deltas.push(baseline.minus(session.baselineConsumptionDeltaKwh));
 
     if (actual !== null && session.consumptionDeltaKwh !== null)
-      deltas.push(actual - session.consumptionDeltaKwh);
+      deltas.push(actual.minus(session.consumptionDeltaKwh));
   }
 
-  return deltas.some((delta) => Math.abs(delta) > TOLERANCE + 1e-9) ? 'difference' : 'match';
+  return deltas.some((delta) => delta.abs().gt(TOLERANCE)) ? 'difference' : 'match';
 }
 
 export function calculateAll(data: Dataset): Calculation[] {
@@ -109,11 +110,11 @@ export function calculateAll(data: Dataset): Calculation[] {
   const imports = indexReadings(data.imports);
   const exports = data.exports === null ? null : indexReadings(data.exports);
 
-  const read = (time: number): number | null => {
+  const read = (time: number): Decimal | null => {
     const i = imports.get(time);
-    const e = exports === null ? 0 : exports.get(time);
+    const e = exports === null ? decimal(0) : exports.get(time);
 
-    return i == null || e == null ? null : i - e;
+    return i == null || e == null ? null : i.minus(e);
   };
 
   const excluded = new Set(data.eventDays),
@@ -168,7 +169,7 @@ export function calculateAll(data: Dataset): Calculation[] {
             ? (imports.get(time.epochMilliseconds) ?? null)
             : read(time.epochMilliseconds),
           baseline: complete
-            ? references.reduce((s, r) => s + r.value!, 0) / references.length
+            ? (total(references.map((r) => r.value))?.div(references.length) ?? null)
             : null,
           references,
         });
@@ -180,14 +181,14 @@ export function calculateAll(data: Dataset): Calculation[] {
     const missingActual = slots.filter((s) => s.actual === null).length;
 
     const missingReference = slots.reduce(
-      (sum, s) => sum + s.references.filter((r) => r.value === null).length,
-      0,
+      (sum, s) => sum.plus(s.references.filter((r) => r.value === null).length),
+      decimal(0),
     );
 
     if (missingActual)
       issues.push(`${missingActual} session half-hour reading(s) missing or invalid.`);
 
-    if (missingReference)
+    if (!missingReference.isZero())
       issues.push(
         `${missingReference} baseline half-hour reading(s) missing, invalid or ambiguous at a clock change.`,
       );
@@ -197,14 +198,14 @@ export function calculateAll(data: Dataset): Calculation[] {
     let unavailableReason: Calculation['unavailableReason'] = null;
 
     if (unsupported) unavailableReason = 'unsupported';
-    else if (blockers.length) unavailableReason = blockers[0];
+    else if (blockers.length) unavailableReason = blockers[0] ?? null;
     else if (missingActual > 0) unavailableReason = 'session-readings';
     else if (ambiguousClockTime) unavailableReason = 'clock-change';
-    else if (missingReference > 0) unavailableReason = 'baseline-readings';
+    else if (missingReference.gt(0)) unavailableReason = 'baseline-readings';
     else if (!happyHour && days.length < referenceCount) unavailableReason = 'baseline-history';
 
     const complete = unavailableReason === null;
-    let rewarded: number | null = null;
+    let rewarded: Decimal | null = null;
 
     if (complete) {
       if (happyHour) rewarded = actual;
@@ -212,14 +213,17 @@ export function calculateAll(data: Dataset): Calculation[] {
         const direction = session.eventType === 'TURN_UP' ? -1 : 1;
 
         rewarded = slots.reduce(
-          (sum, slot) => sum + Math.max(0, (slot.baseline! - slot.actual!) * direction),
-          0,
+          (sum, slot) =>
+            slot.baseline === null || slot.actual === null
+              ? sum
+              : sum.plus(positive(slot.baseline.minus(slot.actual).times(direction))),
+          decimal(0),
         );
       }
     }
 
     const reported = reportedShifted(session);
-    const difference = rewarded !== null && reported !== null ? rewarded - reported : null;
+    const difference = rewarded !== null && reported !== null ? rewarded.minus(reported) : null;
 
     return {
       session,
@@ -230,7 +234,10 @@ export function calculateAll(data: Dataset): Calculation[] {
       baseline,
       actual,
       rewarded,
-      netSaved: complete && !happyHour ? baseline! - actual! : null,
+      netSaved:
+        complete && !happyHour && baseline !== null && actual !== null
+          ? baseline.minus(actual)
+          : null,
       difference,
       unavailableReason,
       state: comparisonState(session, unavailableReason, difference, baseline, actual),

@@ -1,3 +1,4 @@
+import { milliseconds } from './time';
 import { expect, it } from 'vitest';
 import { readingCoverage } from './coverage';
 import { demoDataset } from './demo';
@@ -5,11 +6,15 @@ import { demoDataset } from './demo';
 it('counts all missing slots and handles both DST transitions', () => {
   const data = { ...demoDataset(), imports: [] };
 
-  expect(readingCoverage(data, '2026-03-29', '2026-03-29', Infinity)).toMatchObject({
+  expect(
+    readingCoverage(data, '2026-03-29', '2026-03-29', milliseconds('2100-01-01T00:00:00Z')),
+  ).toMatchObject({
     expected: 46,
     missing: 46,
   });
-  expect(readingCoverage(data, '2026-10-25', '2026-10-25', Infinity)).toMatchObject({
+  expect(
+    readingCoverage(data, '2026-10-25', '2026-10-25', milliseconds('2100-01-01T00:00:00Z')),
+  ).toMatchObject({
     expected: 50,
     missing: 50,
   });
@@ -28,14 +33,14 @@ it('does not require future slots and distinguishes zero readings from missing e
   };
 
   expect(
-    readingCoverage(data, '2026-01-01', '2026-01-01', Date.parse('2026-01-01T00:40:00Z')),
+    readingCoverage(data, '2026-01-01', '2026-01-01', milliseconds('2026-01-01T00:40:00Z')),
   ).toMatchObject({ expected: 1, missing: 0 });
   expect(
     readingCoverage(
       { ...data, exports: [] },
       '2026-01-01',
       '2026-01-01',
-      Date.parse('2026-01-01T00:40:00Z'),
+      milliseconds('2026-01-01T00:40:00Z'),
     ).missing,
   ).toBe(1);
 });
@@ -62,7 +67,7 @@ it('merges contiguous gaps across dates, invalid readings and Mini availability 
     data,
     '2026-11-03',
     '2026-11-05',
-    Date.parse('2026-11-05T01:10:00Z'),
+    milliseconds('2026-11-05T01:10:00Z'),
   );
   expect(coverage).toMatchObject({
     expected: 98,
@@ -85,7 +90,7 @@ it('counts each half-hour once when both meters are absent and retains DST inter
     { ...demoDataset(), imports: [], exports: [] },
     '2026-10-25',
     '2026-10-25',
-    Date.parse('2026-10-26T00:00:00Z'),
+    milliseconds('2026-10-26T00:00:00Z'),
   );
   expect(coverage).toMatchObject({ expected: 50, missing: 50 });
   expect(coverage.gaps).toHaveLength(1);
@@ -102,7 +107,7 @@ it('splits a contiguous gap only at the seven-day status boundary', () => {
     { ...demoDataset(), imports: [], exports: null },
     '2026-11-03',
     '2026-11-03',
-    Date.parse('2026-11-10T12:00:00Z'),
+    milliseconds('2026-11-10T12:00:00Z'),
   );
   expect(coverage.gaps).toEqual([
     {

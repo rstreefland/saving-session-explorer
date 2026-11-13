@@ -1,5 +1,6 @@
+import { decimal } from '../domain/decimal';
 import { useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query';
 import { loadDataset, type LoadOptions } from '../api/client';
 
 interface Request {
@@ -34,7 +35,7 @@ export function useSessionData(
   const query = useQuery({
     queryKey: queryKey(request),
     enabled: request !== null,
-    queryFn: ({ signal }) => load(request!.options, signal),
+    queryFn: request ? ({ signal }) => load(request.options, signal) : skipToken,
   });
 
   function reset(forget = false) {
@@ -48,14 +49,19 @@ export function useSessionData(
   }
 
   function connect(options: LoadOptions) {
-    const previous = identity.current;
+    let current = identity.current;
 
-    if (!previous || previous.key !== options.key || previous.account !== options.account) {
+    if (!current || current.key !== options.key || current.account !== options.account) {
       client.clear();
-      identity.current = { key: options.key, account: options.account, scope: ++nextScope.current };
+      current = {
+        key: options.key,
+        account: options.account,
+        scope: (nextScope.current = decimal(nextScope.current).plus(1).toNumber()),
+      };
     }
 
-    const next = { options, scope: identity.current!.scope };
+    identity.current = current;
+    const next = { options, scope: current.scope };
 
     if (JSON.stringify(queryKey(next)) === JSON.stringify(queryKey(request))) {
       void query.refetch();

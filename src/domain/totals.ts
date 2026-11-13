@@ -1,4 +1,4 @@
-import { Decimal } from './decimal';
+import { Decimal, type Numeric } from './decimal';
 import { estimateOctopoints } from './points';
 import { sessionOutcome } from './outcome';
 import { isHappyHour, isPublished, reportedShifted } from './session';
@@ -11,7 +11,7 @@ export interface ColumnTotal {
   provisional: boolean;
 }
 
-function sum(values: { value: number | null; provisional?: boolean }[]): ColumnTotal {
+function sum(values: { value: Decimal | Numeric | null; provisional?: boolean }[]): ColumnTotal {
   let value = new Decimal(0);
   let available = new Decimal(0);
   let provisional = false;
@@ -85,7 +85,7 @@ export function sessionTotals(results: Calculation[]) {
 export type SessionTotals = ReturnType<typeof sessionTotals>;
 
 /** Keep footer eligibility identical to the reward shown in each history row. */
-export function officialRewardValue(session: Session): number | null {
+export function officialRewardValue(session: Session): Numeric | null {
   if (!session.resultsStatus || ['CALCULATING', 'UPCOMING'].includes(session.resultsStatus))
     return null;
   return isHappyHour(session)

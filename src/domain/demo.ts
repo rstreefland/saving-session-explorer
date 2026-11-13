@@ -1,4 +1,5 @@
-import { Temporal, todayInLondon, midnight, iso, milliseconds, day } from './time';
+import { decimal } from './decimal';
+import { addMilliseconds, Temporal, todayInLondon, midnight, iso, milliseconds, day } from './time';
 import type { Dataset, Session, Reading } from './types';
 
 const fixtures = new Map<string, Dataset>();
@@ -23,7 +24,7 @@ export function demoDataset(allTypes = false): Dataset {
     const start = today.subtract({ days: offset }).with({ hour: 17 });
 
     return {
-      eventId: i + 1,
+      eventId: decimal(i).plus(1).toNumber(),
       startAt: iso(start),
       endAt: iso(start.add({ hours: 1 })),
       eventType: 'TURN_DOWN',
@@ -85,15 +86,17 @@ export function demoDataset(allTypes = false): Dataset {
   for (
     let time = today.subtract({ days: 75 }).epochMilliseconds;
     time < today.epochMilliseconds;
-    time += halfHour
+    time = addMilliseconds(time, halfHour)
   ) {
     const sessionIndex = periods.findIndex((period) => time >= period.start && time < period.end);
 
-    if (sessionIndex === 3 && time - periods[3].start === halfHour) continue;
+    if (sessionIndex === 3 && time === addMilliseconds(periods[3].start, halfHour)) continue;
 
     imports.push({
       interval_start: Temporal.Instant.fromEpochMilliseconds(time).toString(),
-      interval_end: Temporal.Instant.fromEpochMilliseconds(time + halfHour).toString(),
+      interval_end: Temporal.Instant.fromEpochMilliseconds(
+        addMilliseconds(time, halfHour),
+      ).toString(),
       consumption: sessionIndex >= 0 ? 0.15 : 0.6,
     });
   }

@@ -1,3 +1,4 @@
+import { decimal } from '../domain/decimal';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
@@ -14,7 +15,7 @@ it('uses Octopus status descriptions and preserves zero, missing and pending res
   data.sessions = ['SUCCESS', 'PARTIAL_SUCCESS', 'FAIL', 'MISSING_READINGS', 'CALCULATING'].map(
     (resultsStatus, i) => ({
       ...base,
-      eventId: 10 + i,
+      eventId: decimal(10).plus(i).toNumber(),
       resultsStatus,
       energyDeltaKwh: 0,
       rewardGivenInOctoPoints: 0,
@@ -174,7 +175,7 @@ it('shows neutral small differences only in details and flags genuinely missing 
 
   const view = render(
     <SessionHistory
-      results={[{ ...result, difference: -0.018, state: 'difference' }]}
+      results={[{ ...result, difference: decimal(-0.018), state: 'difference' }]}
       type="TURN_DOWN"
       onTypeChange={vi.fn()}
     />,
@@ -228,7 +229,7 @@ it('shows a failed zero result as final rather than awaiting Octopus', () => {
       results={[
         {
           ...result,
-          rewarded: 0,
+          rewarded: decimal(0),
           session: {
             ...result.session,
             resultsStatus: 'FAIL',
@@ -291,6 +292,8 @@ it('keeps Happy Hour cash credits without an estimated Octopoints column', async
   const result = calculateAll(demoDataset(true)).find(
     (r) => r.session.eventType === 'WEEKEND_HAPPY_HOUR',
   )!;
+
+  result.session.rewardGivenInPence = '8.00';
 
   render(<SessionHistory results={[result]} type="WEEKEND_HAPPY_HOUR" onTypeChange={vi.fn()} />);
 

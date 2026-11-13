@@ -1,3 +1,4 @@
+import type { Decimal, Numeric } from '../../domain/decimal';
 import type { Calculation } from '../../domain/types';
 import { isHappyHour, reportedShifted } from '../../domain/session';
 import { number } from './format';
@@ -7,7 +8,7 @@ import { RewardRoundingExplanation } from '../RewardRoundingExplanation';
 export function OctopusComparison({ result }: { result: Calculation }) {
   const happy = isHappyHour(result.session);
 
-  const rows: [string, number | null, number | null][] = happy
+  const rows: [string, Decimal | Numeric | null, Decimal | Numeric | null][] = happy
     ? [['Imported', result.actual, reportedShifted(result.session)]]
     : [
         ['Baseline', result.baseline, result.session.baselineConsumptionDeltaKwh],
@@ -38,7 +39,7 @@ export function OctopusComparison({ result }: { result: Calculation }) {
       {result.difference !== null && (
         <p className="neutral-difference">
           Difference in {happy ? 'imported' : 'shifted'} energy:{' '}
-          {result.difference >= 0.0005 ? '+' : ''}
+          {result.difference.gte('0.0005') ? '+' : ''}
           {number(result.difference)} kWh (calculated minus Octopus).
         </p>
       )}

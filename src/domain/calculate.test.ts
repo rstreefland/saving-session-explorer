@@ -1,5 +1,6 @@
+import { decimal } from './decimal';
+import { milliseconds, Temporal, local, midnight, iso, referenceTime } from './time';
 import { describe, it, expect } from 'vitest';
-import { Temporal, local, midnight, iso, referenceTime } from './time';
 import { calculateAll, indexReadings, referenceDays } from './calculate';
 import { demoDataset } from './demo';
 import type { Session } from './types';
@@ -47,7 +48,7 @@ describe('baseline date selection', () => {
     const excluded = new Set(
       Array.from({ length: 60 }, (_, i) =>
         Temporal.PlainDate.from('2026-11-05')
-          .subtract({ days: i + 1 })
+          .subtract({ days: decimal(i).plus(1).toNumber() })
           .toString(),
       ),
     );
@@ -61,8 +62,8 @@ describe('calculations', () => {
     const r = calculateAll(demoDataset());
 
     expect(r.map((x) => x.state)).toEqual(['pending', 'difference', 'match', 'incomplete']);
-    expect(r[0].rewarded).toBeCloseTo(0.9);
-    expect(r[1].difference).toBeCloseTo(0.26);
+    expect(r[0].rewarded?.toNumber()).toBeCloseTo(0.9);
+    expect(r[1].difference?.toNumber()).toBeCloseTo(0.26);
     expect(r[3].actual).toBeNull();
     expect(r[3].rewarded).toBeNull();
   });
@@ -79,7 +80,7 @@ describe('calculations', () => {
 
     data.imports = [];
 
-    for (let offset = 0; offset < 40; offset++) {
+    for (let offset = 0; offset < 40; offset = decimal(offset).plus(1).toNumber()) {
       const date = Temporal.PlainDate.from('2026-08-31').subtract({ days: offset }).toString();
 
       for (const minute of [0, 30]) {
@@ -89,7 +90,11 @@ describe('calculations', () => {
           interval_start: iso(start),
           interval_end: iso(start.add({ minutes: 30 })),
           consumption:
-            offset === 0 ? 0.5 : weekends.includes(date) ? weekends.indexOf(date) + 1 : 9,
+            offset === 0
+              ? 0.5
+              : weekends.includes(date)
+                ? decimal(weekends.indexOf(date)).plus(1).toNumber()
+                : 9,
         });
       }
     }
@@ -97,9 +102,9 @@ describe('calculations', () => {
     const [result] = calculateAll(data);
 
     expect(result.days).toEqual(weekends);
-    expect(result.baseline).toBe(5);
-    expect(result.actual).toBe(1);
-    expect(result.rewarded).toBe(4);
+    expect(result.baseline?.toNumber()).toBe(5);
+    expect(result.actual?.toNumber()).toBe(1);
+    expect(result.rewarded?.toNumber()).toBe(4);
     expect(result.issues).toEqual([]);
 
     data.imports = data.imports.filter((r) => !r.interval_start.startsWith('2026-08-23'));
@@ -111,7 +116,7 @@ describe('calculations', () => {
     data.eventDays = weekends.slice(1).concat(
       Array.from({ length: 60 }, (_, i) =>
         Temporal.PlainDate.from('2026-08-31')
-          .subtract({ days: i + 1 })
+          .subtract({ days: decimal(i).plus(1).toNumber() })
           .toString(),
       ),
     );
@@ -137,8 +142,8 @@ describe('calculations', () => {
 
     data.exports = data.imports.map((r) => ({ ...r, consumption: 0.1 }));
 
-    expect(calculateAll(data)[0].actual).toBeCloseTo(0.1);
-    expect(calculateAll(data)[0].rewarded).toBeCloseTo(0.9);
+    expect(calculateAll(data)[0].actual?.toNumber()).toBeCloseTo(0.1);
+    expect(calculateAll(data)[0].rewarded?.toNumber()).toBeCloseTo(0.9);
 
     data.exports = [];
 
@@ -152,12 +157,12 @@ describe('calculations', () => {
     s.eventType = 'TURN_UP';
 
     for (const r of data.imports)
-      if (Date.parse(r.interval_start) === Date.parse(s.startAt)) r.consumption = 1.6;
+      if (milliseconds(r.interval_start) === milliseconds(s.startAt)) r.consumption = 1.6;
 
     const r = calculateAll(data)[0];
 
-    expect(r.rewarded).toBeCloseTo(1);
-    expect(r.netSaved).toBeCloseTo(-0.55);
+    expect(r.rewarded?.toNumber()).toBeCloseTo(1);
+    expect(r.netSaved?.toNumber()).toBeCloseTo(-0.55);
   });
 
   it('zero is a published result, and tolerance is absolute', () => {
@@ -216,12 +221,19 @@ describe('calculations', () => {
       consumption: 0,
     };
 
-    expect(indexReadings([good]).get(Date.parse(good.interval_start))).toBe(0);
+    expect(indexReadings([good]).get(milliseconds(good.interval_start))?.toNumber()).toBe(0);
 
     for (const readings of [
       [good, good],
       [{ ...good, consumption: -1 }],
       [{ ...good, interval_end: '2026-01-01T01:00:00Z' }],
+      [
+        {
+          ...good,
+          interval_start: '2026-01-01T00:00:00.000000001Z',
+          interval_end: '2026-01-01T00:30:00.000000001Z',
+        },
+      ],
     ])
       expect([...indexReadings(readings).values()]).toEqual([null]);
   });
@@ -246,7 +258,7 @@ describe('calculations', () => {
         });
       }
 
-    expect(calculateAll(data)[0].baseline).toBe(2);
+    expect(calculateAll(data)[0].baseline?.toNumber()).toBe(2);
   });
 
   it('flags ambiguous autumn clock-change references', () => {
@@ -285,8 +297,8 @@ describe('Happy Hours', () => {
     const result = calculateAll(data)[0];
 
     expect(result.state).toBe('match');
-    expect(result.rewarded).toBeCloseTo(0.3);
-    expect(result.actual).toBeCloseTo(0.3);
+    expect(result.rewarded?.toNumber()).toBeCloseTo(0.3);
+    expect(result.actual?.toNumber()).toBeCloseTo(0.3);
     expect(result.baseline).toBeNull();
     expect(result.days).toEqual([]);
     expect(result.slots.every((slot) => slot.references.length === 0)).toBe(true);
@@ -304,8 +316,8 @@ describe('Happy Hours', () => {
 
     for (const reading of data.imports)
       if (
-        Date.parse(reading.interval_start) >= Date.parse(s.startAt) &&
-        Date.parse(reading.interval_start) < Date.parse(s.endAt)
+        milliseconds(reading.interval_start) >= milliseconds(s.startAt) &&
+        milliseconds(reading.interval_start) < milliseconds(s.endAt)
       )
         reading.consumption = 10;
 
@@ -313,8 +325,8 @@ describe('Happy Hours', () => {
 
     const result = calculateAll(data)[0];
 
-    expect(result.rewarded).toBe(20);
-    expect(result.difference).toBe(0);
+    expect(result.rewarded?.toNumber()).toBe(20);
+    expect(result.difference?.toNumber()).toBe(0);
   });
 
   it('flags missing imported readings and leaves unpublished results pending', () => {
@@ -355,15 +367,15 @@ it('marks Mini session and baseline inputs provisional, then clears the marker w
   const data = demoDataset();
   const before = calculateAll(data)[1];
   const sessionReading = data.imports.find(
-    (r) => Date.parse(r.interval_start) === Date.parse(before.session.startAt),
+    (r) => milliseconds(r.interval_start) === milliseconds(before.session.startAt),
   )!;
   sessionReading.source = 'home-mini';
   expect(calculateAll(data)[1].provisional).toBe(true);
   delete sessionReading.source;
   expect(calculateAll(data)[1].provisional).toBe(false);
   const target = referenceTime(before.days[0], local(before.session.startAt).toPlainTime());
-  const baselineReading = data.imports.find((r) => Date.parse(r.interval_start) === target)!;
+  const baselineReading = data.imports.find((r) => milliseconds(r.interval_start) === target)!;
   baselineReading.source = 'home-mini';
   expect(calculateAll(data)[1].provisional).toBe(true);
-  expect(calculateAll(data)[1].rewarded).toBe(before.rewarded);
+  expect(calculateAll(data)[1].rewarded).toEqual(before.rewarded);
 });
