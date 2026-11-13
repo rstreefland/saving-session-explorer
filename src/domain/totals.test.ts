@@ -94,3 +94,39 @@ it('keeps Happy Hours cash credit separate and does not invent Power up reward e
     sessionTotals([{ ...base, session: { ...base.session, eventType: 'TURN_UP' } }]).reward.value,
   ).toBeNull();
 });
+
+it('counts achievement independently from publication and suppresses provisional alerts', () => {
+  const failedSession = { ...base.session, resultsStatus: 'FAIL', rewardGivenInOctoPoints: 0 };
+  const totals = sessionTotals([
+    base,
+    { ...base, provisional: true, session: failedSession },
+    { ...base, session: failedSession },
+    { ...base, rewarded: null, netSaved: null, state: 'incomplete' },
+    { ...base, netSaved: 0, session: { ...base.session, resultsStatus: 'PARTIAL_SUCCESS' } },
+  ]);
+  expect(totals.overview.sessions).toBe('5');
+  expect(totals.overview.calculatedAchievement.value?.toString()).toBe('4');
+  expect(totals.overview.calculatedAchievement.available).toBe('4');
+  expect(totals.overview.calculatedAchievement.provisional).toBe(true);
+  expect(totals.overview.officialAchievement.value?.toString()).toBe('1');
+  expect(totals.overview.officialAchievement.available).toBe('3');
+  expect(totals.overview.missedRewards).toBe('1');
+  expect(totals.overview.pending).toBe('2');
+  expect(totals.overview.unavailable).toBe('1');
+});
+
+it('separates pending, missing and upcoming results without inventing achievement', () => {
+  const totals = sessionTotals(
+    ['CALCULATING', 'MISSING_READINGS', 'UPCOMING'].map((resultsStatus) => ({
+      ...base,
+      rewarded: null,
+      session: { ...base.session, resultsStatus },
+    })),
+  );
+  expect(totals.overview.pending).toBe('1');
+  expect(totals.overview.missing).toBe('1');
+  expect(totals.overview.upcoming).toBe('1');
+  expect(totals.overview.officialAchievement.value).toBeNull();
+  expect(totals.overview.calculatedAchievement.value).toBeNull();
+  expect(totals.overview.missedRewards).toBe('0');
+});

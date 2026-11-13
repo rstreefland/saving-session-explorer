@@ -16,7 +16,7 @@ import { Tooltip } from './Tooltip';
 import { OctopointsValue } from './OctopointsValue';
 import { estimateOctopoints } from '../domain/points';
 import { useMediaQuery } from '../hooks/useMediaQuery';
-import { HistoryTotals } from './HistoryTotals';
+import { SessionOverview } from './SessionOverview';
 import { officialRewardValue, type SessionTotals } from '../domain/totals';
 import { PLACEHOLDER } from './placeholder';
 
@@ -239,9 +239,7 @@ export function SessionHistory({
         ))}
       </div>
       <div role="tabpanel" id={id + '-panel'} aria-labelledby={id + '-' + type} tabIndex={0}>
-        {phone && totals && results.length > 0 && (
-          <HistoryTotals totals={totals} type={type} mobile />
-        )}
+        {totals && results.length > 0 && <SessionOverview totals={totals} type={type} />}
         {phone ? (
           <MobileResults
             results={results}
@@ -439,9 +437,6 @@ export function SessionHistory({
                   );
                 })}
               </tbody>
-              {totals && results.length > 0 && (
-                <HistoryTotals totals={totals} type={type} compact={compact} />
-              )}
             </table>
           </div>
         )}

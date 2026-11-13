@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-for (const width of [393, 768, 1280]) {
-  test(`totals follow the selected layout and session type at ${width}px`, async ({ page }) => {
+for (const width of [320, 393, 768, 1280]) {
+  test(`overview follows the selected layout and session type at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 852 });
     await page.route('https://**/*', (route) => route.abort());
     await page.goto('/');
@@ -12,37 +12,36 @@ for (const width of [393, 768, 1280]) {
       .first()
       .click();
     await expect(page.getByRole('region', { name: 'Session summary' })).toHaveCount(0);
-    const footer = page.locator('.history-totals');
-    await expect(footer).toBeVisible();
+    const overview = page.getByRole('region', { name: 'Session overview' });
+    await expect(overview).toBeVisible();
     await page
       .locator('.session-tabs')
       .evaluate((element) => element.scrollIntoView({ block: 'start' }));
-    if (width === 393) {
-      const totalsCard = page.getByRole('region', { name: 'Session totals' });
-      await expect(totalsCard).toHaveCSS('position', 'static');
-      expect(
-        await totalsCard.evaluate(
-          (element) =>
-            element.parentElement?.firstElementChild === element &&
-            element.nextElementSibling?.classList.contains('mobile-results'),
-        ),
-      ).toBe(true);
-      await page.locator('.mobile-session').last().scrollIntoViewIfNeeded();
-      await expect(totalsCard).not.toBeInViewport();
-    } else {
-      await expect
-        .poll(() => footer.evaluate((element) => element.getBoundingClientRect().bottom))
-        .toBe(852);
-    }
-    await expect(footer).toContainText('results included');
+    await expect(overview).toHaveCSS('position', 'static');
+    expect(
+      await overview.evaluate((element) => element.parentElement?.firstElementChild === element),
+    ).toBe(true);
+    expect(
+      await overview.locator('.overview-heading').evaluate((element) => {
+        const heading = element.querySelector('h3');
+        const count = element.querySelector('span');
+        return (
+          heading &&
+          count &&
+          heading.getBoundingClientRect().top === count.getBoundingClientRect().top &&
+          element.scrollWidth <= element.clientWidth
+        );
+      }),
+    ).toBe(true);
+    await expect(overview).toContainText('results included');
     const typographyMatchesRows = await page.evaluate(() => {
       const energy = document.querySelector('.mobile-energy, .history-row .shifted-energy');
       const reward = document.querySelector(
         '.mobile-source-reward .octopoints-value, .history-row .octopoints-value',
       );
-      const totalEnergy = document.querySelector('.history-totals .total-energy');
-      const totalReward = document.querySelector('.history-totals .octopoints-value');
-      const count = document.querySelector('.history-totals .total-value > small');
+      const totalEnergy = document.querySelector('.session-overview .overview-value');
+      const totalReward = document.querySelector('.session-overview .octopoints-value');
+      const count = document.querySelector('.session-overview .overview-value > small');
       return (
         energy &&
         reward &&
@@ -56,16 +55,24 @@ for (const width of [393, 768, 1280]) {
     });
     expect(typographyMatchesRows).toBe(true);
 
-    for (const amount of await footer.locator('.octopoints-value').all()) {
+    for (const amount of await overview.locator('.octopoints-value').all()) {
       await expect(amount).toHaveCSS('white-space', 'nowrap');
       await expect(amount.locator('.points-unit')).toHaveCSS('display', 'inline');
     }
+    await overview.getByRole('button', { name: 'About these totals' }).focus();
+    await expect(page.getByRole('tooltip')).toContainText('never counted as zero');
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('tooltip')).toHaveCount(0);
     await page.getByRole('tab', { name: 'Power up', exact: true }).click();
-    await expect(footer.locator('.octopoints-value')).toHaveCount(1);
+    await expect(overview.locator('.octopoints-value')).toHaveCount(1);
+    await expect(overview.getByRole('button', { name: 'Not estimated' })).toBeVisible();
     await page.getByRole('tab', { name: 'Happy Hours', exact: true }).click();
-    await expect(footer.locator('.octopoints-value')).toHaveCount(0);
-    await expect(footer).toContainText('kWh');
-    await expect(footer).toContainText('p');
+    await expect(overview.locator('.octopoints-value')).toHaveCount(0);
+    await expect(overview).toContainText('kWh');
+    await expect(overview.getByRole('rowheader', { name: 'Bill credit' })).toBeVisible();
+    await expect(
+      overview.getByRole('rowheader', { name: 'Achieved or partly achieved' }),
+    ).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );

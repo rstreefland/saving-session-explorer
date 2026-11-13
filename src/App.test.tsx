@@ -87,7 +87,9 @@ describe('Session history', () => {
 
     expect(within(table).getByRole('columnheader', { name: 'Usage' })).toBeInTheDocument();
     expect(within(table.querySelector('tbody')!).getByText('8p')).toBeInTheDocument();
-    expect(within(table.querySelector('tfoot')!).getByText('8p')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('region', { name: 'Session overview' })).getByText('8p'),
+    ).toBeInTheDocument();
   });
 
   it('persists a key, loads an account and forgets its results', async () => {

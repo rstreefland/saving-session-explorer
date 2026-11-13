@@ -85,3 +85,11 @@ calculation boundary; they remain Decimal through summation, then energy is disp
 places. Rewards sum the already rounded per-session awards, without rounding or repricing the
 aggregate. The legacy reading and reward calculators still use native arithmetic pending the
 wider ADR-004 migration; this change does not migrate or certify those calculations.
+
+The combined overview uses the same visible sessions as the history. Calculated achievement
+counts reuse the row outcome codes, including partly achieved sessions; official achievement
+counts use published SUCCESS and PARTIAL_SUCCESS statuses, with published FAIL counting as an
+available non-achievement. Provisional estimates mark corresponding counts and totals.
+Possible missed rewards reuse the row attention decision, so provisional estimates cannot raise
+an alert. Pending, missing-reading and upcoming official statuses are counted separately.
+Happy Hours show usage rather than achievement, and no independent cash-credit estimate.

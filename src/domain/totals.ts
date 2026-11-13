@@ -1,6 +1,7 @@
 import { Decimal } from './decimal';
 import { estimateOctopoints } from './points';
-import { isHappyHour, reportedShifted } from './session';
+import { sessionOutcome } from './outcome';
+import { isHappyHour, isPublished, reportedShifted } from './session';
 import type { Calculation, Session } from './types';
 
 export interface ColumnTotal {
@@ -30,7 +31,42 @@ function sum(values: { value: number | null; provisional?: boolean }[]): ColumnT
 
 /** Sum only the figures displayed by each column, without repricing session rewards. */
 export function sessionTotals(results: Calculation[]) {
+  const outcomes = results.map(sessionOutcome);
   return {
+    overview: {
+      sessions: String(results.length),
+      calculatedAchievement: sum(
+        results.map((result, index) => ({
+          value: outcomes[index].code === 'unavailable' ? null : outcomes[index].achieved ? 1 : 0,
+          provisional: result.provisional,
+        })),
+      ),
+      officialAchievement: sum(
+        results.map(({ session }) => ({
+          value: isPublished(session)
+            ? ['SUCCESS', 'PARTIAL_SUCCESS'].includes(session.resultsStatus ?? '')
+              ? 1
+              : 0
+            : null,
+        })),
+      ),
+      missedRewards: String(outcomes.filter((outcome) => outcome.attention).length),
+      pending: String(
+        results.filter(
+          ({ session }) =>
+            !isPublished(session) &&
+            session.resultsStatus !== 'MISSING_READINGS' &&
+            session.resultsStatus !== 'UPCOMING',
+        ).length,
+      ),
+      missing: String(
+        results.filter(({ session }) => session.resultsStatus === 'MISSING_READINGS').length,
+      ),
+      upcoming: String(
+        results.filter(({ session }) => session.resultsStatus === 'UPCOMING').length,
+      ),
+      unavailable: String(outcomes.filter((outcome) => outcome.code === 'unavailable').length),
+    },
     energy: sum(results.map((r) => ({ value: r.rewarded, provisional: r.provisional }))),
     officialEnergy: sum(results.map((r) => ({ value: reportedShifted(r.session) }))),
     reward: sum(

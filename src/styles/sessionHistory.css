@@ -28,7 +28,6 @@
 }
 
 .history-scroll {
-  overflow: visible;
   border: 2px solid var(--line);
 }
 
@@ -574,72 +573,131 @@
   display: none;
 }
 
-/* The footer sticks to the viewport within the history, preserving column alignment. */
-.history-totals {
-  position: sticky;
-  bottom: 0;
-  z-index: 3;
-  background: var(--mint);
-  box-shadow: 0 -2px 0 var(--line);
+/* Session overview comparisons above the session history. */
+.session-overview {
+  margin-bottom: 16px;
+  border: 2px solid var(--line);
+  background: var(--paper);
+  font-size: var(--results-secondary-size);
 }
-.history-totals th,
-.history-totals td {
-  background: var(--mint);
+.overview-heading {
+  line-height: 1.5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 14px;
+  background: #e8e0ec;
+}
+.overview-heading h3 {
+  margin: 0;
+  font-size: inherit;
+  white-space: nowrap;
+}
+.overview-heading > span {
+  white-space: nowrap;
+}
+.overview-table {
+  table-layout: fixed;
+  font-family: 'DM Sans', sans-serif;
+  font-size: inherit;
+}
+.overview-table th,
+.overview-table td {
+  padding: 12px 14px;
   text-align: left;
   vertical-align: top;
 }
-.total-value {
-  overflow-wrap: anywhere;
+.overview-table thead {
+  background: #e8e0ec;
+}
+.overview-table thead th:first-child {
+  width: 40%;
+}
+.overview-table tr > :last-child {
+  background: var(--mint);
+}
+.overview-value {
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
-.total-energy {
-  font-size: var(--results-secondary-size);
-}
-.history-totals .octopoints-value {
-  font-size: inherit;
-}
-.total-value + .total-value {
-  margin-top: 10px;
-}
-.total-value > small {
+.overview-value small {
   display: block;
-  font-size: var(--results-secondary-size);
-  font-weight: 400;
+  font-size: inherit;
+  color: #65526d;
   margin-top: 4px;
 }
-.mobile-totals {
-  position: static;
-  margin-bottom: 14px;
-  padding: 12px 16px;
-  border: 1px solid var(--line);
+.overview-value .octopoints-value .points-unit {
+  display: inline;
 }
-.mobile-totals h3 {
-  margin: 0 0 8px;
-  font-size: var(--results-primary-size);
+.overview-footer {
+  display: block;
+  margin: 0;
+  text-align: left;
+  padding: 14px;
+  background: #e8e0ec;
+  font-size: inherit;
 }
-.totals-sources {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+.overview-availability {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  color: #65526d;
+  margin: 4px 0;
 }
-.totals-sources h4 {
-  margin: 0 0 8px;
-  font-size: var(--results-label-size);
-}
-.mobile-totals .total-value {
-  font-size: var(--results-secondary-size);
-}
-@media (min-width: 601px) and (max-width: 800px) {
-  @supports (grid-template-rows: subgrid) {
-    .history-table > tfoot {
-      display: grid;
-      grid-column: 1 / -1;
-      grid-template-columns: subgrid;
-    }
-    .history-table > tfoot > tr {
-      display: grid;
-      grid-column: 1 / -1;
-      grid-template-columns: subgrid;
-    }
+@media (max-width: 600px) {
+  .overview-heading {
+    padding: 12px;
+  }
+  .overview-table,
+  .overview-table thead,
+  .overview-table tbody {
+    display: block;
+  }
+  .overview-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid var(--line);
+  }
+  .overview-table thead th:first-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .overview-table thead th {
+    border-bottom: 3px solid var(--pink);
+    background: transparent;
+  }
+  .overview-table thead th:last-child {
+    border-bottom-color: var(--mint);
+  }
+  .overview-table tbody th {
+    grid-column: 1 / -1;
+    padding: 12px 12px 0;
+    color: #65526d;
+    font-weight: 500;
+  }
+  .overview-table th,
+  .overview-table td {
+    border-bottom: 0;
+    min-width: 0;
+  }
+  .overview-table td {
+    padding: 8px 12px 14px;
+  }
+  .overview-table tr > :last-child {
+    background: transparent;
+  }
+  .overview-value .octopoints-value {
+    font-size: inherit;
+  }
+  .overview-footer {
+    padding: 12px;
+  }
+  .overview-availability {
+    flex-direction: column;
   }
 }
