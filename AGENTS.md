@@ -140,6 +140,13 @@ all contributors and repository code, including tests and tooling unless an exce
 
 ## Tests and verification
 
+- Use [Vitest Browser Mode](https://vitest.dev/guide/browser/) for browser tests, with the
+  Playwright provider running Chromium and WebKit. Use native browser locators and assertions
+  for UI tests; keep production CSP and JavaScript-disabled checks in browser commands against
+  a fresh build. Keep calculation and content assertions in normal tests; browser tests should
+  cover real layout, browser interactions, and production behavior. Avoid repeating the same
+  scenario at nearby viewport widths. Do not add tests using the standalone Playwright test runner.
+
 - Prefer a small set of representative, anonymous API contract fixtures and independently worked
   end-to-end calculation examples. Cover supported session types, missing data, publication,
   export, DST, provisional inputs, and rounding where relevant. Expected results must not be
@@ -171,10 +178,11 @@ npm run format:check
 npm run test:coverage -- --maxWorkers=1
 npm run build
 npx playwright install --with-deps chromium webkit
+npm run typecheck:browser
 npm run test:browser:build
 ```
 
-Explicit browser-test type checking is a follow-up, not a check the current build provides.
+Browser tests have a separate typecheck command; the application build does not check them.
 Pushing to `main` deploys. Pages doesn't currently wait for the separate browser checks;
 don't claim otherwise or change deployment gating incidentally.
 

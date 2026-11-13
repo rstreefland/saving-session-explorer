@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vitest/globals", "@vitest/browser-playwright"]
+  },
+  "include": ["tests/browser", "vitest.browser.config.ts"]
+}
