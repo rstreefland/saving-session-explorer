@@ -1,10 +1,17 @@
+import { fetchHappyHourTokens } from './api/happyHourTokens';
 import { Temporal, todayInLondon, formatDate } from './domain/time';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { StrictMode } from 'react';
 import App from './App';
 import { demoDataset } from './domain/demo';
+
+vi.mock('./api/happyHourTokens', () => ({ fetchHappyHourTokens: vi.fn() }));
+
+beforeEach(() => {
+  vi.mocked(fetchHappyHourTokens).mockReset().mockResolvedValue(3);
+});
 
 const loadDataset = vi.fn<typeof import('./api/client').loadDataset>();
 const user = () => userEvent.setup();
@@ -502,4 +509,36 @@ it('filters and orders sessions before passing them to the history table', async
       .map((session) => session.startAt)
       .sort((a, b) => Temporal.Instant.compare(b, a)),
   );
+});
+
+it('clears token balances when changing accounts and forgetting', async () => {
+  localStorage.setItem('session-lens.api-key', 'test-key');
+  localStorage.setItem('session-lens.account-number', 'A-123');
+  let finish: (dataset: ReturnType<typeof demoDataset>) => void = () => {
+    throw new Error('Expected pending account request');
+  };
+  vi.mocked(fetchHappyHourTokens).mockResolvedValue(7);
+  loadDataset
+    .mockReset()
+    .mockResolvedValueOnce(demoDataset())
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+  render(app());
+  const tokensTab = await screen.findByRole('tab', { name: 'Happy Hours' });
+  await waitFor(() => expect(tokensTab).toHaveTextContent('7 tokens'));
+
+  const u = user();
+  await u.click(screen.getByRole('button', { name: 'Change account' }));
+  await u.clear(screen.getByLabelText('Account number'));
+  await u.type(screen.getByLabelText('Account number'), 'A-OTHER');
+  await u.click(screen.getByRole('button', { name: 'Connect & compare' }));
+  expect(screen.queryByRole('tab', { name: 'Happy Hours' })).not.toBeInTheDocument();
+
+  await u.click(screen.getByRole('button', { name: 'Forget account' }));
+  await act(async () => finish(demoDataset()));
+  expect(screen.queryByRole('tab', { name: 'Happy Hours' })).not.toBeInTheDocument();
 });

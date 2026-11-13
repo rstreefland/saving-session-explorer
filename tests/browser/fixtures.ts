@@ -177,6 +177,7 @@ export async function connectedAccount(
             ],
             eventCount: decimal(sessions.length).plus(1).toNumber(),
             account: {
+              tokenBalance: 3,
               signedUpMeterPoint: { mpan: '123', gspGroupId: '_A' },
               joinedEvents: sessions,
             },

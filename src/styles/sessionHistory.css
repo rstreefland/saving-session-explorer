@@ -16,10 +16,33 @@
 
 .session-tabs button {
   flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 4px 7px;
   box-shadow: none;
   border: 1px solid transparent;
   background: transparent;
   padding: 12px 8px;
+}
+
+.session-tabs button:has(.happy-hour-tokens) {
+  flex: 1.6;
+}
+
+.session-tab-label {
+  white-space: nowrap;
+}
+
+.happy-hour-tokens {
+  max-width: 100%;
+  padding: 3px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  font-size: 11px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
 }
 
 .session-tabs button[aria-selected='true'] {
