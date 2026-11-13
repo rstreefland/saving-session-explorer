@@ -27,6 +27,7 @@ export interface Session {
 export type BaselineIssue = 'holidays' | 'exports' | 'event-history';
 
 export interface Dataset {
+  happyHourTokens?: number | null;
   accountNumber?: string;
   accountHolderName?: string | null;
   meterSerials?: { import: string; export: string | null };

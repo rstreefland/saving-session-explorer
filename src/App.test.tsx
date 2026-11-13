@@ -503,3 +503,33 @@ it('filters and orders sessions before passing them to the history table', async
       .sort((a, b) => Temporal.Instant.compare(b, a)),
   );
 });
+
+it('clears token balances when changing accounts and forgetting', async () => {
+  localStorage.setItem('session-lens.api-key', 'test-key');
+  localStorage.setItem('session-lens.account-number', 'A-123');
+  let finish: (dataset: ReturnType<typeof demoDataset>) => void = () => {
+    throw new Error('Expected pending account request');
+  };
+  loadDataset
+    .mockReset()
+    .mockResolvedValueOnce({ ...demoDataset(), happyHourTokens: 7 })
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+  render(app());
+  expect(await screen.findByRole('tab', { name: 'Happy Hours' })).toHaveTextContent('7 tokens');
+
+  const u = user();
+  await u.click(screen.getByRole('button', { name: 'Change account' }));
+  await u.clear(screen.getByLabelText('Account number'));
+  await u.type(screen.getByLabelText('Account number'), 'A-OTHER');
+  await u.click(screen.getByRole('button', { name: 'Connect & compare' }));
+  expect(screen.queryByRole('tab', { name: 'Happy Hours' })).not.toBeInTheDocument();
+
+  await u.click(screen.getByRole('button', { name: 'Forget account' }));
+  await act(async () => finish({ ...demoDataset(), happyHourTokens: 99 }));
+  expect(screen.queryByRole('tab', { name: 'Happy Hours' })).not.toBeInTheDocument();
+});
