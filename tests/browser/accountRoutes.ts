@@ -5,7 +5,17 @@ import {
   milliseconds,
 } from '../../src/domain/time';
 import { decimal } from '../../src/domain/decimal';
-import type { Page } from 'playwright';
+import { z } from 'zod';
+import type { Page, Route } from 'playwright';
+
+const graphqlRequestSchema = z.object({ query: z.string() });
+
+function operationName(route: Route) {
+  const { query } = graphqlRequestSchema.parse(route.request().postDataJSON());
+  const operation = /^\s*(?:query|mutation)\s+(\w+)\s*[( {]/.exec(query);
+  if (!operation) throw new Error('Unexpected browser fixture GraphQL request');
+  return operation[1];
+}
 
 // Entirely synthetic account and meter data. No requests reach external services.
 export async function connectedAccount({
@@ -64,12 +74,13 @@ export async function connectedAccount({
   }
 
   await page.route('https://api.oegb-kraken.energy/**', async (route) => {
-    const url = route.request().url();
+    const request = route.request();
+    const { pathname } = new URL(request.url());
 
-    if (url.includes('/graphql/')) {
-      const query = route.request().postDataJSON().query;
+    if (pathname === '/v1/graphql/' && request.method() === 'POST') {
+      const operation = operationName(route);
 
-      if (query.includes('HomeMiniDevices'))
+      if (operation === 'HomeMiniDevices')
         return route.fulfill({
           json: {
             data: {
@@ -93,7 +104,7 @@ export async function connectedAccount({
             },
           },
         });
-      if (query.includes('HomeMiniReadings'))
+      if (operation === 'HomeMiniReadings')
         return route.fulfill({
           json: {
             data: {
@@ -109,21 +120,27 @@ export async function connectedAccount({
           },
         });
 
-      return route.fulfill({
-        json: {
-          data: query.includes('obtainKrakenToken')
-            ? { obtainKrakenToken: { token: 'synthetic-token' } }
-            : {
-                account: {
-                  number: 'A-TEST',
-                  billingName: 'Example Account Holder With A Longer Name',
-                },
+      if (operation === 'Token') {
+        return route.fulfill({
+          json: { data: { obtainKrakenToken: { token: 'synthetic-token' } } },
+        });
+      }
+      if (operation === 'AccountProfile') {
+        return route.fulfill({
+          json: {
+            data: {
+              account: {
+                number: 'A-TEST',
+                billingName: 'Example Account Holder With A Longer Name',
               },
-        },
-      });
+            },
+          },
+        });
+      }
+      throw new Error('Unexpected browser fixture authentication operation');
     }
 
-    if (url.includes('/accounts/'))
+    if (pathname === '/v1/accounts/A-TEST/' && request.method() === 'GET')
       return route.fulfill({
         json: {
           properties: [
@@ -140,10 +157,29 @@ export async function connectedAccount({
         },
       });
 
-    return route.fulfill({ json: { next: null, results: readings } });
+    if (
+      pathname === '/v1/electricity-meter-points/123/meters/SYNTHETIC/consumption/' &&
+      request.method() === 'GET'
+    ) {
+      return route.fulfill({ json: { next: null, results: readings } });
+    }
+    throw new Error('Unexpected browser fixture meter request');
   });
-  await page.route('https://api.backend.octopus.energy/**', (route) =>
-    route.fulfill({
+  await page.route('https://api.backend.octopus.energy/**', (route) => {
+    if (
+      new URL(route.request().url()).pathname !== '/v1/graphql/' ||
+      route.request().method() !== 'POST'
+    ) {
+      throw new Error('Unexpected browser fixture session request');
+    }
+    const operation = operationName(route);
+    if (operation === 'HappyHourTokens') {
+      return route.fulfill({
+        json: { data: { savingSessions: { account: { tokenBalance: 3 } } } },
+      });
+    }
+    if (operation !== 'Sessions') throw new Error('Unexpected browser fixture session operation');
+    return route.fulfill({
       json: {
         data: {
           savingSessions: {
@@ -158,16 +194,21 @@ export async function connectedAccount({
             ],
             eventCount: decimal(sessions.length).plus(1).toNumber(),
             account: {
-              tokenBalance: 3,
               signedUpMeterPoint: { mpan: '123', gspGroupId: '_A' },
               joinedEvents: sessions,
             },
           },
         },
       },
-    }),
-  );
-  await page.route('https://www.gov.uk/**', (route) =>
-    route.fulfill({ json: { 'england-and-wales': { events: [{ date: '2026-08-31' }] } } }),
-  );
+    });
+  });
+  await page.route('https://www.gov.uk/**', (route) => {
+    if (
+      new URL(route.request().url()).pathname !== '/bank-holidays.json' ||
+      route.request().method() !== 'GET'
+    ) {
+      throw new Error('Unexpected browser fixture holiday request');
+    }
+    return route.fulfill({ json: { 'england-and-wales': { events: [{ date: '2026-08-31' }] } } });
+  });
 }
