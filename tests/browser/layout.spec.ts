@@ -58,7 +58,9 @@ async function fitsViewport(page: Page) {
           ? amountStyle.fontSize === unitStyle.fontSize &&
             amountStyle.fontWeight === unitStyle.fontWeight &&
             unitStyle.fontWeight === '400'
-          : Number(amountStyle.fontWeight) >= 700)
+          : value.closest('.overview-table tbody, .history-row')
+            ? amountStyle.fontWeight === '400'
+            : amountStyle.fontWeight === '700')
       );
     }),
   );

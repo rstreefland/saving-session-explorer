@@ -51,6 +51,18 @@ for (const width of [320, 393, 768, 1280]) {
       );
     });
     expect(typographyMatchesRows).toBe(true);
+    for (const value of await overview.locator('tbody strong').all()) {
+      await expect(value).toHaveCSS('font-weight', '400');
+    }
+    for (const value of await page
+      .locator('.history-row .outcome-label, .mobile-source .outcome-label')
+      .all()) {
+      await expect(value).toHaveCSS('font-weight', '400');
+    }
+    await expect(overview.getByRole('columnheader', { name: 'Octopus' })).toHaveCSS(
+      'font-weight',
+      '700',
+    );
 
     for (const amount of await overview.locator('.octopoints-value').all()) {
       await expect(amount).toHaveCSS('white-space', 'nowrap');

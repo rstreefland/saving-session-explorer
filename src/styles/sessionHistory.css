@@ -34,7 +34,7 @@
 .history-table {
   font-family: 'DM Sans', sans-serif;
   font-size: var(--results-primary-size);
-  font-weight: 500;
+  font-weight: 400;
   width: 100%;
   min-width: 0;
   table-layout: fixed;
@@ -65,13 +65,13 @@
   display: block;
   font-size: var(--results-secondary-size);
   margin-top: 5px;
-  font-weight: 500;
+  font-weight: 400;
   color: #65526d;
 }
 
 .history-table .session-date {
   font-size: var(--results-secondary-size);
-  font-weight: 500;
+  font-weight: 400;
   position: sticky;
   left: 0;
   background: inherit;
@@ -108,7 +108,7 @@
 
 .outcome-label {
   display: block;
-  font-weight: 700;
+  font-weight: 400;
   font-size: var(--results-primary-size);
   line-height: 1.5;
 }
@@ -254,7 +254,7 @@
   .mobile-reward-label {
     display: block;
     color: #65526d;
-    font-weight: 600;
+    font-weight: 400;
   }
 
   .history-table .mobile-reward .points-unit {
@@ -471,7 +471,7 @@
 .mobile-session-time,
 .history-table .session-time {
   display: block;
-  font-weight: 700;
+  font-weight: 400;
   font-size: var(--results-primary-size);
 }
 .mobile-session-heading time,
@@ -608,6 +608,16 @@
   text-align: left;
   vertical-align: top;
 }
+.overview-table tbody,
+.overview-table tbody th,
+.overview-table tbody strong,
+.overview-table tbody .octopoints-value,
+.overview-table tbody .points-unit,
+.history-row .octopoints-value,
+.history-row .octopoints-value strong,
+.history-row .points-unit {
+  font-weight: 400;
+}
 .overview-table thead {
   background: #e8e0ec;
 }
@@ -672,7 +682,7 @@
     grid-column: 1 / -1;
     padding: 12px 12px 0;
     color: #65526d;
-    font-weight: 500;
+    font-weight: 400;
   }
   .overview-table th,
   .overview-table td {
