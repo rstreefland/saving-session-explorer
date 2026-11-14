@@ -39,6 +39,41 @@ async function credentials() {
 const app = () => <App load={loadDataset} />;
 
 describe('Session history', () => {
+  it('follows the system theme until a saved override is selected', async () => {
+    let systemDark = false;
+    let notifyChange: (() => void) | undefined;
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        get matches() {
+          return systemDark;
+        },
+        addEventListener: vi.fn((_event: string, listener: () => void) => {
+          notifyChange = listener;
+        }),
+        removeEventListener: vi.fn(),
+      })),
+    );
+
+    render(app());
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+    expect(screen.getByRole('button', { name: 'Switch to dark mode' })).toBeInTheDocument();
+
+    systemDark = true;
+    act(() => notifyChange?.());
+    expect(screen.getByRole('button', { name: 'Switch to light mode' })).toBeInTheDocument();
+
+    await user().click(screen.getByRole('button', { name: 'Switch to light mode' }));
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(localStorage.getItem('session-lens.theme')).toBe('light');
+
+    systemDark = false;
+    act(() => notifyChange?.());
+    systemDark = true;
+    act(() => notifyChange?.());
+    expect(screen.getByRole('button', { name: 'Switch to dark mode' })).toBeInTheDocument();
+  });
+
   it('starts with an accessible connection form', () => {
     render(app());
 

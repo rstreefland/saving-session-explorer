@@ -5,6 +5,7 @@ import '@fontsource/dm-sans/latin-400.css';
 import '@fontsource/dm-sans/latin-500.css';
 import '@fontsource/dm-sans/latin-600.css';
 import '@fontsource/dm-sans/latin-700.css';
+import '../../src/styles/theme.css';
 import '../../src/style.css';
 import '../../src/styles/sessionHistory.css';
 import '../../src/styles/connection.css';
@@ -17,5 +18,6 @@ beforeEach(async () => {
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  delete document.documentElement.dataset.theme;
   vi.restoreAllMocks();
 });
