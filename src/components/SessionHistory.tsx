@@ -113,7 +113,7 @@ function MobileResults({
                         {estimated && result.provisional && <ProvisionalIndicator />}
                       </span>
                     )}
-                    <span className="mobile-energy">
+                    <span className={happy ? 'mobile-energy mobile-energy-main' : 'mobile-energy'}>
                       {energy === null
                         ? PLACEHOLDER
                         : fixed(energy, 2) + (happy ? ' kWh used' : ' kWh shifted')}

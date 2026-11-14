@@ -14,6 +14,11 @@ for (const width of [320, 393, 768, 1280]) {
     await expect(page.getByRole('region', { name: 'Session summary' })).toHaveCount(0);
     const overview = page.getByRole('region', { name: 'Session overview' });
     await expect(overview).toBeVisible();
+    const comparison = overview.getByRole('table', { name: 'Session overview comparison' });
+    await expect(comparison).toHaveCSS('border-top-width', '1px');
+    await expect(comparison).toHaveCSS('border-bottom-width', '1px');
+    await expect(overview.locator('.overview-footer')).toHaveCSS('border-top-width', '0px');
+
     await page
       .locator('.session-tabs')
       .evaluate((element) => element.scrollIntoView({ block: 'start' }));
@@ -46,8 +51,10 @@ for (const width of [320, 393, 768, 1280]) {
         reward &&
         totalEnergy &&
         totalReward &&
-        getComputedStyle(energy).fontSize === getComputedStyle(totalEnergy).fontSize &&
-        getComputedStyle(reward).fontSize === getComputedStyle(totalReward).fontSize
+        getComputedStyle(energy).fontSize === '14px' &&
+        getComputedStyle(totalEnergy).fontSize === '16px' &&
+        getComputedStyle(reward).fontSize === '16px' &&
+        getComputedStyle(totalReward).fontSize === '16px'
       );
     });
     expect(typographyMatchesRows).toBe(true);

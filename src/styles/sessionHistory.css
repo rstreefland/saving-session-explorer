@@ -3,7 +3,6 @@
 .history {
   --results-primary-size: 16px;
   --results-secondary-size: 14px;
-  --results-label-size: 12px;
 }
 
 .session-tabs {
@@ -56,7 +55,7 @@
 }
 
 .history-table thead th {
-  font-size: var(--results-secondary-size);
+  font-size: var(--results-primary-size);
   font-family: 'DM Sans', sans-serif;
   white-space: normal;
 }
@@ -143,7 +142,7 @@
   background: #eee7f1;
   border-left: 3px solid #8a6a9d;
   font-family: 'DM Sans', sans-serif;
-  font-size: var(--results-secondary-size);
+  font-size: var(--results-primary-size);
   line-height: 1.6;
 }
 
@@ -246,12 +245,13 @@
     margin-top: 6px;
     border-top: 1px solid #c5b6ce;
     padding-top: 6px;
-    font-size: var(--results-secondary-size);
+    font-size: var(--results-primary-size);
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
 
   .mobile-reward-label {
+    font-size: var(--results-secondary-size);
     display: block;
     color: #65526d;
     font-weight: 400;
@@ -356,7 +356,7 @@
 @media (max-width: 600px) {
   .session-tabs button {
     font-family: 'DM Sans', sans-serif;
-    font-size: var(--results-secondary-size);
+    font-size: var(--results-primary-size);
     padding: 11px 5px;
   }
 
@@ -374,7 +374,7 @@
 
   .history-table thead th {
     white-space: normal;
-    font-size: var(--results-secondary-size);
+    font-size: var(--results-primary-size);
     line-height: 1.5;
   }
 
@@ -409,7 +409,7 @@
 
   .reward-query {
     padding: 6px 4px;
-    font-size: var(--results-secondary-size);
+    font-size: var(--results-primary-size);
   }
 
   .reward-query small {
@@ -521,23 +521,28 @@
 .mobile-source-label {
   text-transform: uppercase;
   letter-spacing: 0.7px;
-  font-size: var(--results-label-size);
+  font-size: var(--results-secondary-size);
   font-weight: 700;
   color: #65526d;
   padding-top: 3px;
 }
-.mobile-energy,
 .mobile-source-reward,
 .mobile-results .octopoints-value,
 .mobile-results .octopoints-value strong,
 .mobile-results .octopoints-value .points-unit {
-  font-size: var(--results-secondary-size);
+  font-size: var(--results-primary-size);
   font-weight: 400;
   color: #65526d;
 }
 .mobile-energy {
+  font-size: var(--results-secondary-size);
+  font-weight: 400;
+  color: #65526d;
   display: block;
   margin-top: 3px;
+}
+.mobile-energy-main {
+  font-size: var(--results-primary-size);
 }
 .mobile-source-reward {
   text-align: left;
@@ -550,7 +555,7 @@
   padding: 8px 10px;
   border-left: 3px solid #8a6a9d;
   background: #eee7f1;
-  font-size: var(--results-secondary-size);
+  font-size: var(--results-primary-size);
 }
 .mobile-session-attention {
   box-shadow: inset 3px 0 #8a6a9d;
@@ -579,7 +584,7 @@
   margin-bottom: 16px;
   border: 2px solid var(--line);
   background: var(--paper);
-  font-size: var(--results-secondary-size);
+  font-size: var(--results-primary-size);
 }
 .overview-heading {
   line-height: 1.5;
@@ -599,6 +604,7 @@
   white-space: nowrap;
 }
 .overview-table {
+  border-block: 1px solid var(--line);
   table-layout: fixed;
   font-family: 'DM Sans', sans-serif;
   font-size: inherit;
@@ -608,6 +614,10 @@
   padding: 12px 14px;
   text-align: left;
   vertical-align: top;
+}
+.overview-table tbody tr:last-child > th,
+.overview-table tbody tr:last-child > td {
+  border-bottom: 0;
 }
 .overview-table tbody,
 .overview-table tbody th,
@@ -636,12 +646,16 @@
   display: inline;
 }
 .overview-footer {
+  border-top: 0;
   display: block;
   margin: 0;
   text-align: left;
   padding: 14px;
   background: #e8e0ec;
-  font-size: inherit;
+  font-size: var(--results-secondary-size);
+}
+.overview-footer > strong {
+  font-size: var(--results-primary-size);
 }
 .overview-availability {
   display: flex;
@@ -664,6 +678,9 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     border-top: 1px solid var(--line);
   }
+  .overview-table thead tr {
+    border-top: 0;
+  }
   .overview-table thead th:first-child {
     position: absolute;
     width: 1px;
@@ -677,11 +694,12 @@
     background: transparent;
   }
   .overview-table thead th:last-child {
-    border-bottom-color: var(--octopus-tint);
+    border-bottom-color: var(--pink);
   }
   .overview-table tbody th {
     grid-column: 1 / -1;
     padding: 12px 12px 0;
+    font-size: var(--results-secondary-size);
     color: #65526d;
     font-weight: 400;
   }

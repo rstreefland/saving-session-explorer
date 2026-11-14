@@ -29,11 +29,12 @@ async function fitsViewport(page: Page) {
     );
     const energy = document.querySelector('.mobile-energy, .history-table .shifted-energy');
     return (
-      (!time ||
-        [...outcomes].every(
-          (outcome) => getComputedStyle(outcome).fontSize === getComputedStyle(time).fontSize,
-        )) &&
-      (!date || !energy || getComputedStyle(date).fontSize === getComputedStyle(energy).fontSize)
+      (!time || getComputedStyle(time).fontSize === '16px') &&
+      [...outcomes].every((outcome) => getComputedStyle(outcome).fontSize === '16px') &&
+      (!date || getComputedStyle(date).fontSize === '14px') &&
+      (!energy ||
+        getComputedStyle(energy).fontSize ===
+          (energy.classList.contains('mobile-energy-main') ? '16px' : '14px'))
     );
   });
   expect(sizesMatch).toBe(true);
@@ -46,7 +47,8 @@ async function fitsViewport(page: Page) {
       const amountStyle = getComputedStyle(value.querySelector('strong')!);
       const unitStyle = getComputedStyle(value.querySelector('.points-unit')!);
       const energy = value.closest('.mobile-source')?.querySelector('.mobile-energy');
-      const expectedStyle = energy ? getComputedStyle(energy) : amountStyle;
+      const reward = value.closest('.mobile-source-reward');
+      const expectedStyle = reward ? getComputedStyle(reward) : amountStyle;
       return (
         number.bottom > unit.top &&
         unit.bottom > number.top &&
