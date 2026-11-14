@@ -575,6 +575,7 @@
 
 /* Session overview comparisons above the session history. */
 .session-overview {
+  --octopus-tint: color-mix(in srgb, var(--pink) 45%, var(--paper));
   margin-bottom: 16px;
   border: 2px solid var(--line);
   background: var(--paper);
@@ -625,7 +626,7 @@
   width: 40%;
 }
 .overview-table tr > :last-child {
-  background: var(--pink);
+  background: var(--octopus-tint);
 }
 .overview-value {
   font-variant-numeric: tabular-nums;
@@ -676,7 +677,7 @@
     background: transparent;
   }
   .overview-table thead th:last-child {
-    border-bottom-color: var(--pink);
+    border-bottom-color: var(--octopus-tint);
   }
   .overview-table tbody th {
     grid-column: 1 / -1;
