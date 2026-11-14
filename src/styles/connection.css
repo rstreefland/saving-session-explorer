@@ -20,12 +20,12 @@
 .connection p {
   grid-column: 2;
   font-size: 14px;
-  color: #675b6d;
+  color: var(--connection-text);
   margin-bottom: 18px;
 }
 
 .connection svg {
-  color: #885073;
+  color: var(--connection-icon);
 }
 
 .connection > a {
@@ -87,7 +87,7 @@
 .connection .connection-summary p {
   margin: 0;
   font-size: 14px;
-  color: #65526d;
+  color: var(--muted);
 }
 
 .connection-identity p:not(.connection-progress) {
@@ -109,12 +109,12 @@
 
 .connection .region-note {
   font-size: 14px;
-  color: #65526d;
+  color: var(--muted);
   margin: 13px 0 0;
 }
 
 .connection-summary .account-holder {
-  color: #473950;
+  color: var(--muted-strong);
   margin-bottom: 3px;
   overflow-wrap: anywhere;
 }
@@ -122,8 +122,8 @@
 .connection-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid #cabbd2;
-  border-top-color: #755889;
+  border: 2px solid var(--spinner-track);
+  border-top-color: var(--loading-bar);
   border-radius: 50%;
   flex-shrink: 0;
   animation: connection-spin 0.9s linear infinite;
@@ -131,7 +131,7 @@
 
 .connection .connection-progress {
   margin-top: 6px;
-  color: #65526d;
+  color: var(--muted);
   font-size: 14px;
 }
 
