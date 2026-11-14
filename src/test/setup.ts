@@ -6,6 +6,7 @@ afterEach(() => {
   cleanup();
   localStorage.clear();
   delete document.documentElement.dataset.theme;
+  document.querySelector('meta[name="theme-color"]')?.remove();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });

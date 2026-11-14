@@ -14,7 +14,13 @@ import './styles/connection.css';
 const root = document.getElementById('root');
 if (!root) throw new Error('Application root is missing.');
 
-applyThemePreference(readThemePreference());
+const preference = readThemePreference();
+applyThemePreference(
+  preference,
+  preference
+    ? preference === 'dark'
+    : (window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false),
+);
 
 createRoot(root).render(
   <StrictMode>

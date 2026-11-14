@@ -62,7 +62,7 @@ function SessionLens({ load }: AppProps) {
     return () => media.removeEventListener('change', onChange);
   }, []);
 
-  useEffect(() => applyThemePreference(themePreference), [themePreference]);
+  useEffect(() => applyThemePreference(themePreference, dark), [themePreference, dark]);
 
   function toggleTheme() {
     const next = dark ? 'light' : 'dark';
