@@ -1,8 +1,8 @@
 /* Session table, result states and responsive comparison tracks. */
 
 .history {
-  --results-primary-size: 16px;
-  --results-secondary-size: 14px;
+  --results-primary-size: 14px;
+  --results-secondary-size: 12px;
 }
 
 .session-tabs {
@@ -39,7 +39,7 @@
   border: 1px solid var(--line);
   border-radius: 4px;
   background: var(--paper);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   overflow-wrap: anywhere;
 }
