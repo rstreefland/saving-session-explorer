@@ -55,11 +55,8 @@ it('sums exact decimal energy independently, excludes pending placeholders, and 
     { ...base, rewarded: null, state: 'incomplete' },
   ]);
   expect(totals.energy.value?.toString()).toBe('0.3');
-  expect(totals.energy.available).toBe('2');
-  expect(totals.energy.sessions).toBe('3');
   expect(totals.energy.provisional).toBe(true);
   expect(totals.officialEnergy.value?.toString()).toBe('0');
-  expect(totals.officialEnergy.available).toBe('1');
   expect(totals.officialReward.value?.toString()).toBe('0');
 });
 
@@ -111,10 +108,8 @@ it('counts achievement independently from publication and suppresses provisional
   ]);
   expect(totals.overview.sessions).toBe('5');
   expect(totals.overview.calculatedAchievement.value?.toString()).toBe('4');
-  expect(totals.overview.calculatedAchievement.available).toBe('4');
   expect(totals.overview.calculatedAchievement.provisional).toBe(true);
   expect(totals.overview.officialAchievement.value?.toString()).toBe('1');
-  expect(totals.overview.officialAchievement.available).toBe('3');
   expect(totals.overview.missedRewards).toBe('1');
   expect(totals.overview.pending).toBe('2');
   expect(totals.overview.unavailable).toBe('1');

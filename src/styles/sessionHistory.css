@@ -621,12 +621,6 @@
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
-.overview-value small {
-  display: block;
-  font-size: inherit;
-  color: #65526d;
-  margin-top: 4px;
-}
 .overview-value .octopoints-value .points-unit {
   display: inline;
 }

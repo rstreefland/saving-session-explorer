@@ -6,25 +6,21 @@ import type { Calculation, Session } from './types';
 
 export interface ColumnTotal {
   value: Decimal | null;
-  available: string;
-  sessions: string;
   provisional: boolean;
 }
 
 function sum(values: { value: Decimal | Numeric | null; provisional?: boolean }[]): ColumnTotal {
   let value = new Decimal(0);
-  let available = new Decimal(0);
+  let hasValues = false;
   let provisional = false;
   for (const entry of values) {
     if (entry.value === null) continue;
     value = value.plus(entry.value);
-    available = available.plus(1);
+    hasValues = true;
     provisional ||= entry.provisional === true;
   }
   return {
-    value: available.isZero() ? null : value,
-    available: available.toString(),
-    sessions: String(values.length),
+    value: hasValues ? value : null,
     provisional,
   };
 }

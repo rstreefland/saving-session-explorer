@@ -215,8 +215,8 @@ snapshots. Fixture agreement and coverage thresholds don't prove agreement with 
 
 Totals sum each column independently over the visible session type and date range. Unavailable
 values and pending results are excluded, not replaced by zero; a column with no available values shows the
-usual placeholder. Each total shows “2 of 3 results included” (for example), since calculated and Octopus
-columns may cover different sessions. Provisional inputs mark the corresponding calculated totals.
+usual placeholder. Calculated and Octopus columns may cover different sessions. The overview
+shows pending and unavailable counts below the values. Provisional inputs mark the corresponding calculated totals.
 Happy Hours sum import usage and cash credit; Power up has no estimated reward total.
 
 Totals use the shared Decimal precision and rounding policy above. Energy is displayed to two

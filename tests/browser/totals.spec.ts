@@ -33,7 +33,7 @@ for (const width of [320, 393, 768, 1280]) {
         );
       }),
     ).toBe(true);
-    await expect(overview).toContainText('results included');
+    await expect(overview).not.toContainText('results included');
     const typographyMatchesRows = await page.evaluate(() => {
       const energy = document.querySelector('.mobile-energy, .history-row .shifted-energy');
       const reward = document.querySelector(
@@ -41,16 +41,13 @@ for (const width of [320, 393, 768, 1280]) {
       );
       const totalEnergy = document.querySelector('.session-overview .overview-value');
       const totalReward = document.querySelector('.session-overview .octopoints-value');
-      const count = document.querySelector('.session-overview .overview-value > small');
       return (
         energy &&
         reward &&
         totalEnergy &&
         totalReward &&
-        count &&
         getComputedStyle(energy).fontSize === getComputedStyle(totalEnergy).fontSize &&
-        getComputedStyle(reward).fontSize === getComputedStyle(totalReward).fontSize &&
-        getComputedStyle(energy).fontSize === getComputedStyle(count).fontSize
+        getComputedStyle(reward).fontSize === getComputedStyle(totalReward).fontSize
       );
     });
     expect(typographyMatchesRows).toBe(true);

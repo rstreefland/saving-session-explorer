@@ -24,9 +24,6 @@ function OverviewValue({
     <div className="overview-value">
       {value}
       {total.provisional && <ProvisionalIndicator />}
-      <small>
-        {total.available} of {total.sessions} results included
-      </small>
     </div>
   );
 }
@@ -116,7 +113,7 @@ export function SessionOverview({ totals, type }: { totals: SessionTotals; type:
         </div>
         <Tooltip
           label="About these totals"
-          text="Each count shows how many visible sessions contribute. Unavailable values and pending results are excluded, never counted as zero. Supplied Octopus average credits for sessions with missing readings can still contribute to reward totals. Columns can cover different sessions. Rewards sum individually rounded session awards; a difference is not proof of incorrect settlement."
+          text="Totals use available values from the visible sessions. Unavailable values and pending results are excluded, never counted as zero. Supplied Octopus average credits for sessions with missing readings can still contribute to reward totals. Columns can cover different sessions. Rewards sum individually rounded session awards; a difference is not proof of incorrect settlement."
         />
       </footer>
     </section>
