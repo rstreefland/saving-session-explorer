@@ -37,6 +37,6 @@ it('explains included average credits while keeping missing energy unavailable',
   expect(overview).toHaveTextContent('1 Octopus results missing readings');
   await userEvent.click(screen.getByRole('button', { name: 'About these totals' }));
   expect(screen.getByRole('tooltip')).toHaveTextContent(
-    'Supplied Octopus average credits for sessions with missing readings can still contribute to reward totals.',
+    'Any average credit from Octopus is still included.',
   );
 });

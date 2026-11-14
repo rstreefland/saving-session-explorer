@@ -113,7 +113,7 @@ export function SessionOverview({ totals, type }: { totals: SessionTotals; type:
         </div>
         <Tooltip
           label="About these totals"
-          text="Totals use available values from the visible sessions. Unavailable values and pending results are excluded, never counted as zero. Supplied Octopus average credits for sessions with missing readings can still contribute to reward totals. Columns can cover different sessions. Rewards sum individually rounded session awards; a difference is not proof of incorrect settlement."
+          text="We only add up the results we have, so the two sides may cover different sessions. Missing values don't count as zero. Any average credit from Octopus is still included."
         />
       </footer>
     </section>

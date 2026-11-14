@@ -57,7 +57,7 @@ for (const width of [320, 393, 768, 1280]) {
       await expect(amount.locator('.points-unit')).toHaveCSS('display', 'inline');
     }
     await overview.getByRole('button', { name: 'About these totals' }).focus();
-    await expect(page.getByRole('tooltip')).toContainText('never counted as zero');
+    await expect(page.getByRole('tooltip')).toContainText("Missing values don't count as zero");
     await page.keyboard.press('Escape');
     await expect(page.getByRole('tooltip')).toHaveCount(0);
     await page.getByRole('tab', { name: 'Power up', exact: true }).click();
