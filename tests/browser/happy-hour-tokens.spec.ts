@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest';
 import { page, connectedAccount, openApp } from './fixtures';
 
-test('Happy Hours token badge fits its tab on mobile and desktop', async () => {
+test('Happy Hours token badge stays readable and fits on mobile and desktop', async () => {
+  localStorage.setItem('session-lens.theme', 'dark');
   await page.viewport(320, 852);
   await connectedAccount();
   await openApp();
@@ -20,5 +21,8 @@ test('Happy Hours token badge fits its tab on mobile and desktop', async () => {
     expect(document.documentElement.scrollWidth <= innerWidth).toBe(true);
     await tab.click();
     await expect.element(tab).toHaveAttribute('aria-selected', 'true');
+    expect(getComputedStyle(badge.element()).color).toBe(
+      getComputedStyle(document.documentElement).color,
+    );
   }
 });

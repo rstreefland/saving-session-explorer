@@ -40,9 +40,6 @@ const app = () => <App load={loadDataset} />;
 
 describe('Session history', () => {
   it('follows the system theme until a saved override is selected', async () => {
-    const themeColor = document.createElement('meta');
-    themeColor.name = 'theme-color';
-    document.head.append(themeColor);
     let systemDark = false;
     let notifyChange: (() => void) | undefined;
     vi.stubGlobal(
@@ -60,17 +57,14 @@ describe('Session history', () => {
 
     render(app());
     expect(document.documentElement.dataset.theme).toBeUndefined();
-    expect(themeColor.content).toBe('#302640');
     expect(screen.getByRole('button', { name: 'Switch to dark mode' })).toBeInTheDocument();
 
     systemDark = true;
     act(() => notifyChange?.());
-    expect(themeColor.content).toBe('#171719');
     expect(screen.getByRole('button', { name: 'Switch to light mode' })).toBeInTheDocument();
 
     await user().click(screen.getByRole('button', { name: 'Switch to light mode' }));
     expect(document.documentElement.dataset.theme).toBe('light');
-    expect(themeColor.content).toBe('#302640');
     expect(localStorage.getItem('session-lens.theme')).toBe('light');
 
     systemDark = false;

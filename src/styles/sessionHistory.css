@@ -39,6 +39,7 @@
   border: 1px solid var(--line);
   border-radius: 4px;
   background: var(--paper);
+  color: var(--ink);
   font-size: 12px;
   font-weight: 400;
   overflow-wrap: anywhere;

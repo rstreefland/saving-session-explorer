@@ -14,13 +14,9 @@ export function readThemePreference(): ThemePreference | null {
   }
 }
 
-export function applyThemePreference(preference: ThemePreference | null, dark: boolean) {
+export function applyThemePreference(preference: ThemePreference | null) {
   if (preference) document.documentElement.dataset.theme = preference;
   else delete document.documentElement.dataset.theme;
-
-  document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', dark ? '#171719' : '#302640');
 }
 
 export function saveThemePreference(preference: ThemePreference) {
