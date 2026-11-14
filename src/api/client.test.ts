@@ -109,6 +109,8 @@ const options = {
 function setup({
   holderName = 'Test Account Holder' as string | null,
   profileUnavailable = false,
+  tokenBalance = 3,
+  tokenFailure = false,
   joinedEvents = [] as Session[],
   registered = true,
   gsp = '_A',
@@ -141,6 +143,11 @@ function setup({
           ? response({ errors: [{ message: 'Profile unavailable' }] })
           : response({ data: { account: { number: 'A-123', billingName: holderName } } });
       }
+
+      if (url === GRAPHQL && String(init.body).includes('HappyHourTokens'))
+        return tokenFailure
+          ? response({ errors: [{ message: 'Token balance unavailable' }] })
+          : response({ data: { savingSessions: { account: { tokenBalance } } } });
 
       if (url === GRAPHQL)
         return response({
@@ -768,3 +775,77 @@ it.each([false, true])(
     );
   },
 );
+
+it.each([0, 1, 1234])(
+  'shows an account-wide Happy Hours balance of %s through the normal App',
+  async (tokenBalance) => {
+    setup({ tokenBalance });
+    localStorage.setItem('session-lens.api-key', 'test-key');
+    localStorage.setItem('session-lens.account-number', 'A-123');
+    render(createElement(App));
+
+    const tab = await screen.findByRole('tab', { name: 'Happy Hours' });
+    await waitFor(() =>
+      expect(
+        within(tab).getByText(tokenBalance === 1234 ? '1,234' : String(tokenBalance)),
+      ).toBeInTheDocument(),
+    );
+    expect(tab).toHaveAccessibleDescription(
+      `${tokenBalance === 1234 ? '1,234' : String(tokenBalance)} Happy Hours ${tokenBalance === 1 ? 'token' : 'tokens'} available. Account balance, independent of the selected dates.`,
+    );
+    await userEvent.click(tab);
+    expect(screen.getByRole('table', { name: 'Happy Hours session history' })).toBeInTheDocument();
+    expect(tab).toHaveTextContent(
+      tokenBalance === 1
+        ? '1 token'
+        : `${tokenBalance === 1234 ? '1,234' : String(tokenBalance)} tokens`,
+    );
+  },
+);
+
+it('keeps session results usable when loading tokens fails', async () => {
+  setup({ tokenFailure: true, joinedEvents: demoDataset().sessions });
+  localStorage.setItem('session-lens.api-key', 'test-key');
+  localStorage.setItem('session-lens.account-number', 'A-123');
+  render(createElement(App));
+
+  const tab = await screen.findByRole('tab', { name: 'Happy Hours' });
+  await waitFor(() =>
+    expect(tab).toHaveAccessibleDescription(
+      'Happy Hours token balance unavailable. Refresh results to try again.',
+    ),
+  );
+  expect(screen.getByRole('table', { name: 'Power down session history' })).toBeInTheDocument();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.getByRole('tab', { name: 'Happy Hours' })).toHaveTextContent('••• tokens');
+});
+
+it('renders session results while the Happy Hours token request is stalled', async () => {
+  setup({ joinedEvents: demoDataset().sessions });
+  const ordinaryFetch = vi.mocked(fetch).getMockImplementation();
+  if (!ordinaryFetch) throw new Error('Expected fetch fixture');
+  let finish: (response: Response) => void = () => {
+    throw new Error('Expected token request');
+  };
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    if (String(init?.body).includes('HappyHourTokens'))
+      return new Promise<Response>((resolve) => {
+        finish = resolve;
+      });
+    return ordinaryFetch(input, init);
+  });
+  localStorage.setItem('session-lens.api-key', 'test-key');
+  localStorage.setItem('session-lens.account-number', 'A-123');
+  render(createElement(App));
+
+  expect(
+    await screen.findByRole('table', { name: 'Power down session history' }),
+  ).toBeInTheDocument();
+  const tab = screen.getByRole('tab', { name: 'Happy Hours' });
+  expect(tab).toHaveAccessibleDescription('Loading Happy Hours token balance.');
+  expect(tab).toHaveTextContent('••• tokens');
+  expect(screen.getByRole('button', { name: 'Refresh results' })).toBeEnabled();
+
+  finish(Response.json({ data: { savingSessions: { account: { tokenBalance: 4 } } } }));
+  await waitFor(() => expect(tab).toHaveTextContent('4 tokens'));
+});

@@ -1,6 +1,7 @@
 import { decimal } from '../domain/decimal';
 import { useRef, useState } from 'react';
 import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchHappyHourTokens } from '../api/happyHourTokens';
 import { loadDataset, type LoadOptions } from '../api/client';
 
 interface Request {
@@ -38,8 +39,22 @@ export function useSessionData(
     queryFn: request ? ({ signal }) => load(request.options, signal) : skipToken,
   });
 
+  const tokens = useQuery({
+    queryKey: ['happy-hour-tokens', request?.scope ?? 'idle'],
+    enabled: request !== null,
+    queryFn: request
+      ? ({ signal }) =>
+          fetchHappyHourTokens({
+            key: request.options.key,
+            account: request.options.account,
+            signal,
+          })
+      : skipToken,
+  });
+
   function reset(forget = false) {
     void client.cancelQueries({ queryKey: ['sessions'] });
+    void client.cancelQueries({ queryKey: ['happy-hour-tokens'] });
     setRequest(null);
 
     if (forget) {
@@ -60,6 +75,8 @@ export function useSessionData(
       };
     }
 
+    if (request?.scope === current.scope) void tokens.refetch();
+
     identity.current = current;
     const next = { options, scope: current.scope };
 
@@ -77,6 +94,8 @@ export function useSessionData(
   return {
     changeRange,
     data: request ? (query.data ?? null) : null,
+    happyHourTokens: request && !tokens.isError ? (tokens.data ?? null) : null,
+    happyHourTokensLoading: request !== null && tokens.isPending && tokens.isFetching,
     busy: request !== null && query.isFetching,
     error: request && query.error ? query.error.message : '',
     connect,

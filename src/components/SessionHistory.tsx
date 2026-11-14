@@ -1,4 +1,4 @@
-import { decimal, fixed, type Decimal } from '../domain/decimal';
+import { decimal, fixed, formatNumeric, type Decimal } from '../domain/decimal';
 import { Temporal, milliseconds, formatDate, formatTimeRange } from '../domain/time';
 import { Fragment, useId, useState } from 'react';
 import { CalendarClock, ChevronDown } from 'lucide-react';
@@ -175,11 +175,15 @@ export function SessionHistory({
   type,
   onTypeChange,
   totals,
+  happyHourTokens,
+  happyHourTokensLoading = false,
 }: {
   results: Calculation[];
   type: SessionType;
   onTypeChange: (type: SessionType) => void;
   totals?: SessionTotals;
+  happyHourTokens?: number | null;
+  happyHourTokensLoading?: boolean;
 }) {
   const id = useId(),
     [expanded, setExpanded] = useState<Set<number>>(() => new Set());
@@ -197,6 +201,14 @@ export function SessionHistory({
   const compact = useMediaQuery('(max-width: 800px)');
   const estimateReward = type === 'TURN_DOWN';
   const columns = compact ? 4 : estimateReward ? 6 : 5;
+  const tokenCount = happyHourTokens == null ? null : formatNumeric(happyHourTokens, 0);
+  const tokenUnit = happyHourTokens === 1 ? 'token' : 'tokens';
+  const tokenDescription =
+    tokenCount === null
+      ? happyHourTokensLoading
+        ? 'Loading Happy Hours token balance.'
+        : 'Happy Hours token balance unavailable. Refresh results to try again.'
+      : `${tokenCount} Happy Hours ${tokenUnit} available. Account balance, independent of the selected dates.`;
 
   function changeTab(index: number) {
     const next = SESSION_TYPES[index < 0 ? 2 : index > 2 ? 0 : index]?.value;
@@ -216,6 +228,7 @@ export function SessionHistory({
             role="tab"
             aria-selected={type === tab.value}
             aria-controls={id + '-panel'}
+            aria-description={tab.value === 'WEEKEND_HAPPY_HOUR' ? tokenDescription : undefined}
             tabIndex={type === tab.value ? 0 : -1}
             onClick={() => onTypeChange(tab.value)}
             onKeyDown={(e) => {
@@ -238,7 +251,12 @@ export function SessionHistory({
               }
             }}
           >
-            {tab.label}
+            <span className="session-tab-label">{tab.label}</span>
+            {tab.value === 'WEEKEND_HAPPY_HOUR' && (
+              <span className="happy-hour-tokens" aria-hidden="true">
+                <strong>{tokenCount ?? PLACEHOLDER}</strong> {tokenUnit}
+              </span>
+            )}
           </button>
         ))}
       </div>

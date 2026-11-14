@@ -3,8 +3,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { PublicIntro } from './src/components/PublicIntro';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { browserConfig } from './vitest.browser.config';
 
-export default defineConfig({
+const appConfig = defineConfig({
   plugins: [
     react(),
     {
@@ -97,3 +98,5 @@ export default defineConfig({
     },
   },
 });
+
+export default defineConfig(({ mode }) => (mode === 'browser' ? browserConfig : appConfig));
