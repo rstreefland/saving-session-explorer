@@ -26,13 +26,13 @@ for (const width of [320, 393, 768, 1280]) {
     await expect.element(overview).not.toHaveTextContent('results included');
     for (const value of overview.getBySelector('tbody strong').elements()) {
       expect(getComputedStyle(value).fontWeight).toBe('400');
-      expect(getComputedStyle(value).fontSize).toBe('16px');
+      expect(getComputedStyle(value).fontSize).toBe('14px');
     }
     for (const value of page
       .getBySelector('.history-row .outcome-label, .mobile-source .outcome-label')
       .elements()) {
       expect(getComputedStyle(value).fontWeight).toBe('400');
-      expect(getComputedStyle(value).fontSize).toBe('16px');
+      expect(getComputedStyle(value).fontSize).toBe('14px');
     }
     expect(
       getComputedStyle(overview.getByRole('columnheader', { name: 'Octopus' }).element())
@@ -44,7 +44,7 @@ for (const width of [320, 393, 768, 1280]) {
       expect(unit).not.toBeNull();
       if (unit) {
         expect(getComputedStyle(unit).display).toBe('inline');
-        expect(getComputedStyle(unit).fontSize).toBe('16px');
+        expect(getComputedStyle(unit).fontSize).toBe('14px');
       }
     }
     await page
@@ -73,7 +73,7 @@ for (const width of [320, 393, 768, 1280]) {
       await expect.element(page.getBySelector('.mobile-energy-main')).not.toHaveLength(0);
     }
     for (const energy of page.getBySelector('.mobile-energy-main').elements()) {
-      expect(getComputedStyle(energy).fontSize).toBe('16px');
+      expect(getComputedStyle(energy).fontSize).toBe('14px');
     }
     expect(document.documentElement.scrollWidth <= innerWidth).toBe(true);
   });

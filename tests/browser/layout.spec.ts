@@ -20,15 +20,15 @@ function fitsViewport() {
   );
   const energy = document.querySelector('.mobile-energy, .history-table .shifted-energy');
   if (time) {
-    expect(getComputedStyle(time).fontSize).toBe('16px');
+    expect(getComputedStyle(time).fontSize).toBe('14px');
     for (const outcome of outcomes) {
-      expect(getComputedStyle(outcome).fontSize).toBe('16px');
+      expect(getComputedStyle(outcome).fontSize).toBe('14px');
     }
   }
-  if (date) expect(getComputedStyle(date).fontSize).toBe('14px');
+  if (date) expect(getComputedStyle(date).fontSize).toBe('12px');
   if (energy)
     expect(getComputedStyle(energy).fontSize).toBe(
-      energy.classList.contains('mobile-energy-main') ? '16px' : '14px',
+      energy.classList.contains('mobile-energy-main') ? '14px' : '12px',
     );
   for (const value of page.getBySelector('.octopoints-value').elements()) {
     const range = document.createRange();
