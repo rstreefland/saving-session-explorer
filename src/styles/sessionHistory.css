@@ -615,7 +615,7 @@
   width: 40%;
 }
 .overview-table tr > :last-child {
-  background: var(--mint);
+  background: var(--pink);
 }
 .overview-value {
   font-variant-numeric: tabular-nums;
@@ -662,11 +662,11 @@
     clip-path: inset(50%);
   }
   .overview-table thead th {
-    border-bottom: 3px solid var(--pink);
+    border-bottom: 3px solid var(--line);
     background: transparent;
   }
   .overview-table thead th:last-child {
-    border-bottom-color: var(--mint);
+    border-bottom-color: var(--pink);
   }
   .overview-table tbody th {
     grid-column: 1 / -1;
