@@ -1,6 +1,6 @@
 import { decimal, fixed, formatNumeric, type Decimal } from '../domain/decimal';
 import { Temporal, milliseconds, formatDate, formatTimeRange } from '../domain/time';
-import { Fragment, useId, useState, type ReactNode } from 'react';
+import { Fragment, useId, useState } from 'react';
 import { CalendarClock, ChevronDown } from 'lucide-react';
 import type { Calculation, Session } from '../domain/types';
 import {
@@ -17,6 +17,8 @@ import { Tooltip } from './Tooltip';
 import { OctopointsValue } from './OctopointsValue';
 import { estimateOctopoints } from '../domain/points';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { SessionOverview } from './SessionOverview';
+import { officialRewardValue, type SessionTotals } from '../domain/totals';
 import { PLACEHOLDER } from './placeholder';
 
 const statuses: Record<string, { label: string; tone: SessionOutcome['tone'] }> = {
@@ -33,10 +35,7 @@ function status(session: Session) {
 }
 
 function reward(session: Session) {
-  if (['CALCULATING', 'UPCOMING'].includes(session.resultsStatus ?? '') || !session.resultsStatus)
-    return PLACEHOLDER;
-
-  const value = isHappyHour(session) ? session.rewardGivenInPence : session.rewardGivenInOctoPoints;
+  const value = officialRewardValue(session);
 
   if (value == null) return PLACEHOLDER;
   if (isHappyHour(session)) return decimal(value).toString() + 'p';
@@ -114,7 +113,7 @@ function MobileResults({
                         {estimated && result.provisional && <ProvisionalIndicator />}
                       </span>
                     )}
-                    <span className="mobile-energy">
+                    <span className={happy ? 'mobile-energy mobile-energy-main' : 'mobile-energy'}>
                       {energy === null
                         ? PLACEHOLDER
                         : fixed(energy, 2) + (happy ? ' kWh used' : ' kWh shifted')}
@@ -175,14 +174,14 @@ export function SessionHistory({
   results,
   type,
   onTypeChange,
-  summary,
+  totals,
   happyHourTokens,
   happyHourTokensLoading = false,
 }: {
   results: Calculation[];
   type: SessionType;
   onTypeChange: (type: SessionType) => void;
-  summary?: ReactNode;
+  totals?: SessionTotals;
   happyHourTokens?: number | null;
   happyHourTokensLoading?: boolean;
 }) {
@@ -262,7 +261,7 @@ export function SessionHistory({
         ))}
       </div>
       <div role="tabpanel" id={id + '-panel'} aria-labelledby={id + '-' + type} tabIndex={0}>
-        {summary}
+        {totals && results.length > 0 && <SessionOverview totals={totals} type={type} />}
         {phone ? (
           <MobileResults
             results={results}

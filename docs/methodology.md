@@ -210,3 +210,24 @@ For methodology changes, test the path from validated dataset inputs through cal
 reward outputs. Calculate expectations independently rather than using the calculator to produce
 its own answers. Extend focused examples for the changed behaviour instead of adding combinatorial
 snapshots. Fixture agreement and coverage thresholds don't prove agreement with Octopus.
+
+## Visible-history totals
+
+Totals sum each column independently over the visible session type and date range. Unavailable
+values and pending results are excluded, not replaced by zero; a column with no available values shows the
+usual placeholder. Calculated and Octopus columns may cover different sessions. The overview
+shows pending and unavailable counts below the values. Provisional inputs mark the corresponding calculated totals.
+Happy Hours sum import usage and cash credit; Power up has no estimated reward total.
+
+Totals use the shared Decimal precision and rounding policy above. Energy is displayed to two
+places. Rewards sum already-rounded per-session awards, without repricing the aggregate.
+A supplied Octopus average credit for a missing-reading session can contribute to the reward
+total even though its energy and achievement remain unavailable.
+
+The combined overview uses the same visible sessions as the history. Calculated achievement
+counts reuse the row outcome codes, including partly achieved sessions; official achievement
+counts use published SUCCESS and PARTIAL_SUCCESS statuses, with published FAIL counting as an
+available non-achievement. Provisional estimates mark corresponding counts and totals.
+Possible missed rewards reuse the row attention decision, so provisional estimates cannot raise
+an alert. Pending, missing-reading and upcoming official statuses are counted separately.
+Happy Hours show usage rather than achievement, and no independent cash-credit estimate.

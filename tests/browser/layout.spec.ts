@@ -20,13 +20,16 @@ function fitsViewport() {
   );
   const energy = document.querySelector('.mobile-energy, .history-table .shifted-energy');
   if (time) {
+    expect(getComputedStyle(time).fontSize).toBe('16px');
     for (const outcome of outcomes) {
-      expect(getComputedStyle(outcome).fontSize).toBe(getComputedStyle(time).fontSize);
+      expect(getComputedStyle(outcome).fontSize).toBe('16px');
     }
   }
-  if (date && energy) {
-    expect(getComputedStyle(date).fontSize).toBe(getComputedStyle(energy).fontSize);
-  }
+  if (date) expect(getComputedStyle(date).fontSize).toBe('14px');
+  if (energy)
+    expect(getComputedStyle(energy).fontSize).toBe(
+      energy.classList.contains('mobile-energy-main') ? '16px' : '14px',
+    );
   for (const value of page.getBySelector('.octopoints-value').elements()) {
     const range = document.createRange();
     range.selectNode(value.firstChild!);
@@ -36,7 +39,8 @@ function fitsViewport() {
     const amountStyle = getComputedStyle(value.querySelector('strong')!);
     const unitStyle = getComputedStyle(unit);
     const energy = value.closest('.mobile-source')?.querySelector('.mobile-energy');
-    const expectedStyle = energy ? getComputedStyle(energy) : amountStyle;
+    const reward = value.closest('.mobile-source-reward');
+    const expectedStyle = reward ? getComputedStyle(reward) : amountStyle;
     expect(number.bottom).toBeGreaterThan(unitBounds.top);
     expect(unitBounds.bottom).toBeGreaterThan(number.top);
     expect(unitStyle.fontSize).toBe(expectedStyle.fontSize);
@@ -49,7 +53,9 @@ function fitsViewport() {
       expect(amountStyle.fontWeight).toBe(unitStyle.fontWeight);
       expect(unitStyle.fontWeight).toBe('400');
     } else {
-      expect(Number(amountStyle.fontWeight)).toBeGreaterThanOrEqual(700);
+      expect(amountStyle.fontWeight).toBe(
+        value.closest('.overview-table tbody, .history-row') ? '400' : '700',
+      );
     }
   }
 }

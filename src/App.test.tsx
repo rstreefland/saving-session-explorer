@@ -19,7 +19,7 @@ const user = () => userEvent.setup();
 const rows = () =>
   within(screen.getByRole('table', { name: 'Power down session history' }))
     .getAllByRole('row')
-    .slice(1);
+    .filter((row) => row.classList.contains('history-row'));
 
 async function credentials() {
   const u = user();
@@ -66,11 +66,9 @@ describe('Session history', () => {
     expect(rows()).toHaveLength(5);
     expect(within(rows()[0]).getByText('Upcoming')).toBeInTheDocument();
 
-    const summary = screen.getByRole('region', { name: 'Session summary' });
+    expect(screen.queryByRole('region', { name: 'Session summary' })).not.toBeInTheDocument();
     const tabs = screen.getByRole('tablist', { name: 'Session type' });
-
-    expect(tabs.nextElementSibling).toContainElement(summary);
-    expect(summary.nextElementSibling).toContainElement(
+    expect(tabs.nextElementSibling).toContainElement(
       screen.getByRole('table', { name: 'Power down session history' }),
     );
 
@@ -79,9 +77,6 @@ describe('Session history', () => {
     expect(notes.previousElementSibling).toContainElement(
       screen.getByRole('table', { name: 'Power down session history' }),
     );
-    expect(
-      within(summary).getByText('Achieved or partly achieved').nextElementSibling,
-    ).toHaveTextContent('3 / 3');
 
     const changedRow = rows().find((row) => within(row).queryByText('0.64 kWh shifted'))!;
 
@@ -98,7 +93,10 @@ describe('Session history', () => {
     const table = screen.getByRole('table', { name: 'Happy Hours session history' });
 
     expect(within(table).getByRole('columnheader', { name: 'Usage' })).toBeInTheDocument();
-    expect(within(table).getByText('8p')).toBeInTheDocument();
+    expect(within(table.querySelector('tbody')!).getByText('8p')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('region', { name: 'Session overview' })).getByText('8p'),
+    ).toBeInTheDocument();
   });
 
   it('persists a key, loads an account and forgets its results', async () => {
