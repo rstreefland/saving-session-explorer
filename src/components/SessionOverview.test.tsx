@@ -1,5 +1,4 @@
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { expect, it } from 'vitest';
 import { PLACEHOLDER } from './placeholder';
 import { SessionOverview } from './SessionOverview';
@@ -7,7 +6,7 @@ import { sessionTotals } from '../domain/totals';
 import { calculateAll } from '../domain/calculate';
 import { demoDataset } from '../domain/demo';
 
-it('explains included average credits while keeping missing energy unavailable', async () => {
+it('includes average credits while keeping missing energy unavailable', () => {
   const base = calculateAll(demoDataset())[0];
   const totals = sessionTotals([
     {
@@ -35,8 +34,4 @@ it('explains included average credits while keeping missing energy unavailable',
   expect(overview).not.toHaveTextContent('results included');
   expect(reward).toHaveTextContent('64 Octopoints');
   expect(overview).toHaveTextContent('1 Octopus results missing readings');
-  await userEvent.click(screen.getByRole('button', { name: 'About these totals' }));
-  expect(screen.getByRole('tooltip')).toHaveTextContent(
-    'Any average credit from Octopus is still included.',
-  );
 });

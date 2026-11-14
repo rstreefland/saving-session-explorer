@@ -111,10 +111,6 @@ export function SessionOverview({ totals, type }: { totals: SessionTotals; type:
           {overview.upcoming !== '0' && <span>{overview.upcoming} upcoming sessions</span>}
           <span>{overview.unavailable} calculated results unavailable</span>
         </div>
-        <Tooltip
-          label="About these totals"
-          text="We only add up the results we have, so the two sides may cover different sessions. Missing values don't count as zero. Any average credit from Octopus is still included."
-        />
       </footer>
     </section>
   );
