@@ -131,9 +131,10 @@ all contributors and repository code, including tests and tooling unless an exce
   expansion state across resizing.
 - Give styles a clear owner. Use shared tokens and feature stylesheets; edit the owning rule
   rather than appending overrides elsewhere. Preserve established typography relationships.
-- Use 16px main text and 14px secondary text in the session overview and history table bodies,
-  including their mobile cards. Keep body text at regular weight (400), with numbers and units
-  at the same size. Reuse the shared size tokens across breakpoints rather than adding variants.
+- Use only 14px for primary text and 12px for secondary text throughout the app, including
+  mobile layouts. The main title is the only exception and may use a responsive size. Keep
+  session overview and history body text at regular weight (400), with numbers and units at
+  the same size. Reuse the shared size tokens across breakpoints rather than adding variants.
 - Use semantic controls with accessible names, keyboard operation, focus, disclosure state,
   adequate touch targets, and reduced-motion support. Tooltips must work with keyboard and touch.
   Automated accessibility checks supplement interaction tests.
