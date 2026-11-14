@@ -41,3 +41,18 @@ test('the top bar theme control styles mobile and desktop and restores the saved
     'rgb(247, 246, 245)',
   );
 });
+
+test('selected date range keeps its readable colors on hover in dark mode', async () => {
+  localStorage.setItem('session-lens.theme', 'dark');
+  await page.viewport(1280, 900);
+  await openApp();
+
+  const selected = page.getByRole('button', { name: 'Last 30 days' });
+  const background = getComputedStyle(selected.element()).backgroundColor;
+  const color = getComputedStyle(selected.element()).color;
+
+  await selected.hover();
+
+  expect(getComputedStyle(selected.element()).backgroundColor).toBe(background);
+  expect(getComputedStyle(selected.element()).color).toBe(color);
+});

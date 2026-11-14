@@ -283,6 +283,10 @@ input::placeholder {
   color: var(--on-accent);
 }
 
+.period-buttons .selected:hover:not(:disabled) {
+  background: var(--mint);
+}
+
 .range-caption {
   font-size: 14px;
   font-family: var(--mono);
