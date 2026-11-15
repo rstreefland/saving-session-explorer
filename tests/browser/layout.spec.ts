@@ -1,5 +1,6 @@
 import { decimal } from '../../src/domain/decimal';
-import { expect, test } from 'vitest';
+import { Temporal } from '../../src/domain/time';
+import { expect, test, vi } from 'vitest';
 import { userEvent, type Locator } from 'vitest/browser';
 import { page, openApp, connectedAccount } from './fixtures';
 
@@ -285,6 +286,11 @@ test('appearance switch fits a phone and changes the rendered palette', async ()
 });
 
 test('history header and first row keep the regular height while icons stay circular', async () => {
+  const instant = Temporal.Instant.from('2026-11-05T12:00:00Z');
+  vi.spyOn(Temporal.Now, 'instant').mockReturnValue(instant);
+  vi.spyOn(Temporal.Now, 'plainDateISO').mockReturnValue(
+    instant.toZonedDateTimeISO('Europe/London').toPlainDate(),
+  );
   await page.viewport(1280, 900);
   await openApp();
   await page.getByRole('button', { name: 'Try demo' }).click();
@@ -352,10 +358,12 @@ test('history header and first row keep the regular height while icons stay circ
       icon.element().focus();
       expect(document.activeElement).toBe(icon.element());
     }
+    const topBeforeHover = decimal(box(icon).top).plus(window.scrollY);
     await icon.hover();
     const hovered = box(icon);
+    const topAfterHover = decimal(hovered.top).plus(window.scrollY);
     expect(decimal(hovered.x).minus(bounds.x).abs().toNumber()).toBeLessThanOrEqual(1);
-    expect(decimal(hovered.y).minus(bounds.y).abs().toNumber()).toBeLessThanOrEqual(1);
+    expect(topAfterHover.minus(topBeforeHover).abs().toNumber()).toBeLessThanOrEqual(1);
     fitsViewport();
   }
 });
