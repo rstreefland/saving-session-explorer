@@ -3,6 +3,16 @@ z.config({ jitless: true });
 export const GRAPHQL = 'https://api.backend.octopus.energy/v1/graphql/';
 export const AUTH = 'https://api.oegb-kraken.energy/v1/graphql/';
 
+export class HttpError extends Error {
+  readonly status: number;
+
+  constructor({ status, message }: { status: number; message: string }) {
+    super(message);
+    this.name = 'HttpError';
+    this.status = status;
+  }
+}
+
 export async function json(url: string, init: RequestInit, signal: AbortSignal): Promise<unknown> {
   let response: Response;
 
@@ -17,13 +27,15 @@ export async function json(url: string, init: RequestInit, signal: AbortSignal):
   }
 
   if (!response.ok)
-    throw new Error(
-      response.status === 401 || response.status === 403
-        ? 'Octopus rejected these credentials. Check your API key and account number.'
-        : response.status === 429
-          ? 'Octopus rate limit reached. Please wait before refreshing.'
-          : `Service returned HTTP ${response.status}. Please try again.`,
-    );
+    throw new HttpError({
+      status: response.status,
+      message:
+        response.status === 401 || response.status === 403
+          ? 'Octopus rejected these credentials. Check your API key and account number.'
+          : response.status === 429
+            ? 'Octopus rate limit reached. Please wait before refreshing.'
+            : `Service returned HTTP ${response.status}. Please try again.`,
+    });
 
   return response.json();
 }

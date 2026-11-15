@@ -1,4 +1,4 @@
-import { AUTH, GRAPHQL, graphql, json } from './transport';
+import { AUTH, GRAPHQL, HttpError, graphql, json } from './transport';
 export { AUTH, GRAPHQL, graphql } from './transport';
 import { decimal } from '../domain/decimal';
 import {
@@ -152,22 +152,26 @@ export async function selectMeter(
     serials.map(async (serial) => {
       const url = consumptionUrl(point.mpan, serial, { page_size: '100', order_by: '-period' });
 
-      for await (const page of readingPages(key, url, signal, 10)) {
-        const valid = page.filter((reading) => {
-          return (
-            decimal(reading.consumption).gte(0) &&
-            alignedHalfHour(reading.interval_start) &&
-            elapsedHalfHour(reading.interval_start, reading.interval_end)
-          );
-        });
+      try {
+        for await (const page of readingPages(key, url, signal, 10)) {
+          const valid = page.filter((reading) => {
+            return (
+              decimal(reading.consumption).gte(0) &&
+              alignedHalfHour(reading.interval_start) &&
+              elapsedHalfHour(reading.interval_start, reading.interval_end)
+            );
+          });
 
-        if (valid.length)
-          return {
-            serial,
-            latest: valid
-              .map((reading) => milliseconds(reading.interval_end))
-              .reduce((latest, time) => (time > latest ? time : latest)),
-          };
+          if (valid.length)
+            return {
+              serial,
+              latest: valid
+                .map((reading) => milliseconds(reading.interval_end))
+                .reduce((latest, time) => (time > latest ? time : latest)),
+            };
+        }
+      } catch (error) {
+        if (signal.aborted || !(error instanceof HttpError) || error.status !== 404) throw error;
       }
 
       return { serial, latest: null };
