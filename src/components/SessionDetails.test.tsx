@@ -46,12 +46,12 @@ it('shows half-hour formulas and the rewarded total without an overall-change su
     within(equations[0])
       .getAllByRole('definition')
       .map((value) => value.textContent),
-  ).toEqual(['0.600 kWh', '0.100 kWh', '0.500 kWh0.500 kWh counts towards rewards']);
+  ).toEqual(['0.600', '0.100', '0.500', '0.500 kWh']);
   expect(
     within(equations[1])
       .getAllByRole('definition')
       .map((value) => value.textContent),
-  ).toEqual(['0.600 kWh', '0.700 kWh', '-0.100 kWh0.000 kWh counts towards rewards']);
+  ).toEqual(['0.600', '0.700', '-0.100', '0.000 kWh']);
   for (const equation of equations) {
     expect(within(equation).getByText('−')).toBeVisible();
     expect(within(equation).getByText('=')).toBeVisible();
@@ -77,8 +77,8 @@ it('uses rewarded half-hours rather than the net session reduction in the screen
 
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
 
-  expect(summary).toHaveTextContent('-0.002 kWh0.000 kWh counts towards rewards');
-  expect(summary).toHaveTextContent('0.077 kWh counts towards rewards');
+  expect(summary).toHaveTextContent('Change-0.002Counts for rewards0.000 kWh');
+  expect(summary).toHaveTextContent('Counts for rewards0.077 kWh');
   expect(summary).toHaveTextContent('Total shifted for rewards0.077 kWh');
   expect(summary).not.toHaveTextContent('0.075');
 });
@@ -88,8 +88,8 @@ it('retains earned shifts when usage rises over the session as a whole', () => {
 
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
 
-  expect(summary).toHaveTextContent('0.500 kWh counts towards rewards');
-  expect(summary).toHaveTextContent('-0.600 kWh0.000 kWh counts towards rewards');
+  expect(summary).toHaveTextContent('Counts for rewards0.500 kWh');
+  expect(summary).toHaveTextContent('Change-0.600Counts for rewards0.000 kWh');
   expect(summary).toHaveTextContent('Total shifted for rewards0.500 kWh');
 });
 
@@ -105,12 +105,12 @@ it('reverses the formula for Power up and counts only usage above baseline', () 
     within(equations[0])
       .getAllByRole('definition')
       .map((value) => value.textContent),
-  ).toEqual(['1.100 kWh', '0.600 kWh', '0.500 kWh0.500 kWh counts towards rewards']);
+  ).toEqual(['1.100', '0.600', '0.500', '0.500 kWh']);
   expect(
     within(equations[1])
       .getAllByRole('definition')
       .map((value) => value.textContent),
-  ).toEqual(['0.500 kWh', '0.600 kWh', '-0.100 kWh0.000 kWh counts towards rewards']);
+  ).toEqual(['0.500', '0.600', '-0.100', '0.000 kWh']);
   expect(summary).toHaveTextContent('Total shifted for rewards0.500 kWh');
 });
 
@@ -119,7 +119,11 @@ it.each([false, true])('shows zero when no half-hour qualifies (Power up: %s)', 
 
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
 
-  expect(within(summary).getAllByText('0.000 kWh counts towards rewards')).toHaveLength(2);
+  expect(
+    within(summary)
+      .getAllByText('Counts for rewards')
+      .map((term) => term.parentElement?.textContent),
+  ).toEqual(['Counts for rewards0.000 kWh', 'Counts for rewards0.000 kWh']);
   expect(summary).toHaveTextContent('Total shifted for rewards0.000 kWh');
 });
 
@@ -145,7 +149,7 @@ it('adds Happy Hour import readings without baseline equations or a promise of c
   const readings = within(summary).getAllByRole('group', { name: 'Imported usage' });
 
   expect(readings).toHaveLength(2);
-  expect(readings[0]).toHaveTextContent('Imported0.150 kWh');
+  expect(readings[0]).toHaveTextContent('Imported0.150');
   expect(summary).toHaveTextContent('Total imported0.300 kWh');
   expect(summary).toHaveTextContent('No baseline comparison is needed.');
   expect(within(summary).queryByText('−')).not.toBeInTheDocument();
@@ -289,7 +293,7 @@ it('explains provisional Mini inputs without suggesting a missed reward', async 
   expect(screen.queryByText(/Possible missed reward/)).not.toBeInTheDocument();
 });
 
-it('marks only usage boxes whose half-hour comes from the Mini', async () => {
+it('marks only usage values whose half-hour comes from the Mini', async () => {
   const data = demoDataset();
   const start = milliseconds(data.sessions[1].startAt);
   data.imports.find((r) => milliseconds(r.interval_start) === start)!.source = 'home-mini';
@@ -333,4 +337,18 @@ it('explains Octopus missing data and average credits even when our readings are
   );
   expect(screen.getByText(/Possible missed reward/)).toBeInTheDocument();
   expect(screen.getByRole('region', { name: 'Calculation summary' })).toBeInTheDocument();
+});
+
+it('keeps the full calculation explanation available in a disclosure', async () => {
+  render(<SessionDetails result={mixed(1.1, 0.5, true)} />);
+  const summary = screen.getByRole('region', { name: 'Calculation summary' });
+  const explanation =
+    'Power down and Power up use electricity imported minus electricity exported.';
+
+  expect(within(summary).queryByText(explanation)).not.toBeInTheDocument();
+  await userEvent.click(within(summary).getByText('How this is calculated'));
+  expect(within(summary).getByText(explanation)).toBeVisible();
+  expect(within(summary).getByText(/Each half-hour is counted separately/)).toHaveTextContent(
+    'Each half-hour is counted separately. Only usage above baseline counts towards rewards; other half-hours count as zero.',
+  );
 });

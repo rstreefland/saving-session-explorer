@@ -1,6 +1,6 @@
 import { decimal } from '../../src/domain/decimal';
 import { expect, test } from 'vitest';
-import type { Locator } from 'vitest/browser';
+import { userEvent, type Locator } from 'vitest/browser';
 import { page, openApp, connectedAccount } from './fixtures';
 
 function box(locator: Locator) {
@@ -156,8 +156,10 @@ for (const width of [320, 600, 800, 1280]) {
     const outer = calculationElement.getBoundingClientRect();
     const geometry = {
       outer: { x: outer.x, right: outer.right },
-      cards: [...calculationElement.querySelectorAll('.calculation-card')].map((card) => {
-        const bounds = card.getBoundingClientRect();
+      values: [
+        ...calculationElement.querySelectorAll('.calculation-value, .calculation-contribution'),
+      ].map((value) => {
+        const bounds = value.getBoundingClientRect();
         return { x: bounds.x, right: bounds.right };
       }),
       operators: [...calculationElement.querySelectorAll('.calculation-operator')].map(
@@ -172,10 +174,10 @@ for (const width of [320, 600, 800, 1280]) {
       ),
     };
 
-    expect(geometry.cards).toHaveLength(6);
+    expect(geometry.values).toHaveLength(8);
     expect(geometry.operators).toHaveLength(4);
     expect(
-      geometry.cards.every(
+      geometry.values.every(
         (bounds) =>
           decimal(bounds.x).gte(decimal(geometry.outer.x).minus(1)) &&
           decimal(bounds.right).lte(decimal(geometry.outer.right).plus(1)),
@@ -186,6 +188,24 @@ for (const width of [320, 600, 800, 1280]) {
         (bounds) => bounds.width > 0 && bounds.height > 0 && bounds.visibility === 'visible',
       ),
     ).toBe(true);
+    for (const halfHour of calculation.getBySelector('.half-hour-calculation').all()) {
+      expect(box(halfHour).height).toBeLessThanOrEqual(width > 1000 ? 100 : 150);
+      const values = halfHour.getBySelector('.calculation-value dd').elements();
+      const first = values[0].getBoundingClientRect();
+      for (const value of values) {
+        const bounds = value.getBoundingClientRect();
+        expect(decimal(bounds.top).minus(first.top).abs().toNumber()).toBeLessThanOrEqual(1);
+        expect(getComputedStyle(value).fontSize).toBe('14px');
+        expect(getComputedStyle(value).fontWeight).toBe('400');
+      }
+      const contribution = box(halfHour.getBySelector('.calculation-contribution'));
+      if (width <= 600) expect(contribution.top).toBeGreaterThanOrEqual(first.bottom);
+    }
+    const explanation = calculation.getByText('How this is calculated');
+    explanation.element().focus();
+    await userEvent.keyboard('{Enter}');
+    await expect.element(calculation.getBySelector('.reading-disclosure-body')).toBeVisible();
+    expect(box(explanation).height).toBeGreaterThanOrEqual(44);
     fitsViewport();
     await page.getByRole('tab', { name: 'Happy Hours' }).click();
 

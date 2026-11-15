@@ -34,11 +34,6 @@ export function SessionDetails({ result }: { result: Calculation }) {
         </p>
       )}
       <PointsBreakdown result={result} />
-      {!isHappyHour(result.session) && (
-        <p className="reading-note">
-          Power down and Power up use electricity imported minus electricity exported.
-        </p>
-      )}
       {!isHappyHour(result.session) && <ReferenceReadings result={result} />}
       <OctopusComparison result={result} />
     </div>
