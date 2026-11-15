@@ -808,7 +808,8 @@ it.each([false, true])(
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: /Readings for/ }));
     const summary = screen.getByRole('region', { name: 'Calculation summary' });
-    expect(summary).toHaveTextContent('Baseline0.101 kWh');
+    expect(within(summary).getByText('All values in kWh')).toBeVisible();
+    expect(within(summary).getByText('Baseline').closest('dl')).toHaveTextContent('Baseline0.101');
     expect(summary).toHaveTextContent('Total shifted for rewards0.101 kWh');
     await user.click(screen.getByText('Days used for baseline (10)', { exact: true }));
     const references = screen.getByRole('table', { name: 'Readings used for baseline' });
@@ -847,9 +848,9 @@ it('loads usable results in the default App when another import serial returns 4
   await user.click(await screen.findByRole('button', { name: /Readings for/ }));
 
   expect(screen.getByText(/Import meter: REPLACEMENT/)).toBeVisible();
-  expect(screen.getByRole('region', { name: 'Calculation summary' })).toHaveTextContent(
-    'Baseline0.101 kWh',
-  );
+  const summary = screen.getByRole('region', { name: 'Calculation summary' });
+  expect(within(summary).getByText('All values in kWh')).toBeVisible();
+  expect(within(summary).getByText('Baseline').closest('dl')).toHaveTextContent('Baseline0.101');
   expect(screen.getByRole('button', { name: 'Refresh results' })).toBeEnabled();
   expect(calls.filter((url) => url.includes('period_from='))).toHaveLength(1);
   expect(calls.find((url) => url.includes('period_from='))).toContain('/meters/REPLACEMENT/');

@@ -4,31 +4,26 @@ import { PLACEHOLDER } from '../placeholder';
 import type { Calculation } from '../../domain/types';
 import { isHappyHour } from '../../domain/session';
 import { halfHourRange, number } from './format';
+import { ReadingDisclosure } from './ReadingDisclosure';
 
-function EnergyCard({
+function EnergyValue({
   label,
   value,
-  note,
   tone,
   provisional,
 }: {
   label: string;
   value: Decimal | null;
-  note?: string;
   tone?: 'positive' | 'negative';
   provisional?: boolean;
 }) {
   return (
-    <dl className={'calculation-card' + (tone ? ' calculation-card-' + tone : '')}>
+    <dl className={'calculation-value' + (tone ? ' calculation-value-' + tone : '')}>
       <dt>
         {label}
         {provisional && value !== null && <ProvisionalIndicator />}
       </dt>
-      <dd>
-        {number(value)}
-        {value !== null && <span className="energy-unit"> kWh</span>}
-        {note && <span className="calculation-card-note">{note}</span>}
-      </dd>
+      <dd>{number(value)}</dd>
     </dl>
   );
 }
@@ -39,14 +34,17 @@ export function CalculationSummary({ result }: { result: Calculation }) {
 
   return (
     <section className="calculation-summary" aria-label="Calculation summary">
-      <h3>
-        {happy ? 'How your usage was calculated' : 'How your shifted energy was calculated'}
-        {result.provisional && <ProvisionalIndicator />}
-      </h3>
+      <div className="calculation-heading">
+        <h3>
+          {happy ? 'Imported energy' : 'How your energy was shifted'}
+          {result.provisional && <ProvisionalIndicator />}
+        </h3>
+        <span>All values in kWh</span>
+      </div>
       <p className="calculation-explanation">
         {happy
-          ? 'Imported electricity is added up half-hour by half-hour. No baseline comparison is needed.'
-          : `Each half-hour is counted separately. Only usage ${up ? 'above' : 'below'} baseline counts towards rewards; other half-hours count as zero.`}
+          ? 'No baseline comparison is needed.'
+          : `Only usage ${up ? 'above' : 'below'} baseline counts towards rewards.`}
       </p>
       {result.rewarded === null && (
         <p className="reading-note">
@@ -61,9 +59,9 @@ export function CalculationSummary({ result }: { result: Calculation }) {
             ? null
             : slot.baseline.minus(slot.actual).times(up ? -1 : 1);
         const shift = change === null ? null : positive(change);
-        const baseline = <EnergyCard label="Baseline" value={slot.baseline} />;
+        const baseline = <EnergyValue label="Baseline" value={slot.baseline} />;
         const usage = (
-          <EnergyCard
+          <EnergyValue
             label={happy ? 'Imported' : 'Your usage'}
             value={slot.actual}
             provisional={slot.actualProvisional}
@@ -80,7 +78,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
               <time dateTime={slot.start}>{time}</time>
             </h4>
             <div
-              className={'calculation-cards' + (happy ? ' single-card' : '')}
+              className={'calculation-values' + (happy ? ' import-only' : '')}
               role="group"
               aria-label={
                 happy
@@ -102,7 +100,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
                   <span className="calculation-operator" aria-hidden="true">
                     =
                   </span>
-                  <EnergyCard
+                  <EnergyValue
                     label="Change"
                     value={change}
                     tone={
@@ -112,12 +110,15 @@ export function CalculationSummary({ result }: { result: Calculation }) {
                           ? 'positive'
                           : 'negative'
                     }
-                    note={
-                      shift === null
-                        ? 'Awaiting readings'
-                        : `${number(shift)} kWh counts towards rewards`
-                    }
                   />
+                  <dl className="calculation-contribution">
+                    <dt>Counts for rewards</dt>
+                    <dd>
+                      {number(shift)}
+                      {shift !== null && <span className="energy-unit"> kWh</span>}
+                    </dd>
+                  </dl>
+                  {shift === null && <p className="reading-note">Awaiting readings</p>}
                 </>
               )}
             </div>
@@ -131,6 +132,16 @@ export function CalculationSummary({ result }: { result: Calculation }) {
           {result.rewarded !== null && <span className="energy-unit"> kWh</span>}
         </dd>
       </dl>
+      <ReadingDisclosure title="How this is calculated">
+        <p>
+          {happy
+            ? 'Imported electricity is added up half-hour by half-hour. No baseline comparison is needed.'
+            : `Each half-hour is counted separately. Only usage ${up ? 'above' : 'below'} baseline counts towards rewards; other half-hours count as zero.`}
+        </p>
+        {!happy && (
+          <p>Power down and Power up use electricity imported minus electricity exported.</p>
+        )}
+      </ReadingDisclosure>
       {happy && (
         <p className="reading-note">
           Octopus calculates the bill credit using your tariff and the session rules.
