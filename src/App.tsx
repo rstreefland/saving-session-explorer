@@ -139,14 +139,17 @@ function SessionLens({ load }: AppProps) {
     setDemo(null);
     setValidationError('');
 
-    if (!validRange(from, to)) {
+    const nextRange = selected === '30d' ? last30Days() : range;
+
+    if (!validRange(nextRange.from, nextRange.to)) {
       remote.reset();
       setValidationError('Choose a date range of up to 366 days.');
 
       return;
     }
 
-    remote.connect({ key, account, region: 'auto', from, to });
+    setRange(nextRange);
+    remote.connect({ key, account, region: 'auto', ...nextRange });
   }
 
   return (
