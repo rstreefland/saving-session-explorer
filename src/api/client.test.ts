@@ -423,10 +423,58 @@ describe('meter selection', () => {
     expect(fetch).toHaveBeenCalledTimes(20); // At most ten pages for each of two candidates.
   });
 
-  it('does not silently ignore failures while comparing meters', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({}, 401)));
+  it.each([
+    ['OLD', 'NEW'],
+    ['NEW', 'OLD'],
+  ])('skips a missing meter and selects the usable serial (%s, %s)', async (first, second) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('/meters/OLD/')
+          ? response({}, 404)
+          : response({ results: [reading], next: null }),
+      ),
+    );
 
-    await expect(selectMeter('key', point(), signal())).rejects.toThrow('credentials');
+    expect(await selectMeter('key', point([first, second]), signal())).toBe('NEW');
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not select a meter when every candidate returns 404', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({}, 404)));
+
+    await expect(selectMeter('key', point(), signal())).rejects.toThrow('No half-hourly readings');
+  });
+
+  it('preserves cancellation when a candidate returns 404', async () => {
+    const controller = new AbortController();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        controller.abort();
+        return response({}, 404);
+      }),
+    );
+
+    await expect(selectMeter('key', point(), controller.signal)).rejects.toThrow('HTTP 404');
+  });
+
+  it.each([
+    { status: 401, message: 'credentials' },
+    { status: 403, message: 'credentials' },
+    { status: 429, message: 'rate limit' },
+    { status: 500, message: 'HTTP 500' },
+  ])('does not ignore HTTP $status when another meter is usable', async ({ status, message }) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('/meters/OLD/')
+          ? response({}, status)
+          : response({ results: [reading], next: null }),
+      ),
+    );
+
+    await expect(selectMeter('key', point(), signal())).rejects.toThrow(message);
   });
 });
 
@@ -768,3 +816,35 @@ it.each([false, true])(
     );
   },
 );
+
+it('loads usable results in the default App when another import serial returns 404', async () => {
+  vi.spyOn(Temporal.Now, 'instant').mockReturnValue(Temporal.Instant.from('2026-11-06T12:00:00Z'));
+  vi.spyOn(Temporal.Now, 'plainDateISO').mockReturnValue(Temporal.PlainDate.from('2026-11-06'));
+  const data = precisionFixture(false);
+  const calls = setup({
+    meters: 2,
+    joinedEvents: data.sessions,
+    meterReadings: { REPLACEMENT: data.imports },
+    rewardRate: '80',
+  });
+  const ordinaryFetch = vi.mocked(fetch).getMockImplementation();
+  if (!ordinaryFetch) throw new Error('Missing fetch mock');
+  vi.mocked(fetch).mockImplementation(async (input, init) =>
+    String(input).includes('/meters/ABC/') ? response({}, 404) : ordinaryFetch(input, init),
+  );
+  localStorage.setItem('session-lens.api-key', 'synthetic-key');
+  localStorage.setItem('session-lens.account-number', 'A-123');
+
+  render(createElement(App));
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('button', { name: /Readings for/ }));
+
+  expect(screen.getByText(/Import meter: REPLACEMENT/)).toBeVisible();
+  expect(screen.getByRole('region', { name: 'Calculation summary' })).toHaveTextContent(
+    'Baseline0.101 kWh',
+  );
+  expect(screen.getByRole('button', { name: 'Refresh results' })).toBeEnabled();
+  expect(calls.filter((url) => url.includes('period_from='))).toHaveLength(1);
+  expect(calls.find((url) => url.includes('period_from='))).toContain('/meters/REPLACEMENT/');
+  expect(screen.queryByText(/Service returned HTTP 404/)).not.toBeInTheDocument();
+});
