@@ -27,10 +27,6 @@
   padding: 12px 8px;
 }
 
-.session-tabs button:has(.happy-hour-tokens) {
-  flex: 1.6;
-}
-
 .session-tab-label {
   white-space: nowrap;
 }
