@@ -13,18 +13,23 @@ for (const width of [320, 393, 768, 1280]) {
     const overviewElement = overview.element();
     expect(overviewElement.parentElement?.firstElementChild).toBe(overviewElement);
     expect(getComputedStyle(overviewElement).position).toBe('static');
-    const comparison = overview.getByRole('table', { name: 'Session overview comparison' });
-    const comparisonStyle = getComputedStyle(comparison.element());
-    expect(comparisonStyle.borderTopWidth).toBe('1px');
-    expect(comparisonStyle.borderBottomWidth).toBe('1px');
+    const calculated = overview.getByRole('group', { name: 'Calculated' });
+    const octopus = overview.getByRole('group', { name: 'Octopus' });
+    const calculatedBox = calculated.element().getBoundingClientRect();
+    const octopusBox = octopus.element().getBoundingClientRect();
+    if (width <= 600) {
+      expect(octopusBox.top).toBeGreaterThan(calculatedBox.bottom);
+    } else {
+      expect(octopusBox.left).toBeGreaterThan(calculatedBox.right);
+    }
     expect(
       getComputedStyle(overview.getBySelector('.overview-footer').element()).borderTopWidth,
-    ).toBe('0px');
+    ).toBe('1px');
     const heading = overview.getByRole('heading', { name: 'At a glance' }).element();
     const count = overview.getBySelector('.overview-heading > span').element();
-    expect(heading.getBoundingClientRect().top).toBe(count.getBoundingClientRect().top);
+    expect(count.getBoundingClientRect().top).toBeLessThan(heading.getBoundingClientRect().bottom);
     await expect.element(overview).not.toHaveTextContent('results included');
-    for (const value of overview.getBySelector('tbody strong').elements()) {
+    for (const value of overview.getBySelector('.overview-ledger-row strong').elements()) {
       expect(getComputedStyle(value).fontWeight).toBe('400');
       expect(getComputedStyle(value).fontSize).toBe('14px');
     }
@@ -34,10 +39,12 @@ for (const width of [320, 393, 768, 1280]) {
       expect(getComputedStyle(value).fontWeight).toBe('400');
       expect(getComputedStyle(value).fontSize).toBe('14px');
     }
-    expect(
-      getComputedStyle(overview.getByRole('columnheader', { name: 'Octopus' }).element())
-        .fontWeight,
-    ).toBe('700');
+    expect(getComputedStyle(octopus.element()).backgroundColor).toBe(
+      getComputedStyle(calculated.element()).backgroundColor,
+    );
+    if (width <= 600) {
+      await expect.element(overview.getBySelector('.reward-unit-full').first()).toBeVisible();
+    }
     for (const amount of overview.getBySelector('.octopoints-value').elements()) {
       expect(getComputedStyle(amount).whiteSpace).toBe('nowrap');
       const unit = amount.querySelector('.points-unit');
@@ -65,10 +72,8 @@ for (const width of [320, 393, 768, 1280]) {
     await expect.element(overview.getByRole('button', { name: 'Not estimated' })).toBeVisible();
     await page.getByRole('tab', { name: 'Happy Hours', exact: true }).click();
     await expect.element(overview.getBySelector('.octopoints-value')).toHaveLength(0);
-    await expect.element(overview.getByRole('rowheader', { name: 'Bill credit' })).toBeVisible();
-    await expect
-      .element(overview.getByRole('rowheader', { name: 'Achieved or partly achieved' }))
-      .toHaveLength(0);
+    await expect.element(octopus.getByText('Bill credit')).toBeVisible();
+    await expect.element(octopus.getByText('Achieved or partly achieved')).toHaveLength(0);
     if (width === 320 || width === 393) {
       await expect.element(page.getBySelector('.mobile-energy-main')).not.toHaveLength(0);
     }

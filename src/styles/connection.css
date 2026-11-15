@@ -12,20 +12,20 @@
 }
 
 .connection h2 {
-  font-family: var(--mono);
+  font-family: inherit;
   font-size: 14px;
   margin-bottom: 8px;
 }
 
 .connection p {
   grid-column: 2;
-  font-size: 14px;
-  color: var(--connection-text);
+  font-size: 12px;
+  color: var(--muted);
   margin-bottom: 18px;
 }
 
 .connection svg {
-  color: var(--connection-icon);
+  color: var(--accent);
 }
 
 .connection > a {
@@ -71,7 +71,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 8px;
 }
 
 .connection-actions button {
@@ -108,13 +108,13 @@
 }
 
 .connection .region-note {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--muted);
   margin: 13px 0 0;
 }
 
 .connection-summary .account-holder {
-  color: var(--muted-strong);
+  color: var(--ink);
   margin-bottom: 3px;
   overflow-wrap: anywhere;
 }
@@ -122,8 +122,8 @@
 .connection-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid var(--spinner-track);
-  border-top-color: var(--loading-bar);
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
   border-radius: 50%;
   flex-shrink: 0;
   animation: connection-spin 0.9s linear infinite;
@@ -132,7 +132,7 @@
 .connection .connection-progress {
   margin-top: 6px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 12px;
 }
 
 @media (max-width: 800px) {

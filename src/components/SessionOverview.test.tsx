@@ -21,17 +21,18 @@ it('includes average credits while keeping missing energy unavailable', () => {
   ]);
   render(<SessionOverview totals={totals} type="TURN_DOWN" />);
   const overview = screen.getByRole('region', { name: 'Session overview' });
-  const energy = within(overview).getByRole('row', { name: /Energy shifted/ });
-  const reward = within(overview).getByRole('row', { name: /Reward/ });
+  const calculated = within(overview).getByRole('group', { name: 'Calculated' });
+  const octopus = within(overview).getByRole('group', { name: 'Octopus' });
   expect(totals.officialEnergy.value).toBeNull();
   expect(totals.overview.officialAchievement.value).toBeNull();
   expect(totals.officialReward.value?.toString()).toBe('64');
-  expect(
-    within(energy)
-      .getAllByRole('cell')
-      .map((cell) => cell.textContent),
-  ).toEqual([PLACEHOLDER, PLACEHOLDER]);
+  expect(within(calculated).getByText('Energy shifted').nextElementSibling).toHaveTextContent(
+    PLACEHOLDER,
+  );
+  expect(within(octopus).getByText('Energy shifted').nextElementSibling).toHaveTextContent(
+    PLACEHOLDER,
+  );
   expect(overview).not.toHaveTextContent('results included');
-  expect(reward).toHaveTextContent('64 Octopoints');
+  expect(within(octopus).getByText('Reward').nextElementSibling).toHaveTextContent('64 Octopoints');
   expect(overview).toHaveTextContent('1 Octopus results missing readings');
 });

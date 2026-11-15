@@ -320,7 +320,9 @@ it('puts rewards below their corresponding results on tablets and adapts expande
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) =>
-      query === '(max-width: 800px)' ? media : Object.assign(new EventTarget(), { matches: false }),
+      query === '(max-width: 1199px)'
+        ? media
+        : Object.assign(new EventTarget(), { matches: false }),
     ),
   );
 
@@ -367,7 +369,7 @@ it('labels Happy Hour cash credits correctly in the compact table', () => {
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) =>
-      Object.assign(new EventTarget(), { matches: query === '(max-width: 800px)' }),
+      Object.assign(new EventTarget(), { matches: query === '(max-width: 1199px)' }),
     ),
   );
 
@@ -387,7 +389,7 @@ it.each([0, 3])('shows a consistent placeholder for unavailable shifted figures 
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) =>
-      Object.assign(new EventTarget(), { matches: query === '(max-width: 800px)' }),
+      Object.assign(new EventTarget(), { matches: query === '(max-width: 1199px)' }),
     ),
   );
 
@@ -417,7 +419,7 @@ it.each([
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) =>
-      Object.assign(new EventTarget(), { matches: query === '(max-width: 800px)' }),
+      Object.assign(new EventTarget(), { matches: query === '(max-width: 1199px)' }),
     ),
   );
 
