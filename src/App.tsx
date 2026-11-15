@@ -9,10 +9,11 @@ import {
 } from './domain/time';
 import { useEffect, useMemo, useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { Activity } from 'lucide-react';
+import { Activity, Moon, Sun } from 'lucide-react';
 import { loadDataset } from './api/client';
 import { createQueryClient } from './api/queryClient';
 import { dataWarnings } from './domain/availability';
+import { sessionTotals } from './domain/totals';
 import { calculateAll } from './domain/calculate';
 import { last30Days, validRange, type Preset } from './domain/dateRange';
 import { readingCoverage } from './domain/coverage';
@@ -22,13 +23,13 @@ import { LoadingState } from './components/LoadingState';
 import { ConnectionForm } from './components/ConnectionForm';
 import { DateFilters } from './components/DateFilters';
 import { SessionHistory } from './components/SessionHistory';
-import { SessionSummary } from './components/SessionSummary';
 import { MeterDataNotes } from './components/MeterDataNotes';
 import { PublicIntro } from './components/PublicIntro';
 import { Methodology } from './components/Methodology';
 import type { SessionType } from './domain/session';
 import { useSessionData } from './hooks/useSessionData';
 import { readAccount, readKey } from './domain/storage';
+import { applyThemePreference, readThemePreference, saveThemePreference } from './theme';
 
 interface AppProps {
   load?: typeof loadDataset;
@@ -47,6 +48,28 @@ export default function App(props: AppProps = {}) {
 }
 
 function SessionLens({ load }: AppProps) {
+  const [themePreference, setThemePreference] = useState(readThemePreference);
+  const [systemDark, setSystemDark] = useState(
+    () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false,
+  );
+  const dark = themePreference ? themePreference === 'dark' : systemDark;
+
+  useEffect(() => {
+    const media = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!media) return;
+    const onChange = () => setSystemDark(media.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => applyThemePreference(themePreference), [themePreference]);
+
+  function toggleTheme() {
+    const next = dark ? 'light' : 'dark';
+    setThemePreference(next);
+    saveThemePreference(next);
+  }
+
   const [range, setRange] = useState(() => last30Days());
   const [selected, setSelected] = useState<Preset | 'custom'>('30d');
   const [demo, setDemo] = useState<Dataset | null>(null);
@@ -131,6 +154,16 @@ function SessionLens({ load }: AppProps) {
       <header className="titlebar">
         <Activity size={19} />
         <span>Octopus Saving Session Explorer</span>
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={toggleTheme}
+          aria-label={`Switch to ${dark ? 'light' : 'dark'} mode`}
+          title={`Switch to ${dark ? 'light' : 'dark'} mode`}
+        >
+          {dark ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+          <span>{dark ? 'Light mode' : 'Dark mode'}</span>
+        </button>
       </header>
       <main>
         <PublicIntro />
@@ -178,9 +211,11 @@ function SessionLens({ load }: AppProps) {
               )}
               <SessionHistory
                 results={visible}
+                totals={sessionTotals(visible)}
+                happyHourTokens={demo ? 3 : remote.happyHourTokens}
+                happyHourTokensLoading={!demo && remote.happyHourTokensLoading}
                 type={type}
                 onTypeChange={setType}
-                summary={<SessionSummary results={visible} type={type} />}
               />
               <MeterDataNotes coverage={coverage} warnings={warnings} />
               <p className="fine-print">

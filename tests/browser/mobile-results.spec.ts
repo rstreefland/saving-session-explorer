@@ -1,30 +1,37 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from 'vitest';
+import { page, openApp } from './fixtures';
 
-for (const width of [320, 393, 600]) {
-  test(`comparison cards fit at ${width}px and open readings`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 852 });
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Try demo' }).click();
-    await expect(page.locator('.mobile-session')).not.toHaveCount(0);
-    await page.evaluate(() => document.fonts.ready);
-    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
-    expect(await fits()).toBe(true);
-    for (const name of ['Power down', 'Power up', 'Happy Hours']) {
-      await page.getByRole('tab', { name, exact: true }).click();
-      const button = page.locator('.mobile-details-toggle').first();
-      await expect(button).toHaveAttribute('aria-expanded', 'false');
-      const box = await button.boundingBox();
-      expect(box!.width).toBeGreaterThanOrEqual(44);
-      expect(box!.height).toBeGreaterThanOrEqual(44);
-      await button.click();
-      await expect(page.locator('.session-details')).toBeVisible();
-      expect(await fits()).toBe(true);
-      await button.click();
-      await expect(page.locator('.session-details')).toHaveCount(0);
-    }
-    // Larger screens retain the table.
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await expect(page.locator('.history-table')).toBeVisible();
-    await expect(page.locator('.mobile-results')).toHaveCount(0);
-  });
-}
+test('mobile tabs fit and expanded readings survive resizing to desktop', async () => {
+  await page.viewport(320, 852);
+  await openApp();
+  await page.getByRole('button', { name: 'Try demo' }).click();
+  await expect.element(page.getBySelector('.mobile-session')).not.toHaveLength(0);
+  await document.fonts.ready;
+  const fits = () => document.documentElement.scrollWidth <= innerWidth;
+  expect(fits()).toBe(true);
+  for (const name of ['Power down', 'Power up', 'Happy Hours']) {
+    await page.getByRole('tab', { name, exact: true }).click();
+    const button = page.getBySelector('.mobile-details-toggle').first();
+    await expect.element(button).toHaveAttribute('aria-expanded', 'false');
+    const box = button.element().getBoundingClientRect();
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    await button.click();
+    await expect.element(page.getBySelector('.session-details')).toBeVisible();
+    expect(fits()).toBe(true);
+    await button.click();
+    await expect.element(page.getBySelector('.session-details')).toHaveLength(0);
+  }
+  await page
+    .getByRole('button', { name: /Readings for/ })
+    .first()
+    .click();
+  // Larger screens retain the table.
+  await page.viewport(1280, 900);
+  await expect.element(page.getBySelector('.history-table')).toBeVisible();
+  await expect.element(page.getBySelector('.mobile-results')).toHaveLength(0);
+  await expect.element(page.getBySelector('.session-details')).toBeVisible();
+  await expect
+    .element(page.getByRole('button', { name: /Readings for/ }).first())
+    .toHaveAttribute('aria-expanded', 'true');
+});

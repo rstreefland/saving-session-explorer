@@ -15,7 +15,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-24.04
-    # Match the locked @playwright/test version; browsers and OS dependencies are preinstalled.
+    # Match the locked Playwright provider engine version; browsers and OS dependencies are preinstalled.
     container:
       image: mcr.microsoft.com/playwright:v1.65.0-noble@sha256:6e3fb709361521eb27161606e6da6d2674e5e89fa16516cb37d6fdd91372273d
       options: --ipc=host
@@ -32,4 +32,5 @@ jobs:
       - run: npm run format:check
       - run: npm run test:coverage -- --maxWorkers=1
       - run: npm run build
+      - run: npm run typecheck:browser
       - run: npm run test:browser

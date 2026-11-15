@@ -1,10 +1,17 @@
+import { fetchHappyHourTokens } from './api/happyHourTokens';
 import { Temporal, todayInLondon, formatDate } from './domain/time';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { StrictMode } from 'react';
 import App from './App';
 import { demoDataset } from './domain/demo';
+
+vi.mock('./api/happyHourTokens', () => ({ fetchHappyHourTokens: vi.fn() }));
+
+beforeEach(() => {
+  vi.mocked(fetchHappyHourTokens).mockReset().mockResolvedValue(3);
+});
 
 const loadDataset = vi.fn<typeof import('./api/client').loadDataset>();
 const user = () => userEvent.setup();
@@ -12,7 +19,7 @@ const user = () => userEvent.setup();
 const rows = () =>
   within(screen.getByRole('table', { name: 'Power down session history' }))
     .getAllByRole('row')
-    .slice(1);
+    .filter((row) => row.classList.contains('history-row'));
 
 async function credentials() {
   const u = user();
@@ -32,6 +39,41 @@ async function credentials() {
 const app = () => <App load={loadDataset} />;
 
 describe('Session history', () => {
+  it('follows the system theme until a saved override is selected', async () => {
+    let systemDark = false;
+    let notifyChange: (() => void) | undefined;
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        get matches() {
+          return systemDark;
+        },
+        addEventListener: vi.fn((_event: string, listener: () => void) => {
+          notifyChange = listener;
+        }),
+        removeEventListener: vi.fn(),
+      })),
+    );
+
+    render(app());
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+    expect(screen.getByRole('button', { name: 'Switch to dark mode' })).toBeInTheDocument();
+
+    systemDark = true;
+    act(() => notifyChange?.());
+    expect(screen.getByRole('button', { name: 'Switch to light mode' })).toBeInTheDocument();
+
+    await user().click(screen.getByRole('button', { name: 'Switch to light mode' }));
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(localStorage.getItem('session-lens.theme')).toBe('light');
+
+    systemDark = false;
+    act(() => notifyChange?.());
+    systemDark = true;
+    act(() => notifyChange?.());
+    expect(screen.getByRole('button', { name: 'Switch to dark mode' })).toBeInTheDocument();
+  });
+
   it('starts with an accessible connection form', () => {
     render(app());
 
@@ -59,11 +101,9 @@ describe('Session history', () => {
     expect(rows()).toHaveLength(5);
     expect(within(rows()[0]).getByText('Upcoming')).toBeInTheDocument();
 
-    const summary = screen.getByRole('region', { name: 'Session summary' });
+    expect(screen.queryByRole('region', { name: 'Session summary' })).not.toBeInTheDocument();
     const tabs = screen.getByRole('tablist', { name: 'Session type' });
-
-    expect(tabs.nextElementSibling).toContainElement(summary);
-    expect(summary.nextElementSibling).toContainElement(
+    expect(tabs.nextElementSibling).toContainElement(
       screen.getByRole('table', { name: 'Power down session history' }),
     );
 
@@ -72,9 +112,6 @@ describe('Session history', () => {
     expect(notes.previousElementSibling).toContainElement(
       screen.getByRole('table', { name: 'Power down session history' }),
     );
-    expect(
-      within(summary).getByText('Achieved or partly achieved').nextElementSibling,
-    ).toHaveTextContent('3 / 3');
 
     const changedRow = rows().find((row) => within(row).queryByText('0.64 kWh shifted'))!;
 
@@ -91,7 +128,10 @@ describe('Session history', () => {
     const table = screen.getByRole('table', { name: 'Happy Hours session history' });
 
     expect(within(table).getByRole('columnheader', { name: 'Usage' })).toBeInTheDocument();
-    expect(within(table).getByText('8p')).toBeInTheDocument();
+    expect(within(table.querySelector('tbody')!).getByText('8p')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('region', { name: 'Session overview' })).getByText('8p'),
+    ).toBeInTheDocument();
   });
 
   it('persists a key, loads an account and forgets its results', async () => {
@@ -502,4 +542,36 @@ it('filters and orders sessions before passing them to the history table', async
       .map((session) => session.startAt)
       .sort((a, b) => Temporal.Instant.compare(b, a)),
   );
+});
+
+it('clears token balances when changing accounts and forgetting', async () => {
+  localStorage.setItem('session-lens.api-key', 'test-key');
+  localStorage.setItem('session-lens.account-number', 'A-123');
+  let finish: (dataset: ReturnType<typeof demoDataset>) => void = () => {
+    throw new Error('Expected pending account request');
+  };
+  vi.mocked(fetchHappyHourTokens).mockResolvedValue(7);
+  loadDataset
+    .mockReset()
+    .mockResolvedValueOnce(demoDataset())
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+  render(app());
+  const tokensTab = await screen.findByRole('tab', { name: 'Happy Hours' });
+  await waitFor(() => expect(tokensTab).toHaveTextContent('7 tokens'));
+
+  const u = user();
+  await u.click(screen.getByRole('button', { name: 'Change account' }));
+  await u.clear(screen.getByLabelText('Account number'));
+  await u.type(screen.getByLabelText('Account number'), 'A-OTHER');
+  await u.click(screen.getByRole('button', { name: 'Connect & compare' }));
+  expect(screen.queryByRole('tab', { name: 'Happy Hours' })).not.toBeInTheDocument();
+
+  await u.click(screen.getByRole('button', { name: 'Forget account' }));
+  await act(async () => finish(demoDataset()));
+  expect(screen.queryByRole('tab', { name: 'Happy Hours' })).not.toBeInTheDocument();
 });

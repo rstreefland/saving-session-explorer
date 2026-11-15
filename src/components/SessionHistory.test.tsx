@@ -48,7 +48,7 @@ it('supports keyboard navigation between the three tabs', () => {
   function History() {
     const [type, setType] = useState<SessionType>('TURN_DOWN');
 
-    return <SessionHistory results={[]} type={type} onTypeChange={setType} />;
+    return <SessionHistory results={[]} type={type} onTypeChange={setType} happyHourTokens={3} />;
   }
 
   render(<History />);
@@ -63,6 +63,9 @@ it('supports keyboard navigation between the three tabs', () => {
   fireEvent.keyDown(screen.getByRole('tab', { name: 'Power up' }), { key: 'End' });
 
   expect(screen.getByRole('tab', { name: 'Happy Hours' })).toHaveFocus();
+  expect(screen.getByRole('tab', { name: 'Happy Hours' })).toHaveAccessibleDescription(
+    '3 Happy Hours tokens available. Account balance, independent of the selected dates.',
+  );
   expect(screen.getByRole('columnheader', { name: 'Usage' })).toBeInTheDocument();
 
   fireEvent.keyDown(screen.getByRole('tab', { name: 'Happy Hours' }), { key: 'Home' });
