@@ -252,7 +252,7 @@
   white-space: nowrap;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 1199px) {
   .history-table > thead > tr > .readings-column {
     width: 44px;
   }
@@ -371,6 +371,11 @@
     .history-table > tbody > .history-row > .readings-column {
       grid-column: 4;
       grid-row: 1 / span 4;
+    }
+
+    .history-table > tbody > .details-row > td {
+      grid-column: 1 / -1;
+      min-width: 0;
     }
   }
 }
@@ -509,7 +514,9 @@
   padding-right: 56px;
 }
 
-.history-table .session-date .tooltip-icon {
+.history-table .session-date .tooltip-icon,
+.history-table .session-date .tooltip-icon:hover:not(:disabled),
+.history-table .session-date .tooltip-icon:active:not(:disabled) {
   position: absolute;
   top: 50%;
   right: 8px;

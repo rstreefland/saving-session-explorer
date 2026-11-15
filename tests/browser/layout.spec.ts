@@ -268,13 +268,13 @@ test('history header and first row keep the regular height while icons stay circ
       .toNumber(),
   ).toBeLessThanOrEqual(1);
 
-  for (const width of [1280, 800, 320]) {
+  for (const width of [1280, 1024, 820, 320]) {
     await page.viewport(width, 900);
     if (width === 320) {
       await expect.element(page.getBySelector('.mobile-results')).toBeVisible();
     } else {
       await expect.element(page.getBySelector('.history-table')).toBeVisible();
-      if (width === 800) {
+      if (width < 1200) {
         await expect.element(page.getBySelector('.history-table .reward-column')).toHaveLength(0);
       }
     }
@@ -288,6 +288,7 @@ test('history header and first row keep the regular height while icons stay circ
       }
     }
     const icon = page.getByRole('button', { name: 'Session has not ended yet' }).first();
+    icon.element().scrollIntoView({ block: 'center' });
     const bounds = box(icon);
     expect(bounds.width).toBe(44);
     expect(bounds.height).toBe(44);
@@ -313,6 +314,10 @@ test('history header and first row keep the regular height while icons stay circ
       icon.element().focus();
       expect(document.activeElement).toBe(icon.element());
     }
+    await icon.hover();
+    const hovered = box(icon);
+    expect(decimal(hovered.x).minus(bounds.x).abs().toNumber()).toBeLessThanOrEqual(1);
+    expect(decimal(hovered.y).minus(bounds.y).abs().toNumber()).toBeLessThanOrEqual(1);
     fitsViewport();
   }
 });

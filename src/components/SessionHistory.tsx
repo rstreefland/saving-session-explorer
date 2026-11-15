@@ -198,7 +198,7 @@ export function SessionHistory({
     });
   }
   const happy = type === 'WEEKEND_HAPPY_HOUR';
-  const compact = useMediaQuery('(max-width: 800px)');
+  const compact = useMediaQuery('(max-width: 1199px)');
   const estimateReward = type === 'TURN_DOWN';
   const columns = compact ? 4 : estimateReward ? 6 : 5;
   const tokenCount = happyHourTokens == null ? null : formatNumeric(happyHourTokens, 0);

@@ -1102,16 +1102,6 @@ th {
   }
 }
 
-/* Expanded details span the compact table columns. */
-@media (max-width: 800px) {
-  @supports (grid-template-rows: subgrid) {
-    .history-table > tbody > .details-row > td {
-      grid-column: 1 / -1;
-      min-width: 0;
-    }
-  }
-}
-
 .tooltip-trigger.tooltip-icon,
 .tooltip-trigger.tooltip-icon:hover:not(:disabled),
 .tooltip-trigger.tooltip-icon:active:not(:disabled) {
