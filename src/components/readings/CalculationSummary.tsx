@@ -116,9 +116,9 @@ export function CalculationSummary({ result }: { result: Calculation }) {
                     <dd>
                       {number(shift)}
                       {shift !== null && <span className="energy-unit"> kWh</span>}
-                      {shift === null && <span className="reading-note">Awaiting readings</span>}
                     </dd>
                   </dl>
+                  {shift === null && <p className="reading-note">Awaiting readings</p>}
                 </>
               )}
             </div>

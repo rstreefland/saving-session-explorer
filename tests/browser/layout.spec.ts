@@ -137,6 +137,24 @@ for (const width of [320, 600, 800, 1280]) {
 
     await expect.element(page.getBySelector('.session-details')).toBeVisible();
 
+    const incompleteCalculation = page.getByRole('region', { name: 'Calculation summary' });
+    await expect.element(incompleteCalculation.getByText('Awaiting readings')).toHaveLength(2);
+    for (const equation of incompleteCalculation.getBySelector('.calculation-values').all()) {
+      const values = equation.getBySelector('.calculation-value dd').elements();
+      const first = values[0].getBoundingClientRect();
+      for (const value of values) {
+        expect(
+          decimal(value.getBoundingClientRect().top).minus(first.top).abs().toNumber(),
+        ).toBeLessThanOrEqual(1);
+      }
+      const contribution = box(equation.getBySelector('.calculation-contribution dd'));
+      if (width > 600) {
+        expect(decimal(contribution.top).minus(first.top).abs().toNumber()).toBeLessThanOrEqual(1);
+      }
+      expect(box(equation.getByText('Awaiting readings')).top).toBeGreaterThanOrEqual(
+        contribution.bottom,
+      );
+    }
     fitsViewport();
     // Check complete formulas as well as placeholders, including the stacked mobile layout.
     await page
