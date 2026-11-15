@@ -54,7 +54,7 @@ function fitsViewport() {
       expect(unitStyle.fontWeight).toBe('400');
     } else {
       expect(amountStyle.fontWeight).toBe(
-        value.closest('.overview-table tbody, .history-row') ? '400' : '700',
+        value.closest('.overview-ledger, .history-row') ? '400' : '700',
       );
     }
   }
@@ -218,4 +218,87 @@ test('provisional tooltip opens within the mobile viewport after scrolling', asy
   await provisional.click();
   await expect.element(page.getByRole('tooltip')).toBeInViewport();
   fitsViewport();
+});
+
+test('appearance switch fits a phone and changes the rendered palette', async () => {
+  await page.viewport(320, 852);
+  await openApp();
+  await document.fonts.ready;
+
+  const dark = page.getByRole('button', { name: 'Switch to dark mode' });
+  expect(box(dark).width).toBe(44);
+  expect(box(dark).height).toBeGreaterThanOrEqual(44);
+  expect(getComputedStyle(dark.getBySelector('.theme-toggle span').element()).display).toBe(
+    'none',
+  );
+
+  await dark.click();
+  expect(document.documentElement.dataset.theme).toBe('dark');
+  expect(getComputedStyle(document.documentElement).colorScheme).toBe('dark');
+  const darkBackground = getComputedStyle(document.body).backgroundColor;
+
+  await page.getByRole('button', { name: 'Switch to light mode' }).click();
+  expect(document.documentElement.dataset.theme).toBe('light');
+  expect(getComputedStyle(document.documentElement).colorScheme).toBe('light');
+  expect(getComputedStyle(document.body).backgroundColor).not.toBe(darkBackground);
+  expect(document.documentElement.scrollWidth <= innerWidth).toBe(true);
+
+  await page.viewport(1280, 852);
+  const desktop = page.getByRole('button', { name: 'Switch to dark mode' });
+  expect(
+    getComputedStyle(desktop.getBySelector('.theme-toggle span').element()).display,
+  ).not.toBe('none');
+});
+
+test('history header and first row keep the regular height while icons stay circular', async () => {
+  await page.viewport(1280, 900);
+  await openApp();
+  await page.getByRole('button', { name: 'Try demo' }).click();
+  await document.fonts.ready;
+
+  const date = page.getByRole('columnheader', { name: 'Date' }).element();
+  const result = page
+    .getByRole('columnheader', { name: 'Calculated result' })
+    .getByRole('button')
+    .element();
+  const dateText = document.createRange();
+  const resultText = document.createRange();
+  dateText.selectNodeContents(date);
+  resultText.selectNodeContents(result);
+  expect(
+    decimal(dateText.getBoundingClientRect().top)
+      .minus(resultText.getBoundingClientRect().top)
+      .abs()
+      .toNumber(),
+  ).toBeLessThanOrEqual(1);
+
+  for (const width of [1280, 800, 320]) {
+    await page.viewport(width, 900);
+    if (width === 320) {
+      await expect.element(page.getBySelector('.mobile-results')).toBeVisible();
+    } else {
+      await expect.element(page.getBySelector('.history-table')).toBeVisible();
+      if (width === 800) {
+        await expect.element(page.getBySelector('.history-table .reward-column')).toHaveLength(0);
+      }
+    }
+    if (width >= 800) {
+      const header = box(page.getBySelector('.history-table thead tr'));
+      const first = box(page.getBySelector('.history-row').first());
+      const next = box(page.getBySelector('.history-row').nth(1));
+      expect(decimal(first.height).minus(next.height).abs().toNumber()).toBeLessThanOrEqual(1);
+      if (width === 1280) {
+        expect(decimal(header.height).minus(next.height).abs().toNumber()).toBeLessThanOrEqual(1);
+      }
+    }
+    const icon = page.getByRole('button', { name: 'Session has not ended yet' }).first();
+    const bounds = box(icon);
+    expect(bounds.width).toBe(44);
+    expect(bounds.height).toBe(44);
+    const circle = getComputedStyle(icon.element(), '::before');
+    expect(circle.width).toBe('28px');
+    expect(circle.height).toBe('28px');
+    expect(circle.borderRadius).toBe('50%');
+    fitsViewport();
+  }
 });
