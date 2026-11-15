@@ -495,6 +495,72 @@ describe('Session history', () => {
   });
 });
 
+it.each([
+  {
+    preset: 'Last 30 days',
+    initialFrom: '2026-10-16',
+    refreshedFrom: '2026-10-17',
+    refreshedTo: '2026-11-15',
+    caption: '17 Oct 2026 → 15 Nov 2026 (inclusive)',
+  },
+  {
+    preset: 'Custom dates',
+    initialFrom: '2026-11-01',
+    refreshedFrom: '2026-11-01',
+    refreshedTo: '2026-11-14',
+    caption: '1 Nov 2026 → 14 Nov 2026 (inclusive)',
+  },
+])('refreshes $preset with the correct range after midnight', async (testCase) => {
+  const clock = vi
+    .spyOn(Temporal.Now, 'plainDateISO')
+    .mockReturnValue(Temporal.PlainDate.from('2026-11-14'));
+  const data = { ...demoDataset(), sessions: [] };
+  loadDataset.mockReset().mockResolvedValue(data);
+  render(app());
+
+  const u = user();
+
+  if (testCase.preset === 'Custom dates') {
+    await u.click(screen.getByRole('button', { name: 'Custom dates' }));
+    fireEvent.change(screen.getByLabelText('From'), {
+      target: { value: testCase.initialFrom },
+    });
+    await u.click(screen.getByRole('button', { name: 'Apply dates' }));
+  }
+
+  await u.type(screen.getByLabelText('Octopus API key'), 'test-key');
+  await u.type(screen.getByLabelText('Account number'), 'A-123');
+  await u.click(screen.getByRole('button', { name: 'Connect & compare' }));
+  await screen.findByRole('heading', { name: 'Connected to Octopus' });
+
+  clock.mockReturnValue(Temporal.PlainDate.from('2026-11-15'));
+  await u.click(screen.getByRole('button', { name: 'Refresh results' }));
+
+  await waitFor(() =>
+    expect(loadDataset.mock.calls.map(([options]) => options)).toEqual([
+      {
+        key: 'test-key',
+        account: 'A-123',
+        region: 'auto',
+        from: testCase.initialFrom,
+        to: '2026-11-14',
+      },
+      {
+        key: 'test-key',
+        account: 'A-123',
+        region: 'auto',
+        from: testCase.refreshedFrom,
+        to: testCase.refreshedTo,
+      },
+    ]),
+  );
+  expect(screen.getByText(testCase.caption)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Last 30 days' })).toHaveAttribute(
+    'aria-pressed',
+    String(testCase.preset === 'Last 30 days'),
+  );
+});
+
 it('disconnects and aborts a refresh even when saved details cannot be removed', async () => {
   loadDataset.mockResolvedValueOnce(demoDataset());
   render(app());
