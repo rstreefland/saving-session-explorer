@@ -275,7 +275,8 @@ input::placeholder {
   background: transparent;
 }
 
-.period-buttons .selected {
+.period-buttons .selected,
+.period-buttons .selected:hover:not(:disabled) {
   background: var(--paper);
   box-shadow: 0 1px 4px #30264012;
 }

@@ -228,9 +228,7 @@ test('appearance switch fits a phone and changes the rendered palette', async ()
   const dark = page.getByRole('button', { name: 'Switch to dark mode' });
   expect(box(dark).width).toBe(44);
   expect(box(dark).height).toBeGreaterThanOrEqual(44);
-  expect(getComputedStyle(dark.getBySelector('.theme-toggle span').element()).display).toBe(
-    'none',
-  );
+  expect(getComputedStyle(dark.getBySelector('span').element()).display).toBe('none');
 
   await dark.click();
   expect(document.documentElement.dataset.theme).toBe('dark');
@@ -245,9 +243,7 @@ test('appearance switch fits a phone and changes the rendered palette', async ()
 
   await page.viewport(1280, 852);
   const desktop = page.getByRole('button', { name: 'Switch to dark mode' });
-  expect(
-    getComputedStyle(desktop.getBySelector('.theme-toggle span').element()).display,
-  ).not.toBe('none');
+  expect(getComputedStyle(desktop.getBySelector('span').element()).display).not.toBe('none');
 });
 
 test('history header and first row keep the regular height while icons stay circular', async () => {

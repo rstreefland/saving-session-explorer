@@ -48,6 +48,9 @@ test('selected date range keeps its readable colors on hover in dark mode', asyn
   await openApp();
 
   const selected = page.getByRole('button', { name: 'Last 30 days' });
+  await expect
+    .poll(() => getComputedStyle(selected.element()).backgroundColor)
+    .toBe(getComputedStyle(page.getBySelector('.app-shell').element()).backgroundColor);
   const background = getComputedStyle(selected.element()).backgroundColor;
   const color = getComputedStyle(selected.element()).color;
 
