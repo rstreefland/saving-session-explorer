@@ -688,6 +688,18 @@
   overflow-wrap: anywhere;
 }
 
+.overview-ledger-row .tooltip-trigger {
+  position: relative;
+  min-height: 0;
+}
+
+/* Use the row padding for a full touch target without adding layout height. */
+.overview-ledger-row .tooltip-trigger::after {
+  content: '';
+  position: absolute;
+  inset: -13px 0;
+}
+
 .overview-value {
   font-variant-numeric: tabular-nums;
 }
