@@ -505,10 +505,16 @@
   margin-top: 4px;
 }
 
-.history-table .session-date time {
-  display: flex;
-  align-items: center;
-  height: 16px;
+.history-table .session-date:has(.tooltip-icon) {
+  padding-right: 56px;
+}
+
+.history-table .session-date .tooltip-icon {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  margin-left: 0;
+  transform: translateY(-50%);
 }
 .mobile-details-toggle {
   flex-shrink: 0;

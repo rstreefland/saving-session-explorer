@@ -7,6 +7,7 @@
   --surface-strong: light-dark(#eee9f0, #382e3e);
   --line: light-dark(#ded6e1, #4c4053);
   --line-strong: light-dark(#b7a9bd, #6c5a73);
+  --control-border: light-dark(#81718a, #a697b0);
   --muted: light-dark(#665a6e, #cbbdd0);
   --accent: light-dark(#a83f7d, #edafd0);
   --accent-soft: light-dark(#f7eaf2, #453143);

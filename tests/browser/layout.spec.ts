@@ -295,6 +295,24 @@ test('history header and first row keep the regular height while icons stay circ
     expect(circle.width).toBe('28px');
     expect(circle.height).toBe('28px');
     expect(circle.borderRadius).toBe('50%');
+    if (width >= 800) {
+      const dateCell = icon.element().closest('.session-date');
+      const sessionTime = dateCell?.querySelector('.session-time');
+      const dateText = dateCell?.querySelector('time')?.firstChild;
+      if (!sessionTime || !dateText) throw new Error('Upcoming session date is missing');
+      const timeRange = document.createRange();
+      timeRange.selectNodeContents(sessionTime);
+      const dateRange = document.createRange();
+      dateRange.selectNodeContents(dateText);
+      expect(
+        decimal(timeRange.getBoundingClientRect().right).plus(3).toNumber(),
+      ).toBeLessThanOrEqual(bounds.left);
+      expect(
+        decimal(dateRange.getBoundingClientRect().right).plus(3).toNumber(),
+      ).toBeLessThanOrEqual(bounds.left);
+      icon.element().focus();
+      expect(document.activeElement).toBe(icon.element());
+    }
     fitsViewport();
   }
 });

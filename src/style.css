@@ -195,7 +195,7 @@ label {
 input,
 select {
   color: var(--ink);
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-border);
   background: var(--paper);
   padding: 10px 12px;
   font-size: 14px;
