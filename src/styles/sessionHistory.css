@@ -666,10 +666,12 @@
 }
 
 .overview-ledger-row {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
+  min-height: 45px;
   padding: 12px 0;
   border-top: 1px solid var(--line);
 }
@@ -688,16 +690,30 @@
   overflow-wrap: anywhere;
 }
 
-.overview-ledger-row .tooltip-trigger {
+.overview-ledger-row .tooltip-trigger:not(.tooltip-icon) {
   position: relative;
   min-height: 0;
 }
 
 /* Use the row padding for a full touch target without adding layout height. */
-.overview-ledger-row .tooltip-trigger::after {
+.overview-ledger-row .tooltip-trigger:not(.tooltip-icon)::after {
   content: '';
   position: absolute;
   inset: -13px 0;
+}
+
+.overview-ledger-row dd:has(.tooltip-icon) {
+  padding-right: 47px;
+}
+
+.overview-ledger-row .tooltip-icon,
+.overview-ledger-row .tooltip-icon:hover:not(:disabled),
+.overview-ledger-row .tooltip-icon:active:not(:disabled) {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  margin-left: 0;
+  transform: translateY(-50%);
 }
 
 .overview-value {
