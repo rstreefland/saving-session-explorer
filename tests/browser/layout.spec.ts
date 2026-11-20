@@ -259,6 +259,32 @@ test('provisional tooltip opens within the mobile viewport after scrolling', asy
   fitsViewport();
 });
 
+test('overview clocks preserve metric row heights and touch targets', async () => {
+  await page.viewport(393, 900);
+  await connectedAccount({ homeMini: true });
+  await openApp();
+  const overview = page.getByRole('region', { name: 'Session overview' });
+  const calculated = overview.getByRole('group', { name: 'Calculated' });
+  const octopus = overview.getByRole('group', { name: 'Octopus' });
+  const clocks = calculated.getByRole('button', { name: 'Provisional reading' });
+  await expect.element(clocks).toHaveLength(3);
+  await document.fonts.ready;
+
+  for (const width of [393, 1280]) {
+    await page.viewport(width, 900);
+    const calculatedRows = calculated.getBySelector('.overview-ledger-row').all();
+    const octopusRows = octopus.getBySelector('.overview-ledger-row').all();
+    expect(calculatedRows.map((row) => box(row).height)).toEqual(
+      octopusRows.map((row) => box(row).height),
+    );
+    for (const clock of clocks.all()) {
+      const bounds = box(clock);
+      expect(bounds.width).toBe(44);
+      expect(bounds.height).toBe(44);
+    }
+  }
+});
+
 test('appearance switch fits a phone and changes the rendered palette', async () => {
   await page.viewport(320, 852);
   await openApp();
