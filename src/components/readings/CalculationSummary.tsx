@@ -35,10 +35,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
   return (
     <section className="calculation-summary" aria-label="Calculation summary">
       <div className="calculation-heading">
-        <h3>
-          {happy ? 'Imported energy' : 'How your energy was shifted'}
-          {result.provisional && <ProvisionalIndicator />}
-        </h3>
+        <h3>{happy ? 'Imported energy' : 'How your energy was shifted'}</h3>
         <span>All values in kWh</span>
       </div>
       <p className="calculation-explanation">

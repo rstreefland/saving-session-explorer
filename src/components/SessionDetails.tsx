@@ -7,6 +7,7 @@ import { sessionOutcome } from '../domain/outcome';
 import { CalculationSummary } from './readings/CalculationSummary';
 import { ReferenceReadings } from './readings/ReferenceReadings';
 import { OctopusComparison } from './readings/OctopusComparison';
+import { ProvisionalIndicator } from './ProvisionalIndicator';
 import { PointsBreakdown } from './readings/PointsBreakdown';
 
 export type DetailTab = 'energy' | 'points' | 'baseline' | 'compare';
@@ -52,7 +53,10 @@ export function SessionDetails({
         </p>
       )}
       <dl className="calculation-total" role="group" aria-label="Session energy total">
-        <dt>{happy ? 'Total imported' : 'Total shifted for rewards'}</dt>
+        <dt>
+          {happy ? 'Total imported' : 'Total shifted for rewards'}
+          {result.provisional && <ProvisionalIndicator />}
+        </dt>
         <dd>
           {number(result.rewarded)}
           {result.rewarded !== null && ' kWh'}

@@ -301,7 +301,10 @@ it('explains provisional Mini inputs without suggesting a missed reward', async 
       }}
     />,
   );
-  await userEvent.click(screen.getByRole('button', { name: 'Provisional reading' }));
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('tab', { name: 'Compare' }));
+  const total = screen.getByRole('group', { name: 'Session energy total' });
+  await user.click(within(total).getByRole('button', { name: 'Provisional reading' }));
   expect(screen.getByRole('tooltip')).toHaveTextContent('Home Mini');
   expect(screen.queryByText(/Possible missed reward/)).not.toBeInTheDocument();
 });
