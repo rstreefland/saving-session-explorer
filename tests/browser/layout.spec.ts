@@ -43,8 +43,10 @@ function fitsViewport() {
     const energy = value.closest('.mobile-source')?.querySelector('.mobile-energy');
     const reward = value.closest('.mobile-source-reward');
     const expectedStyle = reward ? getComputedStyle(reward) : amountStyle;
-    expect(number.bottom).toBeGreaterThan(unitBounds.top);
-    expect(unitBounds.bottom).toBeGreaterThan(number.top);
+    if (!value.closest('.points-comparison')) {
+      expect(number.bottom).toBeGreaterThan(unitBounds.top);
+      expect(unitBounds.bottom).toBeGreaterThan(number.top);
+    }
     expect(unitStyle.fontSize).toBe(expectedStyle.fontSize);
     if (energy) {
       expect(unitStyle.color).toBe(expectedStyle.color);
@@ -227,17 +229,31 @@ for (const width of [320, 600, 800, 1280]) {
     await expect.element(calculation.getBySelector('.reading-disclosure-body')).toBeVisible();
     expect(box(explanation).height).toBeGreaterThanOrEqual(44);
     fitsViewport();
-    if (width === 1280) {
+    if (width === 320 || width === 1280) {
       await page.getByRole('tab', { name: 'Octopoints', exact: true }).click();
-      const steps = page.getByRole('table', { name: 'Octopoints calculation steps' });
+      const points = page.getByRole('region', { name: 'Octopoints estimate' });
+      const steps = points.getByRole('table', { name: 'Octopoints calculation steps' });
       await expect.element(steps).toBeVisible();
-      const calculationHeading = box(steps.getByRole('columnheader', { name: 'Calculation' }));
-      const resultHeading = box(steps.getByRole('columnheader', { name: 'Result' }));
-      for (const row of steps.getBySelector('tbody tr').all()) {
-        const cells = row.getByRole('cell').all();
-        expect(box(cells[0]).left).toBe(calculationHeading.left);
-        expect(box(cells[1]).right).toBe(resultHeading.right);
-        expect(getComputedStyle(cells[1].element()).textAlign).toBe('right');
+      if (width === 320) {
+        const bounds = box(points);
+        for (const locator of points.getBySelector('.points-comparison dd, th, td').all()) {
+          const cell = locator.element();
+          const text = document.createRange();
+          text.selectNodeContents(cell);
+          const content = text.getBoundingClientRect();
+          expect(content.left).toBeGreaterThanOrEqual(bounds.left);
+          expect(content.right).toBeLessThanOrEqual(bounds.right);
+          expect(cell.scrollWidth).toBeLessThanOrEqual(cell.clientWidth);
+        }
+      } else {
+        const calculationHeading = box(steps.getByRole('columnheader', { name: 'Calculation' }));
+        const resultHeading = box(steps.getByRole('columnheader', { name: 'Result' }));
+        for (const row of steps.getBySelector('tbody tr').all()) {
+          const cells = row.getByRole('cell').all();
+          expect(box(cells[0]).left).toBe(calculationHeading.left);
+          expect(box(cells[1]).right).toBe(resultHeading.right);
+          expect(getComputedStyle(cells[1].element()).textAlign).toBe('right');
+        }
       }
       fitsViewport();
     }
