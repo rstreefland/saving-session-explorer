@@ -9,7 +9,6 @@ import {
 } from '../../domain/points';
 import { isHappyHour } from '../../domain/session';
 import { PLACEHOLDER } from '../placeholder';
-import { ReadingDisclosure } from './ReadingDisclosure';
 import { OctopointsValue } from '../OctopointsValue';
 
 const precise = (value: Decimal) => formatNumeric(value, 6);
@@ -81,13 +80,13 @@ export function PointsBreakdown({ result }: { result: Calculation }) {
               </tr>
             </tbody>
           </table>
-          <ReadingDisclosure title="Rounding and minimum are inferred">
+          <div className="reading-explanation">
             <p>
               {POINTS_PER_PENNY} points equal 1p. Penny rounding and the 2p minimum were inferred
               from the account results checked. The exact formula has not been published by Octopus,
               so these are assumptions.
             </p>
-          </ReadingDisclosure>
+          </div>
         </>
       ) : (
         <p className="reading-note">{POINTS_UNAVAILABLE[estimate.reason]}</p>

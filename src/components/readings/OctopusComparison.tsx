@@ -2,7 +2,6 @@ import type { Decimal, Numeric } from '../../domain/decimal';
 import type { Calculation } from '../../domain/types';
 import { isHappyHour, reportedShifted } from '../../domain/session';
 import { number } from './format';
-import { ReadingDisclosure } from './ReadingDisclosure';
 import { RewardRoundingExplanation } from '../RewardRoundingExplanation';
 
 export function OctopusComparison({ result }: { result: Calculation }) {
@@ -45,9 +44,9 @@ export function OctopusComparison({ result }: { result: Calculation }) {
         </p>
       )}
       {result.session.eventType === 'TURN_DOWN' && (
-        <ReadingDisclosure title="Why the kWh figures can differ">
+        <div className="reading-explanation">
           <RewardRoundingExplanation />
-        </ReadingDisclosure>
+        </div>
       )}
       <p className="reading-note">
         Small numerical differences alone do not mean a reward is missing.

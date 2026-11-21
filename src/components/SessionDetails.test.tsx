@@ -169,7 +169,7 @@ it('adds Happy Hour import readings without baseline equations or a promise of c
   expect(within(summary).queryByText('−')).not.toBeInTheDocument();
   expect(screen.queryByText(/Days used for baseline/)).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('tab', { name: 'Compare' }));
-  expect(screen.queryByText('Why the kWh figures can differ')).not.toBeInTheDocument();
+  expect(screen.queryByText(/Octopus appears to round the reward/)).not.toBeInTheDocument();
 });
 
 it('shows the actual reference dates and lets the user inspect each half-hour separately', async () => {
@@ -184,6 +184,7 @@ it('shows the actual reference dates and lets the user inspect each half-hour se
   await user.click(screen.getByRole('tab', { name: 'Baseline' }));
 
   const table = screen.getByRole('table', { name: 'Readings used for baseline' });
+  expect(screen.getByText(/The same half-hour on earlier similar days is averaged/)).toBeVisible();
 
   expect(within(table).getByText('0.123')).toBeInTheDocument();
   expect(within(table).getAllByRole('row')).toHaveLength(
@@ -219,7 +220,7 @@ it('explains missing reference readings instead of averaging only the remaining 
   ).toBeVisible();
 });
 
-it('keeps Octopus figures and neutral differences inside their own disclosure', async () => {
+it('keeps Octopus figures and neutral differences in the Compare tab', async () => {
   render(<SessionDetails result={calculateAll(demoDataset())[1]} />);
 
   expect(screen.queryByRole('table', { name: 'Usage comparison' })).not.toBeInTheDocument();
@@ -231,7 +232,6 @@ it('keeps Octopus figures and neutral differences inside their own disclosure', 
   );
   expect(screen.getByText(/Difference in shifted energy: \+0.260 kWh/)).toBeVisible();
 
-  await userEvent.click(screen.getByText('Why the kWh figures can differ'));
   const explanation = screen.getByText(/Octopus appears to round the reward/);
 
   expect(explanation).toHaveTextContent(
@@ -355,14 +355,12 @@ it('explains Octopus missing data and average credits even when our readings are
   expect(screen.getByRole('region', { name: 'Calculation summary' })).toBeInTheDocument();
 });
 
-it('keeps the full calculation explanation available in a disclosure', async () => {
+it('shows the full calculation explanation without an extra interaction', () => {
   render(<SessionDetails result={mixed(1.1, 0.5, true)} />);
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
   const explanation =
     'Power down and Power up use electricity imported minus electricity exported.';
 
-  expect(within(summary).queryByText(explanation)).not.toBeInTheDocument();
-  await userEvent.click(within(summary).getByText('How this is calculated'));
   expect(within(summary).getByText(explanation)).toBeVisible();
   expect(within(summary).getByText(/Each half-hour is counted separately/)).toHaveTextContent(
     'Each half-hour is counted separately. Only usage above baseline counts towards rewards; other half-hours count as zero.',

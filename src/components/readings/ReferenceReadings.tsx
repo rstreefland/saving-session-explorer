@@ -2,7 +2,6 @@ import { useId, useState } from 'react';
 import type { Calculation } from '../../domain/types';
 import { halfHourRange, number } from './format';
 import { formatDate } from '../../domain/time';
-import { ReadingDisclosure } from './ReadingDisclosure';
 
 export function ReferenceReadings({ result }: { result: Calculation }) {
   const id = useId();
@@ -61,12 +60,12 @@ export function ReferenceReadings({ result }: { result: Calculation }) {
           This half-hour’s average cannot be calculated while a reference reading is missing.
         </p>
       )}
-      <ReadingDisclosure title="How these days are selected">
+      <div className="reading-explanation">
         <p>
           The same half-hour on earlier similar days is averaged. Bank holidays and session days are
           left out.
         </p>
-      </ReadingDisclosure>
+      </div>
     </section>
   );
 }

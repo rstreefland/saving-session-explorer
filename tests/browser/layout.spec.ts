@@ -1,7 +1,7 @@
 import { decimal } from '../../src/domain/decimal';
 import { Temporal } from '../../src/domain/time';
 import { expect, test, vi } from 'vitest';
-import { userEvent, type Locator } from 'vitest/browser';
+import type { Locator } from 'vitest/browser';
 import { page, openApp, connectedAccount } from './fixtures';
 
 function box(locator: Locator) {
@@ -223,11 +223,6 @@ for (const width of [320, 600, 800, 1280]) {
       const contribution = box(halfHour.getBySelector('.calculation-contribution'));
       if (width <= 600) expect(contribution.top).toBeGreaterThanOrEqual(first.bottom);
     }
-    const explanation = calculation.getByText('How this is calculated');
-    explanation.element().focus();
-    await userEvent.keyboard('{Enter}');
-    await expect.element(calculation.getBySelector('.reading-disclosure-body')).toBeVisible();
-    expect(box(explanation).height).toBeGreaterThanOrEqual(44);
     fitsViewport();
     if (width === 320 || width === 1280) {
       await page.getByRole('tab', { name: 'Octopoints', exact: true }).click();
@@ -256,6 +251,13 @@ for (const width of [320, 600, 800, 1280]) {
         }
       }
       fitsViewport();
+    }
+    if (width === 1280) {
+      await page.getByRole('tab', { name: 'Baseline', exact: true }).click();
+      const baseline = page.getByRole('region', { name: 'Baseline readings' });
+      const picker = baseline.getByRole('combobox', { name: 'Half-hour to inspect' });
+      await expect.element(picker).toBeVisible();
+      expect(box(picker).left).toBe(box(baseline).left);
     }
     await page.getByRole('tab', { name: 'Happy Hours' }).click();
 

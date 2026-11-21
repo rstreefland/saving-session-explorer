@@ -771,27 +771,14 @@ th {
   width: 62%;
 }
 
-.reading-disclosure {
+.reading-explanation {
   border-top: 1px solid var(--line);
-  margin-top: 0;
-}
-
-.reading-disclosure > summary {
-  font-family: 'DM Sans', sans-serif;
-  font-size: var(--results-secondary-size);
-  font-weight: 400;
-  color: var(--muted);
-  min-height: 44px;
-  padding: 12px 0;
-}
-
-.reading-disclosure-body {
+  padding-top: 8px;
   color: var(--muted);
   font-size: var(--results-secondary-size);
-  padding: 0 0 10px;
 }
 
-.reading-disclosure-body > p:first-child {
+.reading-explanation p {
   margin: 0 0 8px;
 }
 
@@ -812,6 +799,12 @@ th {
   min-height: 44px;
   font-size: var(--results-primary-size);
   font-weight: 400;
+}
+
+@media (min-width: 601px) {
+  .reference-time-picker {
+    align-items: flex-start;
+  }
 }
 
 .calculation-gaps {
