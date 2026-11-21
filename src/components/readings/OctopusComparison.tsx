@@ -17,7 +17,8 @@ export function OctopusComparison({ result }: { result: Calculation }) {
       ];
 
   return (
-    <ReadingDisclosure title="Compare with Octopus">
+    <section aria-label="Octopus comparison">
+      <h3>Compare with Octopus</h3>
       <table className="reading-table comparison-table" aria-label="Usage comparison">
         <thead>
           <tr>
@@ -44,14 +45,13 @@ export function OctopusComparison({ result }: { result: Calculation }) {
         </p>
       )}
       {result.session.eventType === 'TURN_DOWN' && (
-        <aside className="reward-rounding-note" aria-label="Why the kWh figures can differ">
-          <h4>Why the kWh figures can differ</h4>
+        <ReadingDisclosure title="Why the kWh figures can differ">
           <RewardRoundingExplanation />
-        </aside>
+        </ReadingDisclosure>
       )}
       <p className="reading-note">
         Small numerical differences alone do not mean a reward is missing.
       </p>
-    </ReadingDisclosure>
+    </section>
   );
 }

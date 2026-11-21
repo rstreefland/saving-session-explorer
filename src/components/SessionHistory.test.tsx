@@ -192,7 +192,7 @@ it('shows neutral small differences only in details and flags genuinely missing 
 
   expect(screen.queryByRole('table', { name: 'Usage comparison' })).not.toBeInTheDocument();
 
-  await userEvent.click(screen.getByText('Compare with Octopus'));
+  await userEvent.click(screen.getByRole('tab', { name: 'Compare' }));
 
   expect(screen.getByText(/Difference in shifted energy: -0.018 kWh/)).toBeVisible();
 

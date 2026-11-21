@@ -12,11 +12,8 @@ export function ReferenceReadings({ result }: { result: Calculation }) {
   if (!slot) return null;
 
   return (
-    <ReadingDisclosure title={`Days used for baseline (${result.days.length})`}>
-      <p>
-        The same half-hour on earlier similar days is averaged. Bank holidays and session days are
-        left out.
-      </p>
+    <section aria-label="Baseline readings">
+      <h3>Days used for baseline ({result.days.length})</h3>
       <label className="reference-time-picker" htmlFor={id}>
         Half-hour to inspect
         <select
@@ -64,6 +61,12 @@ export function ReferenceReadings({ result }: { result: Calculation }) {
           This half-hour’s average cannot be calculated while a reference reading is missing.
         </p>
       )}
-    </ReadingDisclosure>
+      <ReadingDisclosure title="How these days are selected">
+        <p>
+          The same half-hour on earlier similar days is averaged. Bank holidays and session days are
+          left out.
+        </p>
+      </ReadingDisclosure>
+    </section>
   );
 }

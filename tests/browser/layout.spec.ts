@@ -32,6 +32,7 @@ function fitsViewport() {
       energy.classList.contains('mobile-energy-main') ? '14px' : '12px',
     );
   for (const value of page.getBySelector('.octopoints-value').elements()) {
+    if (value.getClientRects().length === 0) continue;
     const range = document.createRange();
     range.selectNode(value.firstChild!);
     const number = range.getBoundingClientRect();
@@ -55,7 +56,7 @@ function fitsViewport() {
       expect(unitStyle.fontWeight).toBe('400');
     } else {
       expect(amountStyle.fontWeight).toBe(
-        value.closest('.overview-ledger, .history-row') ? '400' : '700',
+        value.closest('.overview-ledger, .history-row, .points-comparison') ? '400' : '700',
       );
     }
   }
@@ -226,6 +227,20 @@ for (const width of [320, 600, 800, 1280]) {
     await expect.element(calculation.getBySelector('.reading-disclosure-body')).toBeVisible();
     expect(box(explanation).height).toBeGreaterThanOrEqual(44);
     fitsViewport();
+    if (width === 1280) {
+      await page.getByRole('tab', { name: 'Octopoints', exact: true }).click();
+      const steps = page.getByRole('table', { name: 'Octopoints calculation steps' });
+      await expect.element(steps).toBeVisible();
+      const calculationHeading = box(steps.getByRole('columnheader', { name: 'Calculation' }));
+      const resultHeading = box(steps.getByRole('columnheader', { name: 'Result' }));
+      for (const row of steps.getBySelector('tbody tr').all()) {
+        const cells = row.getByRole('cell').all();
+        expect(box(cells[0]).left).toBe(calculationHeading.left);
+        expect(box(cells[1]).right).toBe(resultHeading.right);
+        expect(getComputedStyle(cells[1].element()).textAlign).toBe('right');
+      }
+      fitsViewport();
+    }
     await page.getByRole('tab', { name: 'Happy Hours' }).click();
 
     await expect

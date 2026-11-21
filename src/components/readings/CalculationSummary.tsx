@@ -125,13 +125,6 @@ export function CalculationSummary({ result }: { result: Calculation }) {
           </section>
         );
       })}
-      <dl className="calculation-total">
-        <dt>{happy ? 'Total imported' : 'Total shifted for rewards'}</dt>
-        <dd>
-          {number(result.rewarded)}
-          {result.rewarded !== null && <span className="energy-unit"> kWh</span>}
-        </dd>
-      </dl>
       <ReadingDisclosure title="How this is calculated">
         <p>
           {happy
