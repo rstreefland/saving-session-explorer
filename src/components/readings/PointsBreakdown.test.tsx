@@ -1,6 +1,5 @@
 import { decimal } from '../../domain/decimal';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { expect, it } from 'vitest';
 import { calculateAll } from '../../domain/calculate';
 import { demoDataset } from '../../domain/demo';
@@ -17,7 +16,7 @@ function calculation(shifted = 0.1952, rate = 75, actual: number | null = 16): C
   };
 }
 
-it('shows the energy, independently supplied rate, rounding and exact matching award', async () => {
+it('shows the energy, independently supplied rate, rounding and exact matching award', () => {
   render(<PointsBreakdown result={calculation()} />);
 
   const region = screen.getByRole('region', { name: 'Octopoints estimate' });
@@ -34,7 +33,6 @@ it('shows the energy, independently supplied rate, rounding and exact matching a
   ).toBeVisible();
   expect(region).toHaveTextContent('Already at or above 16 points, so no change.');
   expect(region).toHaveTextContent('0 Octopoints. Matches Octopus.');
-  await userEvent.click(screen.getByText('Rounding and minimum are inferred'));
   expect(region).toHaveTextContent(
     'The exact formula has not been published by Octopus, so these are assumptions.',
   );

@@ -4,7 +4,6 @@ import { PLACEHOLDER } from '../placeholder';
 import type { Calculation } from '../../domain/types';
 import { isHappyHour } from '../../domain/session';
 import { halfHourRange, number } from './format';
-import { ReadingDisclosure } from './ReadingDisclosure';
 
 function EnergyValue({
   label,
@@ -122,7 +121,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
           </section>
         );
       })}
-      <ReadingDisclosure title="How this is calculated">
+      <div className="reading-explanation">
         <p>
           {happy
             ? 'Imported electricity is added up half-hour by half-hour. No baseline comparison is needed.'
@@ -131,7 +130,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
         {!happy && (
           <p>Power down and Power up use electricity imported minus electricity exported.</p>
         )}
-      </ReadingDisclosure>
+      </div>
       {happy && (
         <p className="reading-note">
           Octopus calculates the bill credit using your tariff and the session rules.
