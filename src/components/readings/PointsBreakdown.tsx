@@ -9,6 +9,7 @@ import {
 } from '../../domain/points';
 import { isHappyHour } from '../../domain/session';
 import { PLACEHOLDER } from '../placeholder';
+import { ReadingDisclosure } from './ReadingDisclosure';
 import { OctopointsValue } from '../OctopointsValue';
 
 const precise = (value: Decimal) => formatNumeric(value, 6);
@@ -21,43 +22,7 @@ export function PointsBreakdown({ result }: { result: Calculation }) {
 
   return (
     <section className="points-breakdown" aria-label="Octopoints estimate">
-      <h4>Octopoints estimate</h4>
-      {estimate.state === 'ready' ? (
-        <>
-          <ol className="points-steps">
-            <li>
-              <strong>Shifted energy × session rate</strong>
-              <p>
-                {precise(estimate.shifted)} kWh × {precise(estimate.rate)} points/kWh ={' '}
-                {precise(estimate.raw)} points.
-              </p>
-            </li>
-            <li>
-              <strong>Round up to a whole penny</strong>
-              <p>
-                {precise(estimate.raw)} → {estimate.pennyRounded.toString()} points (
-                {POINTS_PER_PENNY} points = 1p).
-              </p>
-            </li>
-            <li>
-              <strong>Apply the assumed 2p minimum</strong>
-              <p>
-                {estimate.raw.isZero()
-                  ? 'No points earned, so no minimum applies.'
-                  : estimate.pennyRounded.lt(ASSUMED_MINIMUM_POINTS)
-                    ? `${estimate.pennyRounded.toString()} → ${ASSUMED_MINIMUM_POINTS} points.`
-                    : 'Already at or above 16 points, so no change.'}
-              </p>
-            </li>
-          </ol>
-          <p className="reading-note">
-            Penny rounding and the 2p minimum were inferred from the account results checked. The
-            exact formula has not been published by Octopus, so these are assumptions.
-          </p>
-        </>
-      ) : (
-        <p>{POINTS_UNAVAILABLE[estimate.reason]}</p>
-      )}
+      <h3>Octopoints estimate</h3>
       <dl className="points-comparison">
         <div>
           <dt>Calculated reward</dt>
@@ -80,6 +45,53 @@ export function PointsBreakdown({ result }: { result: Calculation }) {
           </dd>
         </div>
       </dl>
+      {estimate.state === 'ready' ? (
+        <>
+          <table className="reading-table points-steps" aria-label="Octopoints calculation steps">
+            <thead>
+              <tr>
+                <th scope="col">Step</th>
+                <th scope="col">Calculation</th>
+                <th scope="col">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Shifted energy × session rate</th>
+                <td>
+                  {precise(estimate.shifted)} kWh × {precise(estimate.rate)} points/kWh
+                </td>
+                <td>{precise(estimate.raw)} points</td>
+              </tr>
+              <tr>
+                <th scope="row">Round up to a whole penny</th>
+                <td>{precise(estimate.raw)} points before rounding</td>
+                <td>{estimate.pennyRounded.toString()} points</td>
+              </tr>
+              <tr>
+                <th scope="row">Apply the assumed 2p minimum</th>
+                <td>
+                  {estimate.raw.isZero()
+                    ? 'No points earned, so no minimum applies.'
+                    : estimate.pennyRounded.lt(ASSUMED_MINIMUM_POINTS)
+                      ? `${estimate.pennyRounded.toString()} points before the minimum`
+                      : 'Already at or above 16 points, so no change.'}
+                </td>
+                <td>{formatNumeric(estimate.points)} points</td>
+              </tr>
+            </tbody>
+          </table>
+          <ReadingDisclosure title="Rounding and minimum are inferred">
+            <p>
+              {POINTS_PER_PENNY} points equal 1p. Penny rounding and the 2p minimum were inferred
+              from the account results checked. The exact formula has not been published by Octopus,
+              so these are assumptions.
+            </p>
+          </ReadingDisclosure>
+        </>
+      ) : (
+        <p className="reading-note">{POINTS_UNAVAILABLE[estimate.reason]}</p>
+      )}
     </section>
   );
 }

@@ -11,7 +11,7 @@ import {
   type SessionType,
 } from '../domain/session';
 import { sessionOutcome, type SessionOutcome } from '../domain/outcome';
-import { SessionDetails } from './SessionDetails';
+import { SessionDetails, type DetailTab } from './SessionDetails';
 import { ProvisionalIndicator } from './ProvisionalIndicator';
 import { Tooltip } from './Tooltip';
 import { OctopointsValue } from './OctopointsValue';
@@ -74,12 +74,16 @@ function MobileResults({
   type,
   id,
   expanded,
+  detailTabs,
+  selectDetailTab,
   toggle,
 }: {
   results: Calculation[];
   type: SessionType;
   id: string;
   expanded: Set<number>;
+  detailTabs: Map<number, DetailTab>;
+  selectDetailTab: (selection: { eventId: number; tab: DetailTab }) => void;
   toggle: (eventId: number) => void;
 }) {
   const happy = type === 'WEEKEND_HAPPY_HOUR';
@@ -160,7 +164,11 @@ function MobileResults({
             {comparison}
             {open && (
               <div id={detailId} className="mobile-session-details">
-                <SessionDetails result={result} />
+                <SessionDetails
+                  result={result}
+                  selectedTab={detailTabs.get(session.eventId)}
+                  onTabChange={(tab) => selectDetailTab({ eventId: session.eventId, tab })}
+                />
               </div>
             )}
           </li>
@@ -187,6 +195,11 @@ export function SessionHistory({
 }) {
   const id = useId(),
     [expanded, setExpanded] = useState<Set<number>>(() => new Set());
+  const [detailTabs, setDetailTabs] = useState(() => new Map<number, DetailTab>());
+
+  function selectDetailTab({ eventId, tab }: { eventId: number; tab: DetailTab }) {
+    setDetailTabs((previous) => new Map(previous).set(eventId, tab));
+  }
 
   const phone = useMediaQuery('(max-width: 600px)');
   function toggle(eventId: number) {
@@ -268,6 +281,8 @@ export function SessionHistory({
             type={type}
             id={id}
             expanded={expanded}
+            detailTabs={detailTabs}
+            selectDetailTab={selectDetailTab}
             toggle={toggle}
           />
         ) : (
@@ -454,7 +469,13 @@ export function SessionHistory({
                           id={id + '-details-' + session.eventId}
                         >
                           <td role="cell" colSpan={columns} aria-colspan={columns}>
-                            <SessionDetails result={result} />
+                            <SessionDetails
+                              result={result}
+                              selectedTab={detailTabs.get(session.eventId)}
+                              onTabChange={(tab) =>
+                                selectDetailTab({ eventId: session.eventId, tab })
+                              }
+                            />
                           </td>
                         </tr>
                       )}

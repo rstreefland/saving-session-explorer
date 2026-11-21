@@ -810,15 +810,20 @@ it.each([false, true])(
     const summary = screen.getByRole('region', { name: 'Calculation summary' });
     expect(within(summary).getByText('All values in kWh')).toBeVisible();
     expect(within(summary).getByText('Baseline').closest('dl')).toHaveTextContent('Baseline0.101');
-    expect(summary).toHaveTextContent('Total shifted for rewards0.101 kWh');
-    await user.click(screen.getByText('Days used for baseline (10)', { exact: true }));
+    expect(screen.getByRole('group', { name: 'Session energy total' })).toHaveTextContent(
+      'Total shifted for rewards0.101 kWh',
+    );
+    await user.click(screen.getByRole('tab', { name: 'Baseline' }));
     const references = screen.getByRole('table', { name: 'Readings used for baseline' });
     expect(
       within(references).getByRole('row', { name: 'Average for this half-hour 0.101' }),
     ).toBeVisible();
-    expect(screen.getByRole('region', { name: 'Octopoints estimate' })).toHaveTextContent(
-      '0.1005 kWh × 80 points/kWh = 8.04 points.',
-    );
+    await user.click(screen.getByRole('tab', { name: 'Octopoints' }));
+    expect(
+      screen.getByRole('row', {
+        name: 'Shifted energy × session rate 0.1005 kWh × 80 points/kWh 8.04 points',
+      }),
+    ).toBeVisible();
     expect(screen.getByRole('region', { name: 'Octopoints estimate' })).toHaveTextContent(
       '0 Octopoints. Matches Octopus.',
     );

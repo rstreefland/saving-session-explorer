@@ -1,5 +1,6 @@
 import { decimal } from '../../domain/decimal';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { expect, it } from 'vitest';
 import { calculateAll } from '../../domain/calculate';
 import { demoDataset } from '../../domain/demo';
@@ -16,15 +17,24 @@ function calculation(shifted = 0.1952, rate = 75, actual: number | null = 16): C
   };
 }
 
-it('shows the energy, independently supplied rate, rounding and exact matching award', () => {
+it('shows the energy, independently supplied rate, rounding and exact matching award', async () => {
   render(<PointsBreakdown result={calculation()} />);
 
   const region = screen.getByRole('region', { name: 'Octopoints estimate' });
 
-  expect(region).toHaveTextContent('0.1952 kWh × 75 points/kWh = 14.64 points.');
-  expect(region).toHaveTextContent('14.64 → 16 points (8 points = 1p).');
+  expect(
+    screen.getByRole('row', {
+      name: 'Shifted energy × session rate 0.1952 kWh × 75 points/kWh 14.64 points',
+    }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole('row', {
+      name: 'Round up to a whole penny 14.64 points before rounding 16 points',
+    }),
+  ).toBeVisible();
   expect(region).toHaveTextContent('Already at or above 16 points, so no change.');
   expect(region).toHaveTextContent('0 Octopoints. Matches Octopus.');
+  await userEvent.click(screen.getByText('Rounding and minimum are inferred'));
   expect(region).toHaveTextContent(
     'The exact formula has not been published by Octopus, so these are assumptions.',
   );
@@ -33,9 +43,21 @@ it('shows the energy, independently supplied rate, rounding and exact matching a
 it('explains the assumed minimum without changing the meter-derived shifted energy', () => {
   render(<PointsBreakdown result={calculation(0.1471, 16)} />);
 
-  expect(screen.getByRole('list')).toHaveTextContent('0.1471 kWh × 16 points/kWh = 2.3536 points.');
-  expect(screen.getByRole('list')).toHaveTextContent('2.3536 → 8 points');
-  expect(screen.getByRole('list')).toHaveTextContent('8 → 16 points.');
+  expect(
+    screen.getByRole('row', {
+      name: 'Shifted energy × session rate 0.1471 kWh × 16 points/kWh 2.3536 points',
+    }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole('row', {
+      name: 'Round up to a whole penny 2.3536 points before rounding 8 points',
+    }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole('row', {
+      name: 'Apply the assumed 2p minimum 8 points before the minimum 16 points',
+    }),
+  ).toBeVisible();
 });
 
 it('shows a genuine zero without applying a minimum', () => {
@@ -86,7 +108,7 @@ it('does not present a partial meter calculation as a complete reward', () => {
   render(<PointsBreakdown result={{ ...calculation(), state: 'incomplete', rewarded: null }} />);
 
   expect(screen.getByText('A complete energy estimate is needed first.')).toBeVisible();
-  expect(screen.queryByRole('list')).not.toBeInTheDocument();
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
 });
 
 it('hides reward estimates for Power up and Happy Hours', () => {
@@ -109,7 +131,11 @@ it('hides reward estimates for Power up and Happy Hours', () => {
 
 it('preserves the existing grouping distinction in penny-rounding steps', () => {
   render(<PointsBreakdown result={calculation(12.5, 80, 1000)} />);
-  expect(screen.getByRole('list')).toHaveTextContent('1,000 → 1000 points (8 points = 1p).');
+  expect(
+    screen.getByRole('row', {
+      name: 'Round up to a whole penny 1,000 points before rounding 1000 points',
+    }),
+  ).toBeVisible();
   expect(screen.getByRole('region', { name: 'Octopoints estimate' })).toHaveTextContent(
     '1,000 Octopoints',
   );
