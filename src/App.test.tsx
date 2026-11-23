@@ -675,3 +675,27 @@ it('hides the introduction copy behind a spoiler only when account details are p
   expect(screen.queryByText('About this tool')).not.toBeInTheDocument();
   expect(screen.getByText(introCopy)).toBeVisible();
 });
+
+it('expands the introduction copy again if loading saved account details fails', async () => {
+  localStorage.setItem('session-lens.api-key', 'test-key');
+  localStorage.setItem('session-lens.account-number', 'A-123');
+  let fail: (error: Error) => void = () => {
+    throw new Error('Expected pending account request');
+  };
+  loadDataset.mockImplementationOnce(
+    () =>
+      new Promise((_resolve, reject) => {
+        fail = reject;
+      }),
+  );
+  render(app());
+
+  const introCopy = /Octopus take a few days to calculate Saving Session results/;
+  expect(screen.getByText('About this tool').closest('details')).not.toHaveAttribute('open');
+
+  await act(async () => fail(new Error('Network error')));
+  await screen.findByRole('alert');
+
+  expect(screen.queryByText('About this tool')).not.toBeInTheDocument();
+  expect(screen.getByText(introCopy)).toBeVisible();
+});
