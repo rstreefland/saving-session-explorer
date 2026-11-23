@@ -1,6 +1,6 @@
 # Repository working agreement
 
-Small, browser-only app comparing smart meter estimates with Octopus Saving Session results — keep
+Small, browser-only app comparing smart meter estimates with Octopus Saving Session results; keep
 complexity proportional. Rules apply to all contributors, code, tests, and tooling unless noted.
 
 ## Before changing code
@@ -19,8 +19,9 @@ complexity proportional. Rules apply to all contributors, code, tests, and tooli
 
 ## Dates and times
 
-- **Temporal only — never use JavaScript `Date`** (`new Date`, `Date.now`, `Date.parse`, or test
-  fixtures). Import `temporal-polyfill` explicitly via `src/domain/time.ts`; never patch globals.
+- **Temporal only (never use JavaScript `Date`):** no `new Date`, `Date.now`, `Date.parse`, or
+  `Date` test fixtures. Import `temporal-polyfill` explicitly via `src/domain/time.ts`; never patch
+  globals.
 - Use Temporal arithmetic, `Europe/London` civil dates for calendar rules, and instants for elapsed
   intervals. Preserve half-open intervals and reject ambiguous/nonexistent reference times (local
   days are not always 24 hours).
@@ -172,8 +173,8 @@ npm run test:browser:build
 
 ## Documentation and decisions
 
-- **[README.md](README.md):** lightweight — purpose, quick start, essential privacy/limits, links.
-  No feature announcements or per-feature edits.
+- **[README.md](README.md):** keep lightweight (purpose, quick start, essential privacy/limits,
+  links). No feature announcements or per-feature edits.
 - **[docs/ADR.md](docs/ADR.md):** short, high-level architectural choices only (ID, date, status,
   decision, rationale, consequences). Preserve superseded decisions and link replacements. No
   coding rules, refactors, test policies, or task lists.

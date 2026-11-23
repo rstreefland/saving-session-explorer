@@ -72,8 +72,8 @@ Defined in [happyHourTokens.ts](../src/api/happyHourTokens.ts) and
 
 - Loaded in a separate account-scoped query (`['happy-hour-tokens', scope]`), independent of the
   selected date range.
-- Refetched on manual refresh; errors leave the badge unavailable (`—`) without blocking session
-  data.
+- Refetched on manual refresh; errors leave the badge unavailable (showing the usual placeholder)
+  without blocking session data.
 
 ## Failure modes
 

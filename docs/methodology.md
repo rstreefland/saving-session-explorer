@@ -18,7 +18,7 @@ Passing tests alone never promote a rule to supplier-confirmed.
 
 ## Supported sessions and date ranges
 
-_App policy_ — [calculate.ts](../src/domain/calculate.ts), [dateRange.ts](../src/domain/dateRange.ts)
+_App policy:_ [calculate.ts](../src/domain/calculate.ts), [dateRange.ts](../src/domain/dateRange.ts)
 
 - Recognised types (`Power down`, `Power up`, `Happy Hours`) starting on or after **29 Nov 2024**.
 - Aligned UTC half-hour boundaries, positive duration up to 24 elapsed hours, within one
@@ -29,7 +29,7 @@ _App policy_ — [calculate.ts](../src/domain/calculate.ts), [dateRange.ts](../s
 
 ### Baseline dates
 
-_Implemented model & app policy_ — [calculate.ts](../src/domain/calculate.ts),
+_Implemented model & app policy:_ [calculate.ts](../src/domain/calculate.ts),
 [region.ts](../src/domain/region.ts), [calculate.test.ts](../src/domain/calculate.test.ts),
 [client.test.ts](../src/api/client.test.ts)
 
@@ -44,7 +44,7 @@ _Implemented model & app policy_ — [calculate.ts](../src/domain/calculate.ts),
 
 ### Readings and net import
 
-_Implemented model & app policy_ — [calculate.test.ts](../src/domain/calculate.test.ts),
+_Implemented model & app policy:_ [calculate.test.ts](../src/domain/calculate.test.ts),
 [time.test.ts](../src/domain/time.test.ts), [client.test.ts](../src/api/client.test.ts)
 
 - Matches each session half-hour to the same `Europe/London` wall time on each baseline date.
@@ -55,7 +55,7 @@ _Implemented model & app policy_ — [calculate.test.ts](../src/domain/calculate
 
 ### Qualifying change per half-hour
 
-_Implemented model_ — `calculates turn up and clips each half-hour separately` and
+_Implemented model:_ `calculates turn up and clips each half-hour separately` and
 `calculates a bank holiday from four known weekend days, not weekday usage` in
 [calculate.test.ts](../src/domain/calculate.test.ts)
 
@@ -77,7 +77,7 @@ in one half-hour does not cancel a qualifying shift in another.
 
 ## Happy Hours
 
-_Implemented model & app policy_ — `does not clip imported usage to the reward cap or subtract export`
+_Implemented model & app policy:_ `does not clip imported usage to the reward cap or subtract export`
 in [calculate.test.ts](../src/domain/calculate.test.ts)
 
 - Sums **imported** half-hourly kWh only (no baseline, no export subtraction).
@@ -87,7 +87,7 @@ in [calculate.test.ts](../src/domain/calculate.test.ts)
 
 ## Reward estimation
 
-_Inferred (Power down) & app policy_ — [points.ts](../src/domain/points.ts),
+_Inferred (Power down) & app policy:_ [points.ts](../src/domain/points.ts),
 [points.test.ts](../src/domain/points.test.ts)
 
 - **Power down:** multiplies qualifying kWh by the published Octopoints/kWh rate (capped at
@@ -111,7 +111,7 @@ session readings` in [points.test.ts](../src/domain/points.test.ts)):
 
 ## Missing data, Home Mini, and blockers
 
-_App policy_ — [coverage.ts](../src/domain/coverage.ts), [homeMini.ts](../src/api/homeMini.ts),
+_App policy:_ [coverage.ts](../src/domain/coverage.ts), [homeMini.ts](../src/api/homeMini.ts),
 [calculate.test.ts](../src/domain/calculate.test.ts), [outcome.test.ts](../src/domain/outcome.test.ts)
 
 - **Presumed missing:** completed gaps older than **7 days** (heuristic, not a supplier deadline;
@@ -128,7 +128,7 @@ _App policy_ — [coverage.ts](../src/domain/coverage.ts), [homeMini.ts](../src/
 
 ## Comparing with Octopus results
 
-_API interpretation & app policy_ — [session.ts](../src/domain/session.ts),
+_API interpretation & app policy:_ [session.ts](../src/domain/session.ts),
 [outcome.ts](../src/domain/outcome.ts), [calculate.test.ts](../src/domain/calculate.test.ts),
 [points.test.ts](../src/domain/points.test.ts)
 
@@ -145,7 +145,7 @@ _API interpretation & app policy_ — [session.ts](../src/domain/session.ts),
 
 ## Precision and rounding
 
-_App policy_ — [ADR-003](ADR.md), [decimal.ts](../src/domain/decimal.ts),
+_App policy:_ [ADR-003](ADR.md), [decimal.ts](../src/domain/decimal.ts),
 [numericSchema.ts](../src/api/numericSchema.ts), [decimal.test.ts](../src/domain/decimal.test.ts),
 [numericSchema.test.ts](../src/api/numericSchema.test.ts), [client.test.ts](../src/api/client.test.ts)
 
@@ -170,7 +170,7 @@ _App policy_ — [ADR-003](ADR.md), [decimal.ts](../src/domain/decimal.ts),
 
 ## Visible-history totals and overview
 
-_App policy_ — [totals.ts](../src/domain/totals.ts), [totals.test.ts](../src/domain/totals.test.ts)
+_App policy:_ [totals.ts](../src/domain/totals.ts), [totals.test.ts](../src/domain/totals.test.ts)
 
 - Each column sums independently over the visible session type and date range, excluding
   unavailable and pending values (never zeroing them), so Calculated and Octopus columns may cover
@@ -189,5 +189,5 @@ achieved`; official achievements count published `SUCCESS` and `PARTIAL_SUCCESS`
 2. Update a minimal, anonymous contract fixture (preserve malformed/optional edge cases; strip all
    credentials, account IDs, addresses, names, and meter identifiers; fail unexpected network
    calls).
-3. Revise independently worked examples _before_ changing the calculator — never generate expected
+3. Revise independently worked examples _before_ changing the calculator; never generate expected
    values from the implementation.
