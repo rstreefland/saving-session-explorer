@@ -169,7 +169,7 @@ function SessionLens({ load }: AppProps) {
         </button>
       </header>
       <main>
-        <PublicIntro />
+        <PublicIntro collapsible={!demo && (remote.data !== null || remote.busy)} />
         <ConnectionForm
           onConnect={connect}
           onForget={() => reset(true)}
