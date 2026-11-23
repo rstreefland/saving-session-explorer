@@ -142,17 +142,35 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: 25px;
-  padding: 35px 0 29px;
+  padding: 28px 0;
 }
 
-.intro > div > p {
+.intro p {
   font-size: 14px;
   margin-bottom: 12px;
   max-width: 68ch;
 }
 
-.intro > div > p:last-child {
+.intro p:last-child {
   margin-bottom: 0;
+}
+
+.intro-collapsible {
+  padding: 20px 0 16px;
+}
+
+.intro-collapsible h1 {
+  margin-bottom: 8px;
+}
+
+.intro-details summary {
+  font-size: 14px;
+  color: var(--muted);
+  padding: 4px 0;
+}
+
+.intro-details p:first-of-type {
+  margin-top: 10px;
 }
 
 .eyebrow {
@@ -449,12 +467,16 @@ th {
     align-items: flex-end;
   }
 
+  .intro-collapsible {
+    padding: 18px 0 14px;
+  }
+
   h1 {
     font-size: 32px;
     letter-spacing: -1.5px;
   }
 
-  .intro > div > p:last-child {
+  .intro p:last-child {
     font-size: 14px;
   }
 
@@ -917,11 +939,6 @@ th {
   font-size: clamp(25px, 3.8vw, 42px);
   letter-spacing: -1.6px;
   line-height: 1.15;
-}
-
-.intro {
-  padding-top: 28px;
-  padding-bottom: 28px;
 }
 
 @media (max-width: 600px) {
