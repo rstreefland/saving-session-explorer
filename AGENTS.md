@@ -1,179 +1,160 @@
 # Repository working agreement
 
-This is a small browser-only app for comparing independent energy estimates with Octopus
-Saving Session results, so keep complexity proportional to that purpose. These rules apply to
-all contributors and repository code, including tests and tooling unless an exception is stated.
+Small, browser-only app comparing smart meter estimates with Octopus Saving Session results; keep
+complexity proportional. Rules apply to all contributors, code, tests, and tooling unless noted.
 
-## Before making changes
+## Before changing code
 
-- Read the relevant code, tests, and [decisions](docs/ADR.md). For calculation or upstream-data
-  changes, also read [methodology](docs/methodology.md).
-- Inspect git status and the existing diff. Preserve other contributors' work and coordinate
-  overlapping edits. Never reset, clean, overwrite, or revert unrelated changes.
-- Keep changes focused. Avoid incidental dependency upgrades, broad formatting, and unrelated
-  refactors. Check history and regression tests before changing a previously corrected behaviour.
-- Apply corrections to every affected consumer, including responsive layouts and explanations.
-  Identify intentional differences rather than letting implementations drift.
-- New and changed code must follow these standards. Existing violations are migration work,
-  not examples to copy. Migrate a coherent affected path and report remaining gaps; don't turn
-  a local task into an unrequested repository rewrite. ADR status distinguishes accepted
-  decisions from completed migrations.
+- Read relevant code, tests, and [docs/ADR.md](docs/ADR.md); for calculation or API changes, also
+  read [docs/methodology.md](docs/methodology.md) and [docs/api.md](docs/api.md).
+- Inspect `git status` and existing diffs first. Preserve others' work; never reset, clean,
+  overwrite, or revert unrelated changes.
+- Keep changes focused (no incidental upgrades, broad reformatting, or unrelated refactors). Check
+  git history and regression tests before altering previously fixed behaviour.
+- Update every affected consumer (responsive layouts, tooltips, explanations) and keep intentional
+  differences explicit.
+- Follow these standards in all new/changed code. Don't copy existing violations; migrate the
+  coherent affected path and report remaining gaps instead of rewriting the repo. ADR status
+  distinguishes accepted decisions from completed migrations.
 
 ## Dates and times
 
-- **Use Temporal exclusively for dates and times. Never use JavaScript `Date`**, including
-  `new Date`, `Date.now`, `Date.parse`, and test fixtures. Use the explicit `temporal-polyfill`
-  import and shared helpers in `src/domain/time.ts`; don't patch application globals.
-  Use Temporal operations for date/time arithmetic, London civil dates for calendar rules,
-  and instants for elapsed intervals. Preserve half-open intervals and reject ambiguous or
-  nonexistent reference times; a local day is not necessarily 24 hours.
-- **Reuse established date/time formats. Ask the user for permission before introducing a new
-  variant or changing an existing one.** Show a concrete example and why the existing helper
-  is insufficient. Current formats are `7 Nov 2026`, `5:30pm`, and `5:30pm – 6:00pm`, using
-  `en-GB` and `Europe/London`; use the existing zone-qualified form when needed. ISO transport
-  values and native date-input values remain machine formats. Keep display formatting in
-  shared helpers, with regression examples.
+- **Temporal only (never use JavaScript `Date`):** no `new Date`, `Date.now`, `Date.parse`, or
+  `Date` test fixtures. Import `temporal-polyfill` explicitly via `src/domain/time.ts`; never patch
+  globals.
+- Use Temporal arithmetic, `Europe/London` civil dates for calendar rules, and instants for elapsed
+  intervals. Preserve half-open intervals and reject ambiguous/nonexistent reference times (local
+  days are not always 24 hours).
+- **Reuse existing display formats** (`7 Nov 2026`, `5:30pm`, `5:30pm – 6:00pm` in
+  `en-GB`/`Europe/London`, plus the existing zone-qualified form). Ask the user before adding or
+  changing a format, with a concrete example and rationale. Keep ISO transport values and native
+  date inputs machine-formatted, and keep display formatting in shared helpers with regression
+  tests.
 
-## Numbers and data validation
+## Numbers, types, and validation
 
-- **Use `decimal.js-light` for all numeric arithmetic**, including tests and tooling, not only
-  money. Don't compute with native numeric arithmetic or `Math` and wrap the result afterward.
-  Date/time arithmetic belongs to Temporal. Preserve decimal strings at input boundaries where
-  supplied; keep Decimal values through calculations and comparisons, converting only at explicit
-  display/serialisation or library boundaries. Centralise precision and rounding configuration,
-  document it in the methodology, and test boundary cases. Decimal division still needs a deliberate
-  precision policy. See ADR-003 for migration status.
-- **No type casts/assertions outside test code.** This includes `as T`, double assertions,
-  angle-bracket assertions, and `as const`. Use inference, annotations, discriminated unions,
-  narrowing, or `satisfies`. Don't bypass this rule with `any`, non-null assertions, or TypeScript
-  suppression comments. Test assertions are allowed for fixtures/mocks when needed.
-- **Use Zod to validate data of unknown types** at entry points: API responses, parsed JSON,
-  stored data, and other untrusted input. Parse once before passing typed values inward.
-  Distinguish required fields from optional enrichment; don't cast away uncertainty or silently
-  default malformed values. Keep Zod's JIT-free configuration compatible with production CSP.
-- Follow strict TypeScript and the existing Prettier configuration. Use npm and its lockfile;
-  update manifests and lockfiles together. Prefer existing libraries and UI primitives before
-  adding another state manager, styling system, or abstraction. Don't edit generated output.
+- **Use `decimal.js-light` for all numeric arithmetic** (including tests and tooling); never
+  compute with native arithmetic or `Math` and wrap afterward. Preserve decimal strings at
+  boundaries; keep `Decimal` through calculations/comparisons and convert only at display,
+  serialisation, or library boundaries. Centralise precision/rounding config, document it in
+  [docs/methodology.md](docs/methodology.md), and test boundary cases (including division).
+- **No type casts or assertions outside tests** (`as T`, double casts, angle-bracket casts,
+  `as const`, `any`, `!`, or TS suppression comments). Use inference, annotations, discriminated
+  unions, narrowing, or `satisfies`. Tests may use assertions for fixtures/mocks when needed.
+- **Validate all unknown input with Zod at entry points** (API, parsed JSON, storage) once before
+  passing typed data inward. Separate required fields from optional enrichment; never silently
+  default malformed values. Keep Zod JIT-free (`z.config({ jitless: true })`) for production CSP.
+- Follow strict TypeScript and repo Prettier settings. Use `npm` and keep `package.json` and
+  `package-lock.json` in sync. Prefer existing libraries/UI primitives; never edit generated output.
 
-## Architecture: reduce coordination and duplicated state
+## Architecture
 
-- Separate transport, authentication, schemas, discovery, and dataset assembly into a few focused
-  API modules, with **one readable loading orchestrator**. Use direct functions and explicit data
-  flow, without a generic pipeline framework. Prevent new import cycles; resolve the existing
-  `client.ts`/`homeMini.ts` cycle when changing that boundary.
-- Keep calculations and semantic decisions independent of React, network, and storage. The current
-  `domain/storage.ts` adapter is a placement exception, not permission to add storage to calculations.
-- `useSessionData` owns server state, account-scoped caching, and cancellation. `App` owns selected
-  dates/type and filters/sorts once. History and summaries consume the same visible results.
-  Components must not introduce competing fetching, caches, sorting, or calculations.
-- **Simplify availability into a small typed set of domain causes.** Derive eligibility, summary
-  state, outcome codes, and presentation messages from those causes. Keep provenance and official
-  publication status explicit where they express different facts. Don't add another independently
-  maintained flag, reason string, or label for an existing condition. The current `baselineIssues`,
-  `issues`, `unavailableReason`, and `state` overlap is migration debt, not a required design.
-  Preserve behaviour while consolidating it; keep informational warnings separate from blockers
-  and make precedence deterministic.
-- Handle uncertainty at boundaries and encode valid states in types. Add defensive branches for
-  demonstrated inputs/failures, with focused examples; avoid repeating checks for guarantees already
-  established upstream. Optional failures disable only capabilities that require the missing data.
-- Extract shared logic when it removes actual duplication or disagreement. Avoid arbitrary file
-  limits, speculative extensibility, and layers that merely forward calls.
+- Keep API code in focused modules (transport, auth, schemas, discovery, dataset assembly) behind
+  **one readable loading orchestrator**. Use direct functions and explicit data flow (no generic
+  pipeline framework); prevent import cycles.
+- Keep domain calculations independent of React, network, and storage.
+- **Single state ownership:** `useSessionData` owns server state, account-scoped caching, and
+  cancellation; `App` owns selected dates/type, filters, and sorts once; history and summaries
+  share those visible results. No competing fetches, caches, sorts, or calculations in components.
+- **Consolidate availability into a small typed set of domain causes** and derive eligibility,
+  summary state, outcome codes, and messages from them. Keep provenance and publication status
+  explicit, keep informational warnings separate from blockers, keep precedence deterministic, and
+  don't add parallel flags, reason strings, or labels for existing conditions.
+- Handle uncertainty at boundaries and encode valid states in types. Add defensive branches only
+  for demonstrated failures (with examples); don't re-check upstream guarantees. Optional failures
+  disable only dependent capabilities.
+- Extract shared logic only to remove real duplication or disagreement; avoid arbitrary file
+  limits, speculative extensibility, and pass-through layers.
 
 ## Result integrity
 
-- Missing is not zero. Keep unknown readings, valid zeroes, absent export meters, failed export
-  loading, pending results, and published zero rewards distinct.
-- Select eligible baseline dates before inspecting readings. Never substitute older dates to hide
-  gaps. Reject invalid, duplicate, conflicting, or misaligned half-hours; don't guess or interpolate.
-- Preserve each session type's methodology. Power down/up use net import and qualifying changes
-  per half-hour; Happy Hours use import only. Keep unsupported cases explicit and future sessions
-  inspectable without inventing future readings. Check event-calendar completeness from API counts,
-  not the oldest event date. Keep date-range rules consistent between the UI and requests.
-- Select meters deterministically from usable data and re-evaluate candidates on refresh. Never
-  combine histories from different serials or turn failed discovery into an absent meter.
-- Home Mini fills absent import intervals only, matches both MPAN and serial, uses completed
-  aligned intervals within its bounded history, and never overwrites an existing standard row.
-  Carry provisional provenance through baseline and session calculations; suppress missed-reward
-  alerts for provisional estimates. Refresh allows standard readings to replace fallback inputs.
-- Derive estimates from readings and published rates independently of official outcomes. Centralise
-  reward arithmetic and round at the specified stage. Document supplier evidence, inferred rules,
-  and app heuristics separately; never present discrepancies as proof of incorrect settlement.
+- **Missing ≠ zero:** keep unknown readings, valid zeroes, absent export meters, failed export
+  loads, pending results, and published zero rewards distinct.
+- Select baseline dates before inspecting readings; never substitute older dates to hide gaps.
+  Reject invalid, duplicate, conflicting, or misaligned half-hours without guessing or
+  interpolating.
+- Preserve per-type methodology (Power down/up: net import + per-half-hour qualifying change; Happy
+  Hours: import only). Keep unsupported cases explicit and future sessions inspectable without
+  inventing readings. Verify event-calendar completeness from API counts, not the oldest event
+  date. Align UI and request date-range rules.
+- Select meters deterministically from usable data and re-evaluate on refresh; never mix histories
+  across serials or turn failed discovery into an absent meter.
+- **Home Mini:** fill absent import intervals only, match both MPAN and serial, use completed
+  aligned intervals within bounded history, and never overwrite standard rows. Carry provisional
+  provenance through baseline/session calculations and suppress missed-reward alerts for
+  provisional estimates; refresh lets standard data replace fallbacks.
+- Estimate independently of official outcomes; centralise reward arithmetic and round at the
+  specified stage. Separate supplier evidence, inferred rules, and app heuristics in docs; never
+  claim discrepancies prove underpayment.
 
 ## Account safety
 
 - Keep credentials and personal account data out of logs, raw error messages, query keys, public
-  HTML, committed fixtures, screenshots, and recordings. Results/readings stay in memory.
-  A backend, analytics, persistent readings, credential-storage changes, or account-changing
-  operations require an explicit product decision, recorded in the ADR.
-- Account changes clear account-scoped data and cancel work. Forgetting must disconnect and clear
-  memory even if storage removal fails; attempt all removals and show the storage failure.
+  HTML, committed fixtures, screenshots, and recordings. Results and readings stay in memory.
+- Any backend, analytics, persistent readings, credential-storage change, or write operation
+  requires an explicit product decision in [docs/ADR.md](docs/ADR.md).
+- Account changes clear account-scoped data and cancel in-flight work. Forgetting disconnects and
+  clears memory even if storage removal fails; attempt all removals and surface storage errors.
   Late responses must never restore stale or previous-account results.
 
-## Requests and cancellation
+## Requests, cancellation, and security
 
-- Pass cancellation through every request and optional dependency. Rethrow cancellation rather
-  than converting it to a warning or successful partial result. Clean up effects, subscriptions,
-  and timers; preserve correct behaviour under React Strict Mode.
-- Encode path parameters and constrain authenticated pagination destinations, loops, and page
-  counts. Preserve deliberate retry/refresh behaviour. Mini requests remain sequential and retain
-  successful partial work after a failure; avoid incidental background fetching or retry storms.
-- Preserve production CSP, bundled scripts/fonts, and restricted network destinations. Review
-  implications before changing those constraints. Keep GitHub Actions pinned, permissions minimal,
-  checkout credentials unpersisted, and Playwright package/container versions aligned.
+- Pass `AbortSignal` through every request and optional dependency; rethrow cancellations rather
+  than converting them to warnings or partial results. Clean up effects, subscriptions, and timers
+  under React Strict Mode.
+- Encode path parameters and constrain authenticated pagination (host prefix, loop detection, max
+  pages). Keep retries/refreshes deliberate; keep Home Mini requests sequential and retain partial
+  successful days on failure; avoid background fetch or retry storms.
+- Preserve production CSP, bundled scripts/fonts, and restricted network origins. Keep GitHub
+  Actions pinned to commit SHAs, permissions minimal, `persist-credentials: false`, and Playwright
+  package/container versions aligned.
 
 ## UI consistency
 
-- Base behaviour on domain codes, never display labels. Reuse shared numeric formatting,
-  placeholders, Octopoints, provenance indicators, and explanations. Keep deliberate precision
-  differences between summaries and detailed readings.
-- Mobile, compact, and desktop layouts must show equivalent values, statuses, and access to
-  details. Change CSS/JavaScript breakpoints, columns, and expanded spans together; retain
-  expansion state across resizing.
-- Give styles a clear owner. Use shared tokens and feature stylesheets; edit the owning rule
-  rather than appending overrides elsewhere. Preserve established typography relationships.
-- Use only 14px for primary text and 12px for secondary text throughout the app, including
-  mobile layouts. The main title is the only exception and may use a responsive size. Keep
-  session overview and history body text at regular weight (400), with numbers and units at
-  the same size. Reuse the shared size tokens across breakpoints rather than adding variants.
-- Use semantic controls with accessible names, keyboard operation, focus, disclosure state,
-  adequate touch targets, and reduced-motion support. Tooltips must work with keyboard and touch.
-  Automated accessibility checks supplement interaction tests.
-- Keep the static and interactive public introduction shared and account-free. When hosting or
-  preview assets change, synchronise canonical/social URLs, robots, sitemap, CNAME, and the
-  editable sharing-card source with its published image.
+- Drive behaviour from domain codes, never display labels. Reuse shared numeric formatting,
+  placeholders, Octopoints rendering, provenance indicators, and explanations; preserve deliberate
+  summary vs detail precision differences.
+- Keep mobile, compact, and desktop layouts equivalent in values, statuses, and detail access.
+  Update CSS/JS breakpoints, columns, and expanded spans together; retain expansion state across
+  resizes.
+- Give styles a clear owner via shared tokens and feature stylesheets; edit the owning rule rather
+  than appending overrides.
+- **Typography:** strictly `14px` primary text and `12px` secondary text across all breakpoints
+  (only the main title may resize responsively). Keep overview/history body text at weight `400`,
+  with numbers and units the same size; reuse shared size tokens.
+- **Accessibility:** semantic controls, accessible names, keyboard support, focus, disclosure
+  state, adequate touch targets, reduced motion, and keyboard/touch tooltips. Supplement
+  interaction tests with automated accessibility checks.
+- Keep the static and interactive public intro shared and account-free. When hosting or preview
+  assets change, sync canonical/social URLs, `robots.txt`, `sitemap.xml`, `CNAME`, and
+  `social-card.svg` with `social-card.png`.
 
 ## Tests and verification
 
-- Use [Vitest Browser Mode](https://vitest.dev/guide/browser/) for browser tests, with the
-  Playwright provider running Chromium and WebKit. Use native browser locators and assertions
-  for UI tests; keep production CSP and JavaScript-disabled checks in browser commands against
-  a fresh build. Keep calculation and content assertions in normal tests; browser tests should
-  cover real layout, browser interactions, and production behavior. Avoid repeating the same
-  scenario at nearby viewport widths. Do not add tests using the standalone Playwright test runner.
-
-- Prefer a small set of representative, anonymous API contract fixtures and independently worked
-  end-to-end calculation examples. Cover supported session types, missing data, publication,
-  export, DST, provisional inputs, and rounding where relevant. Expected results must not be
-  generated by the implementation being tested. Revisit these examples when APIs or methodology
-  change; coverage percentages don't establish agreement with Octopus.
-- Test corrected behaviour at the boundary that can fail. API/account changes need the normal
-  `App` with intercepted requests as well as focused hook tests. Test observable UI behaviour;
-  avoid tests that merely mirror implementation or duplicate existing evidence.
-- Keep fixtures synthetic or thoroughly anonymised, minimal, and free of credentials and account
-  identifiers. Intercept network requests and fail unexpected external calls. Keep recordings
-  disabled. Control the relevant Temporal clock and restore mocks; don't add `Date` fixtures.
-- Run targeted checks during development. Before handoff, run formatting and relevant tests;
-  build for code/configuration changes. For layout, CSP, or public-content changes, use a fresh
-  production build and both Chromium and WebKit. Wait for fonts before layout measurements.
-  Documentation-only changes need formatting/link checks, not application test runs.
-- CI runs formatting, coverage, build, and browser checks. Never lower thresholds, disable failing
-  tests, or inflate timeouts merely to get green. Report checks actually run, failures, and gaps.
-  Remove redundant tests only when equivalent behavioural coverage is clear.
+- **Browser tests:** [Vitest Browser Mode](https://vitest.dev/guide/browser/) with Playwright
+  (Chromium + WebKit) and native locators/assertions. Run production CSP and JS-disabled checks via
+  browser commands on a fresh build. Keep calculation/content assertions in unit tests; use browser
+  tests for layout, interactions, and production behaviour. Don't duplicate across nearby
+  viewports; don't add standalone Playwright test runner tests.
+- Prefer small, anonymous API contract fixtures and independently worked end-to-end examples
+  (session types, missing data, publication, export, DST, provisional inputs, rounding). Never
+  generate expected outputs from the implementation; update examples when APIs or methodology
+  change.
+- Test at the failing boundary (API/account changes need `App` with intercepted requests plus
+  focused hook tests). Test observable UI behaviour, not implementation mirrors.
+- Keep fixtures synthetic/anonymised, minimal, and free of credentials or account IDs. Intercept
+  network requests and fail unexpected external calls; disable recordings; control Temporal clocks
+  and restore mocks.
+- **Before handoff:** run formatting and relevant tests, plus `npm run build` for code/config
+  changes. For layout, CSP, or public-content changes, test a fresh production build in Chromium
+  and WebKit (wait for fonts before measuring). Doc-only changes need formatting and link checks
+  only.
+- Never lower CI thresholds, disable failing tests, or inflate timeouts to pass. Report checks run,
+  failures, and gaps. Remove redundant tests only when behavioural coverage is clearly preserved.
 
 ## Development commands
 
-Use Node 24 and npm 10+ for development, matching CI. The broader Node range in `package.json`
-doesn't establish that older versions are tested. Commands:
+Use Node 24 and npm 10+ (matching CI; the broader `engines` range in `package.json` is not tested).
 
 ```sh
 npm ci
@@ -186,21 +167,21 @@ npm run typecheck:browser
 npm run test:browser:build
 ```
 
-Browser tests have a separate typecheck command; the application build does not check them.
-Pushing to `main` deploys. Pages doesn't currently wait for the separate browser checks;
-don't claim otherwise or change deployment gating incidentally.
+- `typecheck:browser` is separate from `npm run build`.
+- Pushing to `main` deploys GitHub Pages without waiting for the separate browser checks workflow;
+  don't claim otherwise or change deployment gating incidentally.
 
 ## Documentation and decisions
 
-- Keep [README.md](README.md) lightweight: purpose, quick start, essential privacy/limitations,
-  and links. Don't append feature announcements or edit it for every feature.
-- Keep [docs/ADR.md](docs/ADR.md) short and high level. Record only significant architectural
-  choices whose reversal would materially change the app: ID, date, status, decision, rationale,
-  and consequences. Coding conventions, routine refactors, test policies, and task lists do not
-  belong there. Preserve genuine architectural decisions when superseded and link replacements.
-- Keep calculation assumptions, evidence classification, and focused examples in
-  [docs/methodology.md](docs/methodology.md). Update affected explanations/tests with methodology
-  changes. Promote a rule to supplier-confirmed only with an exact source and verification date.
-- Only explicitly shared docs are tracked. Keep private local research ignored; never force-add
-  it incidentally. Make intentional standards changes explicit in this guide rather than adding
-  silent exceptions throughout the code.
+- **[README.md](README.md):** keep lightweight (purpose, quick start, essential privacy/limits,
+  links). No feature announcements or per-feature edits.
+- **[docs/ADR.md](docs/ADR.md):** short, high-level architectural choices only (ID, date, status,
+  decision, rationale, consequences). Preserve superseded decisions and link replacements. No
+  coding rules, refactors, test policies, or task lists.
+- **[docs/methodology.md](docs/methodology.md):** calculation assumptions, evidence levels, and
+  worked examples. Update explanations and tests with methodology changes; promote rules to
+  supplier-confirmed only with an exact source and verification date.
+- **[docs/api.md](docs/api.md):** external endpoints, authentication, meter discovery, fallback
+  rules, and failure modes. Update alongside API or CSP changes.
+- Keep private local research git-ignored; never force-add it. Make intentional standards changes
+  explicit here instead of adding silent exceptions in code.
