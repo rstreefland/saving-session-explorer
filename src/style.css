@@ -759,6 +759,29 @@ th {
   width: 35%;
 }
 
+.session-details .reference-table tfoot.reference-average-partial {
+  background: var(--surface);
+  font-weight: 700;
+}
+
+.session-details .reference-table .reference-average-detail {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--results-secondary-size, 12px);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.session-details .reference-table .reference-value {
+  display: inline-flex;
+  align-items: center;
+}
+
+.session-details .reference-table .tooltip-icon {
+  margin-top: -11px;
+  margin-bottom: -11px;
+}
+
 .history-table .comparison-table thead th:first-child {
   width: 40%;
 }

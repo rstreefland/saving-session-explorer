@@ -62,8 +62,10 @@ change in another. See `calculates turn up and clips each half-hour separately` 
 For example, a bank holiday's four reference days supply 1, 2, 3, and 4 kWh for each matching
 half-hour. Their mean is 2.5 kWh per half-hour. If a two-slot Power down session uses 0.5 kWh in
 each slot, its baseline is 5 kWh, actual usage is 1 kWh, and qualifying reduction is 4 kWh.
-Removing a selected day's readings makes the baseline unavailable without changing the selected
-dates. See `calculates a bank holiday from four known weekend days, not weekday usage` in
+Removing a selected day's readings makes the session baseline unavailable without changing the
+selected dates. Inside the baseline breakdown, the app still shows an indicative average of the
+available reference readings alongside the missing count while keeping the session estimate
+incomplete. See `calculates a bank holiday from four known weekend days, not weekday usage` in
 [calculate.test.ts](../src/domain/calculate.test.ts).
 
 For Power up, baseline slots of 0.6 and 0.6 kWh and actual slots of 1.6 and 0.15 kWh give qualifying
@@ -117,9 +119,10 @@ conservative 29-day window. It must match both MPAN and serial and converts Wh t
 replaces an existing standard row, even if that row is invalid. This fallback policy is covered
 by [homeMini.ts](../src/api/homeMini.ts) and [homeMini.test.ts](../src/api/homeMini.test.ts).
 
-Mini data in either session usage or the baseline makes the estimate provisional. The app
-suppresses missed-reward alerts for provisional estimates; standard data replaces fallback
-inputs on refresh. See [calculate.test.ts](../src/domain/calculate.test.ts) and
+Mini data in either session usage or the baseline makes the estimate provisional, and the baseline
+breakdown marks individual reference days supplied by the Mini. The app suppresses missed-reward
+alerts for provisional estimates; standard data replaces fallback inputs on refresh. See
+[calculate.test.ts](../src/domain/calculate.test.ts) and
 [outcome.test.ts](../src/domain/outcome.test.ts).
 
 Holiday, linked-export, and event-history failures block the baseline calculations that depend

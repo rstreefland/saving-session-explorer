@@ -45,12 +45,18 @@ export interface Dataset {
   mpan: string;
 }
 
+export interface ReferenceReading {
+  date: string;
+  value: Decimal | null;
+  provisional?: boolean;
+}
+
 export interface Slot {
   actualProvisional?: boolean;
   start: string;
   baseline: Decimal | null;
   actual: Decimal | null;
-  references: { date: string; value: Decimal | null }[];
+  references: ReferenceReading[];
 }
 
 export interface Calculation {

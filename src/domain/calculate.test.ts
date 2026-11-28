@@ -1,7 +1,7 @@
 import { decimal } from './decimal';
 import { milliseconds, Temporal, local, midnight, iso, referenceTime } from './time';
 import { describe, it, expect } from 'vitest';
-import { calculateAll, indexReadings, referenceDays } from './calculate';
+import { calculateAll, indexReadings, referenceAverage, referenceDays } from './calculate';
 import { demoDataset } from './demo';
 import type { Session } from './types';
 
@@ -376,6 +376,85 @@ it('marks Mini session and baseline inputs provisional, then clears the marker w
   const target = referenceTime(before.days[0], local(before.session.startAt).toPlainTime());
   const baselineReading = data.imports.find((r) => milliseconds(r.interval_start) === target)!;
   baselineReading.source = 'home-mini';
-  expect(calculateAll(data)[1].provisional).toBe(true);
-  expect(calculateAll(data)[1].rewarded).toEqual(before.rewarded);
+  const withMiniBaseline = calculateAll(data)[1];
+  expect(withMiniBaseline.provisional).toBe(true);
+  expect(withMiniBaseline.rewarded).toEqual(before.rewarded);
+  expect(withMiniBaseline.slots[0].references.map((reference) => reference.provisional)).toEqual([
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
+  expect(referenceAverage(withMiniBaseline.slots[0])).toEqual({
+    average: before.slots[0].baseline,
+    complete: true,
+    knownCount: 10,
+    missingCount: 0,
+    provisional: true,
+  });
+});
+
+describe('referenceAverage', () => {
+  it('averages known reference readings with Decimal precision when some readings are missing', () => {
+    const summary = referenceAverage({
+      start: '2026-11-27T15:00:00Z',
+      baseline: null,
+      actual: decimal(0.1),
+      references: [
+        { date: '2026-11-26', value: null, provisional: false },
+        { date: '2026-11-25', value: decimal('0.1'), provisional: true },
+        { date: '2026-11-24', value: decimal('0.1'), provisional: false },
+        { date: '2026-11-23', value: decimal('0.2'), provisional: false },
+      ],
+    });
+
+    expect(summary.complete).toBe(false);
+    expect(summary.knownCount).toBe(3);
+    expect(summary.missingCount).toBe(1);
+    expect(summary.provisional).toBe(true);
+    expect(summary.average?.toFixed(6)).toBe('0.133333');
+  });
+
+  it('returns null when all reference readings are missing', () => {
+    const summary = referenceAverage({
+      start: '2026-11-27T15:00:00Z',
+      baseline: null,
+      actual: decimal(0.1),
+      references: [
+        { date: '2026-11-26', value: null, provisional: false },
+        { date: '2026-11-25', value: null, provisional: false },
+      ],
+    });
+
+    expect(summary).toEqual({
+      average: null,
+      complete: false,
+      knownCount: 0,
+      missingCount: 2,
+      provisional: false,
+    });
+  });
+
+  it('does not mark a baseline reference provisional when missing linked export makes it unavailable', () => {
+    const data = demoDataset();
+    const before = calculateAll(data)[1];
+    const target = referenceTime(before.days[0], local(before.session.startAt).toPlainTime());
+    data.imports.find((r) => milliseconds(r.interval_start) === target)!.source = 'home-mini';
+    data.exports = [];
+
+    const result = calculateAll(data)[1];
+
+    expect(result.slots[0].references[0]).toEqual({
+      date: before.days[0],
+      value: null,
+      provisional: false,
+    });
+    expect(referenceAverage(result.slots[0]).provisional).toBe(false);
+  });
 });

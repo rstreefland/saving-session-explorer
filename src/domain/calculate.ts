@@ -11,9 +11,51 @@ import {
 } from './time';
 import { BASELINE_ISSUES } from './availability';
 import { isHappyHour, reportedShifted } from './session';
-import type { Calculation, Dataset, Reading, Session } from './types';
+import type { Calculation, Dataset, Reading, Session, Slot } from './types';
 
 export { ZONE, local, day } from './time';
+
+export interface ReferenceAverage {
+  average: Decimal | null;
+  complete: boolean;
+  knownCount: number;
+  missingCount: number;
+  provisional: boolean;
+}
+
+export function referenceAverage(slot: Slot): ReferenceAverage {
+  const knownValues: Decimal[] = [];
+  let provisional = false;
+
+  for (const reference of slot.references) {
+    if (reference.value !== null) {
+      knownValues.push(reference.value);
+      if (reference.provisional) provisional = true;
+    }
+  }
+
+  const missingCount = decimal(slot.references.length).minus(knownValues.length).toNumber();
+
+  if (slot.baseline !== null) {
+    return {
+      average: slot.baseline,
+      complete: true,
+      knownCount: knownValues.length,
+      missingCount,
+      provisional,
+    };
+  }
+
+  const knownSum = total(knownValues);
+
+  return {
+    average: knownSum === null ? null : knownSum.div(knownValues.length),
+    complete: false,
+    knownCount: knownValues.length,
+    missingCount,
+    provisional,
+  };
+}
 
 const validConsumption = (value: number | string) =>
   (typeof value === 'string' || Number.isFinite(value)) && decimal(value).gte(0);
@@ -154,9 +196,13 @@ export function calculateAll(data: Dataset): Calculation[] {
 
           if (target === null || !unambiguous) ambiguousClockTime = true;
 
-          if (target !== null && unambiguous && miniTimes.has(target)) provisional = true;
+          const value = target !== null && unambiguous ? read(target) : null;
+          const referenceProvisional =
+            value !== null && target !== null && unambiguous && miniTimes.has(target);
 
-          return { date, value: target !== null && unambiguous ? read(target) : null };
+          if (referenceProvisional) provisional = true;
+
+          return { date, value, provisional: referenceProvisional };
         });
 
         const complete =
