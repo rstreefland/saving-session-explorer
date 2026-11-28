@@ -55,9 +55,10 @@ _Implemented model & app policy:_ [calculate.test.ts](../src/domain/calculate.te
 
 ### Qualifying change per half-hour
 
-_Implemented model:_ `calculates turn up and clips each half-hour separately` and
-`calculates a bank holiday from four known weekend days, not weekday usage` in
-[calculate.test.ts](../src/domain/calculate.test.ts)
+_Implemented model:_ `calculates turn up and clips each half-hour separately`,
+`calculates a bank holiday from four known weekend days, not weekday usage`, and `referenceAverage`
+in [calculate.test.ts](../src/domain/calculate.test.ts) and
+[SessionDetails.test.tsx](../src/components/SessionDetails.test.tsx)
 
 Qualifying energy is clipped at zero **per half-hour** before summing:
 
@@ -69,8 +70,10 @@ in one half-hour does not cancel a qualifying shift in another.
 
 - **Bank holiday example (Power down):** four weekend days supply 1, 2, 3, and 4 kWh/slot (mean
   2.5 kWh). A two-slot session using 0.5 kWh/slot has 5 kWh baseline, 1 kWh actual, and **4 kWh**
-  qualifying reduction. Removing one reference day's readings makes the baseline unavailable
-  without changing the selected dates.
+  qualifying reduction. Removing one reference day's readings makes the session baseline
+  unavailable without changing the selected dates. Inside the baseline breakdown, the app still
+  shows an indicative average of the available reference readings alongside the missing count while
+  keeping the session estimate incomplete.
 - **Clipping example (Power up):** two 0.6 kWh baseline slots with actuals of 1.6 and 0.15 kWh give
   qualifying increases of 1 and 0 kWh (**1 kWh** rewarded; whole-session `baseline − actual` is
   **−0.55 kWh**).
@@ -120,8 +123,8 @@ _App policy:_ [coverage.ts](../src/domain/coverage.ts), [homeMini.ts](../src/api
   rolling window, matching both MPAN and serial and converting Wh → kWh. Never overwrites an
   existing standard row, even an invalid one.
 - **Provisional estimates:** any Mini reading in session or baseline data marks the estimate
-  provisional and suppresses missed-reward alerts; refreshing allows standard readings to replace
-  fallback data.
+  provisional, marks the affected baseline breakdown rows and averages, and suppresses
+  missed-reward alerts; refreshing allows standard readings to replace fallback data.
 - **Blockers vs warnings:** failed bank-holiday, linked-export, or event-history lookups block
   Power down/up baselines while leaving Happy Hours usable. Informational warnings never change
   eligibility.
@@ -150,8 +153,9 @@ _App policy:_ [ADR-003](ADR.md), [decimal.ts](../src/domain/decimal.ts),
 [numericSchema.test.ts](../src/api/numericSchema.test.ts), [client.test.ts](../src/api/client.test.ts)
 
 - **Arithmetic:** one `decimal.js-light` instance at **40 significant digits** (truncating beyond
-  40). Divisions by `4`, `10`, `1,000`, and `8` terminate cleanly within 40 digits for ordinary
-  inputs.
+  40). Complete reference divisions by `4`, `10`, `1,000`, and `8` terminate cleanly within 40
+  digits for ordinary inputs; indicative partial averages in the baseline breakdown divide by the
+  count of available days and truncate at 40 digits before display rounding.
 - **Boundaries:** Zod validates finite numbers and decimal strings at API entry points, preserving
   supplied strings (raw JSON numbers are already parsed by the browser). Out-of-range values are
   rejected. Cached datasets stay plain serialisable values; calculated figures stay `Decimal`

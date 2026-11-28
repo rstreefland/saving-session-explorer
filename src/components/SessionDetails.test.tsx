@@ -1,4 +1,4 @@
-import { Temporal, milliseconds } from '../domain/time';
+import { Temporal, local, milliseconds, referenceTime } from '../domain/time';
 import { decimal } from '../domain/decimal';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -200,7 +200,7 @@ it('shows the actual reference dates and lets the user inspect each half-hour se
   expect(table).toHaveTextContent('Average for this half-hour0.600');
 });
 
-it('explains missing reference readings instead of averaging only the remaining days', async () => {
+it('shows the average of known reference readings and missing count while keeping the session baseline incomplete', async () => {
   const data = demoDataset();
   const before = calculateAll(data)[1];
 
@@ -208,14 +208,119 @@ it('explains missing reference readings instead of averaging only the remaining 
     (reading) => !reading.interval_start.startsWith(before.days[0]),
   );
   render(<SessionDetails result={calculateAll(data)[1]} />);
+
+  const summary = screen.getByRole('region', { name: 'Calculation summary' });
+  expect(summary).toHaveTextContent('This estimate is incomplete.');
+  expect(screen.getByRole('group', { name: 'Session energy total' })).toHaveTextContent(
+    'Total shifted for rewards•••',
+  );
+
+  await userEvent.click(screen.getByRole('tab', { name: 'Baseline' }));
+
+  const table = screen.getByRole('table', { name: 'Readings used for baseline' });
+
+  expect(within(table).getAllByText('•••')).toHaveLength(1);
+  expect(table).toHaveTextContent('Average of known readings9 of 10 days (1 missing)0.600');
+  expect(
+    screen.getByText(
+      '1 reference reading is missing, so this half-hour’s full baseline cannot be calculated yet. The average above uses only the 9 known readings.',
+    ),
+  ).toBeVisible();
+});
+
+it('shows plural missing counts and falls back to the placeholder when all reference readings are missing', async () => {
+  const data = demoDataset();
+  const before = calculateAll(data)[1];
+
+  data.imports = data.imports.filter(
+    (reading) =>
+      !reading.interval_start.startsWith(before.days[0]) &&
+      !reading.interval_start.startsWith(before.days[1]),
+  );
+  const view = render(<SessionDetails result={calculateAll(data)[1]} />);
   await userEvent.click(screen.getByRole('tab', { name: 'Baseline' }));
 
   const table = screen.getByRole('table', { name: 'Readings used for baseline' });
 
   expect(within(table).getAllByText('•••')).toHaveLength(2);
+  expect(table).toHaveTextContent('Average of known readings8 of 10 days (2 missing)0.600');
   expect(
     screen.getByText(
-      /This half-hour’s average cannot be calculated while a reference reading is missing/,
+      '2 reference readings are missing, so this half-hour’s full baseline cannot be calculated yet. The average above uses only the 8 known readings.',
+    ),
+  ).toBeVisible();
+
+  data.imports = data.imports.filter(
+    (reading) =>
+      !before.days.some((referenceDay) => reading.interval_start.startsWith(referenceDay)),
+  );
+  view.rerender(<SessionDetails result={calculateAll(data)[1]} />);
+
+  expect(within(table).getAllByText('•••')).toHaveLength(11);
+  expect(table).toHaveTextContent('Average for this half-hour•••');
+  expect(
+    screen.getByText(
+      'All 10 reference readings are missing, so this half-hour’s average cannot be calculated.',
+    ),
+  ).toBeVisible();
+});
+
+it('marks baseline days supplied by Home Mini with the provisional indicator and tooltip', async () => {
+  const data = demoDataset();
+  const before = calculateAll(data)[1];
+  const target = referenceTime(before.days[0], local(before.session.startAt).toPlainTime());
+  const baselineReading = data.imports.find((r) => milliseconds(r.interval_start) === target)!;
+  baselineReading.source = 'home-mini';
+  baselineReading.consumption = 0.5;
+
+  render(<SessionDetails result={calculateAll(data)[1]} />);
+  await userEvent.click(screen.getByRole('tab', { name: 'Baseline' }));
+
+  const table = screen.getByRole('table', { name: 'Readings used for baseline' });
+  const rows = within(table).getAllByRole('row');
+  const firstReferenceRow = rows[1];
+  const secondReferenceRow = rows[2];
+  const footerRow = rows[rows.length - 1];
+
+  expect(within(firstReferenceRow).getByText('0.500')).toBeInTheDocument();
+  expect(
+    within(firstReferenceRow).getByRole('button', { name: 'Provisional reading' }),
+  ).toBeInTheDocument();
+  expect(
+    within(secondReferenceRow).queryByRole('button', { name: 'Provisional reading' }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(footerRow).getByRole('button', { name: 'Provisional reading' }),
+  ).toBeInTheDocument();
+
+  await userEvent.click(
+    within(firstReferenceRow).getByRole('button', { name: 'Provisional reading' }),
+  );
+  expect(screen.getByRole('tooltip')).toHaveTextContent(
+    'This estimate uses figures from your Octopus Home Mini device because your smart meter readings have not arrived yet. These are indicative only and may differ to the smart meter readings.',
+  );
+});
+
+it('shows the average of available eligible days when fewer than required exist within 60 days', async () => {
+  const data = demoDataset();
+  const before = calculateAll(data)[1];
+  const kept = new Set(before.days.slice(0, 2));
+  const start = local(before.session.startAt).toPlainDate();
+
+  data.eventDays = Array.from({ length: 60 }, (_, i) =>
+    start.subtract({ days: decimal(i).plus(1).toNumber() }).toString(),
+  ).filter((date) => !kept.has(date));
+
+  render(<SessionDetails result={calculateAll(data)[1]} />);
+  await userEvent.click(screen.getByRole('tab', { name: 'Baseline' }));
+
+  expect(screen.getByRole('heading', { name: 'Days used for baseline (2)' })).toBeVisible();
+  const table = screen.getByRole('table', { name: 'Readings used for baseline' });
+
+  expect(table).toHaveTextContent('Average of known readings2 eligible days available0.600');
+  expect(
+    screen.getByText(
+      'Not enough eligible reference days are available to calculate this half-hour’s full baseline. The average above uses only the 2 available days.',
     ),
   ).toBeVisible();
 });

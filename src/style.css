@@ -830,6 +830,25 @@ th {
   }
 }
 
+.session-details .reference-table .reference-average-detail {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--results-secondary-size);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.session-details .reference-table .reference-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.session-details .reference-table .tooltip-icon {
+  margin-top: -6px;
+  margin-bottom: -6px;
+}
+
 .calculation-gaps {
   border-left: 3px solid var(--line-strong);
   border-radius: 0 var(--radius-small) var(--radius-small) 0;
