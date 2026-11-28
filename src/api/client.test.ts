@@ -122,6 +122,7 @@ function setup({
   exportFailure = '' as '' | 'discovery' | 'readings',
   holidayFailure = false,
   meterReadings = {} as Record<string, Reading[]>,
+  homeMiniTelemetry = null as Record<string, { readAt: string; consumptionDelta: string }[]> | null,
 } = {}) {
   const calls: string[] = [];
 
@@ -131,13 +132,44 @@ function setup({
       calls.push(url);
 
       if (url === AUTH) {
-        const query = JSON.parse(init.body as string).query as string;
+        const body = JSON.parse(init.body as string) as {
+          query: string;
+          variables?: { start?: string };
+        };
+        const query = body.query;
 
         if (query.includes('obtainKrakenToken'))
           return response({ data: { obtainKrakenToken: { token: 'jwt' } } });
 
         if (query.includes('HomeMiniDevices'))
-          return response({ data: { account: { electricityAgreements: [] } } });
+          return response({
+            data: {
+              account: {
+                electricityAgreements: homeMiniTelemetry
+                  ? [
+                      {
+                        meterPoint: {
+                          mpan: '123',
+                          meters: [
+                            {
+                              serialNumber: 'ABC',
+                              smartImportElectricityMeter: { deviceId: 'mini-1' },
+                            },
+                          ],
+                        },
+                      },
+                    ]
+                  : [],
+              },
+            },
+          });
+
+        if (query.includes('HomeMiniReadings')) {
+          const dayKey = (body.variables?.start ?? '').slice(0, 10);
+          return response({
+            data: { smartMeterTelemetry: homeMiniTelemetry?.[dayKey] ?? [] },
+          });
+        }
 
         return profileUnavailable
           ? response({ errors: [{ message: 'Profile unavailable' }] })
@@ -824,6 +856,40 @@ it.each([false, true])(
     );
   },
 );
+
+it('fills a missing baseline day from Home Mini telemetry and marks it provisional in the App', async () => {
+  vi.spyOn(Temporal.Now, 'instant').mockReturnValue(Temporal.Instant.from('2026-11-06T12:00:00Z'));
+  vi.spyOn(Temporal.Now, 'plainDateISO').mockReturnValue(Temporal.PlainDate.from('2026-11-06'));
+  const data = precisionFixture(true);
+  const missingDay = '2026-11-04';
+  const missingReading = data.imports.find((r) => r.interval_start.startsWith(missingDay))!;
+  const standardReadings = data.imports.filter((r) => !r.interval_start.startsWith(missingDay));
+
+  setup({
+    joinedEvents: data.sessions,
+    meterReadings: { ABC: standardReadings },
+    rewardRate: '80',
+    homeMiniTelemetry: {
+      [missingDay]: [{ readAt: missingReading.interval_start, consumptionDelta: '100.5' }],
+    },
+  });
+  localStorage.setItem('session-lens.api-key', 'synthetic-key');
+  localStorage.setItem('session-lens.account-number', 'A-123');
+  render(createElement(App));
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('button', { name: /Readings for/ }));
+  await user.click(screen.getByText('Days used for baseline (10)', { exact: true }));
+
+  const references = screen.getByRole('table', { name: 'Readings used for baseline' });
+  const rows = within(references).getAllByRole('row');
+  expect(within(rows[1]).getByText('4 Nov 2026')).toBeVisible();
+  expect(within(rows[1]).getByText('0.101')).toBeVisible();
+  expect(within(rows[1]).getByRole('button', { name: 'Provisional reading' })).toBeVisible();
+  expect(within(rows[2]).queryByRole('button', { name: 'Provisional reading' })).toBeNull();
+  expect(
+    within(rows[rows.length - 1]).getByRole('button', { name: 'Provisional reading' }),
+  ).toBeVisible();
+});
 
 it('loads usable results in the default App when another import serial returns 404', async () => {
   vi.spyOn(Temporal.Now, 'instant').mockReturnValue(Temporal.Instant.from('2026-11-06T12:00:00Z'));

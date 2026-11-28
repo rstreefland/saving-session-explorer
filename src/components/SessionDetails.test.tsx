@@ -286,6 +286,29 @@ it('marks baseline days supplied by Home Mini with the provisional indicator and
   );
 });
 
+it('shows the average of available eligible days when fewer than required exist within 60 days', async () => {
+  const data = demoDataset();
+  const before = calculateAll(data)[1];
+  const kept = new Set(before.days.slice(0, 2));
+  const start = local(before.session.startAt).toPlainDate();
+
+  data.eventDays = Array.from({ length: 60 }, (_, i) =>
+    start.subtract({ days: decimal(i).plus(1).toNumber() }).toString(),
+  ).filter((date) => !kept.has(date));
+
+  render(<SessionDetails result={calculateAll(data)[1]} />);
+  await userEvent.click(screen.getByText('Days used for baseline (2)'));
+
+  const table = screen.getByRole('table', { name: 'Readings used for baseline' });
+
+  expect(table).toHaveTextContent('Average of known readings2 eligible days available0.600');
+  expect(
+    screen.getByText(
+      'Not enough eligible reference days are available to calculate this half-hour’s full baseline. The average above uses only the 2 available days.',
+    ),
+  ).toBeVisible();
+});
+
 it('keeps Octopus figures and neutral differences inside their own disclosure', async () => {
   render(<SessionDetails result={calculateAll(demoDataset())[1]} />);
 

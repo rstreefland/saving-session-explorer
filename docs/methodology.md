@@ -65,8 +65,9 @@ each slot, its baseline is 5 kWh, actual usage is 1 kWh, and qualifying reductio
 Removing a selected day's readings makes the session baseline unavailable without changing the
 selected dates. Inside the baseline breakdown, the app still shows an indicative average of the
 available reference readings alongside the missing count while keeping the session estimate
-incomplete. See `calculates a bank holiday from four known weekend days, not weekday usage` in
-[calculate.test.ts](../src/domain/calculate.test.ts).
+incomplete. See `calculates a bank holiday from four known weekend days, not weekday usage` and
+`referenceAverage` in [calculate.test.ts](../src/domain/calculate.test.ts) and
+[SessionDetails.test.tsx](../src/components/SessionDetails.test.tsx).
 
 For Power up, baseline slots of 0.6 and 0.6 kWh and actual slots of 1.6 and 0.15 kWh give qualifying
 increases of 1 and 0 kWh. Rewarded energy is therefore 1 kWh, while baseline minus actual over
@@ -149,9 +150,11 @@ in [ADR-003](ADR.md) and [decimal.ts](../src/domain/decimal.ts). It keeps Decima
 calculations and comparisons so binary floating-point artefacts don't affect energy or rewards.
 
 Arithmetic uses 40 significant digits. The library truncates at that precision, including for
-non-terminating division: 1/3 becomes 40 threes after the decimal point. Reference means divide
-by four or ten, Mini conversion by 1,000, and points conversion by eight. Those divisions
-terminate exactly when the result fits 40 significant digits. Larger inputs can still lose
+non-terminating division: 1/3 becomes 40 threes after the decimal point. Complete reference means
+divide by four or ten, Mini conversion by 1,000, and points conversion by eight. Those divisions
+terminate exactly when the result fits 40 significant digits. Indicative partial averages in the
+baseline breakdown divide by the count of available days, so they can produce non-terminating
+decimals truncated at 40 significant digits before display rounding. Larger inputs can still lose
 low-order digits. This is a numerical policy, not a supplier rule.
 
 Zod validates finite numbers and decimal strings at API boundaries and preserves supplied

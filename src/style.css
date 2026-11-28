@@ -759,9 +759,21 @@ th {
   width: 35%;
 }
 
+.session-details .reference-table th,
+.session-details .reference-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+
+.session-details .reference-table tfoot {
+  background: var(--positive-surface);
+  font-weight: 700;
+}
+
 .session-details .reference-table tfoot.reference-average-partial {
   background: var(--surface);
-  font-weight: 700;
 }
 
 .session-details .reference-table .reference-average-detail {
@@ -843,7 +855,9 @@ th {
   }
 
   .history-table .reading-table th,
-  .history-table .reading-table td {
+  .history-table .reading-table td,
+  .session-details .reference-table th,
+  .session-details .reference-table td {
     padding: 12px 5px;
   }
 }
