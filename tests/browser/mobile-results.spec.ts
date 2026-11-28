@@ -26,11 +26,16 @@ test('mobile tabs fit and expanded readings survive resizing to desktop', async 
     .getByRole('button', { name: /Readings for/ })
     .first()
     .click();
+  await page.getByRole('tab', { name: 'Compare', exact: true }).click();
+  await expect.element(page.getByRole('table', { name: 'Usage comparison' })).toBeVisible();
   // Larger screens retain the table.
   await page.viewport(1280, 900);
   await expect.element(page.getBySelector('.history-table')).toBeVisible();
   await expect.element(page.getBySelector('.mobile-results')).toHaveLength(0);
   await expect.element(page.getBySelector('.session-details')).toBeVisible();
+  await expect
+    .element(page.getByRole('tab', { name: 'Compare', exact: true }))
+    .toHaveAttribute('aria-selected', 'true');
   await expect
     .element(page.getByRole('button', { name: /Readings for/ }).first())
     .toHaveAttribute('aria-expanded', 'true');

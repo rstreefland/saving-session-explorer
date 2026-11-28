@@ -4,7 +4,6 @@ import type { Calculation } from '../../domain/types';
 import { ProvisionalIndicator } from '../ProvisionalIndicator';
 import { halfHourRange, number } from './format';
 import { formatDate } from '../../domain/time';
-import { ReadingDisclosure } from './ReadingDisclosure';
 
 function partialBaselineNote(summary: ReferenceAverage): string | null {
   if (summary.complete) return null;
@@ -44,11 +43,8 @@ export function ReferenceReadings({ result }: { result: Calculation }) {
   const showPartialAverage = !summary.complete && summary.average !== null;
 
   return (
-    <ReadingDisclosure title={`Days used for baseline (${result.days.length})`}>
-      <p>
-        The same half-hour on earlier similar days is averaged. Bank holidays and session days are
-        left out.
-      </p>
+    <section aria-label="Baseline readings">
+      <h3>Days used for baseline ({result.days.length})</h3>
       <label className="reference-time-picker" htmlFor={id}>
         Half-hour to inspect
         <select
@@ -86,7 +82,7 @@ export function ReferenceReadings({ result }: { result: Calculation }) {
               </tr>
             ))}
           </tbody>
-          <tfoot className={summary.complete ? undefined : 'reference-average-partial'}>
+          <tfoot>
             <tr>
               <th scope="row">
                 {showPartialAverage ? (
@@ -115,6 +111,12 @@ export function ReferenceReadings({ result }: { result: Calculation }) {
         <p>No eligible reference days are available.</p>
       )}
       {note && <p className="reading-note">{note}</p>}
-    </ReadingDisclosure>
+      <div className="reading-explanation">
+        <p>
+          The same half-hour on earlier similar days is averaged. Bank holidays and session days are
+          left out.
+        </p>
+      </div>
+    </section>
   );
 }

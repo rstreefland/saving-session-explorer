@@ -1,10 +1,28 @@
 # Architecture decisions
 
-These decisions record choices that would materially change the app if reversed. Coding rules
-are in [AGENTS.md](../AGENTS.md); calculation assumptions are in [methodology.md](methodology.md).
+High-level choices whose reversal would materially change the app. Coding rules live in
+[AGENTS.md](../AGENTS.md); calculation assumptions live in [methodology.md](methodology.md).
 
-| ID      | Date       | Status                      | Decision                                                               | Rationale and consequences                                                                                                                                                                                                                                       |
-| ------- | ---------- | --------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ADR-001 | 2026-11-08 | Accepted                    | Keep account access read-only and run the app entirely in the browser. | There's no application backend, so we don't need to operate a service that holds account data. Credentials stay in browser storage; readings and results stay in memory. Background collection or server-side processing would require revisiting this decision. |
-| ADR-002 | 2026-11-08 | Accepted; migration pending | Use Temporal as the sole date/time model.                              | Calendar dates and elapsed intervals behave differently across UK clock changes, so one model avoids mixing host-timezone assumptions and incompatible representations. Existing JavaScript `Date` usage still needs to migrate.                                 |
-| ADR-003 | 2026-11-08 | Accepted; implemented       | Use decimal.js-light for numeric arithmetic throughout the app.        | Binary floating-point artefacts can change energy and reward results. Values stay as Decimal through calculations, with explicit rounding at display and reward boundaries. The precision limits and rounding rules are in [methodology.md](methodology.md).     |
+## ADR-001: Browser-only, read-only access
+
+- **Date:** 2026-11-08 · **Status:** Accepted
+- **Decision:** Keep account access read-only and run the app entirely in the browser.
+- **Rationale & consequences:** Avoids operating a backend that holds credentials or account data.
+  Credentials stay in browser storage; readings and results stay in memory. A backend, analytics,
+  persistent readings, or write operations require revisiting this decision.
+
+## ADR-002: Temporal for all dates and times
+
+- **Date:** 2026-11-08 · **Status:** Accepted; implemented
+- **Decision:** Use `temporal-polyfill` (via `src/domain/time.ts`) exclusively, with no JavaScript
+  `Date` usage.
+- **Rationale & consequences:** UK clock changes separate calendar dates from elapsed intervals.
+  One Temporal model avoids host-timezone bugs and mixed representations without patching globals.
+
+## ADR-003: Decimal arithmetic throughout
+
+- **Date:** 2026-11-08 · **Status:** Accepted; implemented
+- **Decision:** Use `decimal.js-light` for all numeric arithmetic.
+- **Rationale & consequences:** Prevents binary floating-point artefacts in baselines, deltas, and
+  reward boundaries. Values remain `Decimal` until display or serialisation; precision and rounding
+  rules are in [methodology.md](methodology.md).

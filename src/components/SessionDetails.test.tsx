@@ -56,7 +56,9 @@ it('shows half-hour formulas and the rewarded total without an overall-change su
     expect(within(equation).getByText('−')).toBeVisible();
     expect(within(equation).getByText('=')).toBeVisible();
   }
-  expect(summary).toHaveTextContent('Total shifted for rewards0.500 kWh');
+  expect(screen.getByRole('group', { name: 'Session energy total' })).toHaveTextContent(
+    'Total shifted for rewards0.500 kWh',
+  );
   expect(within(summary).queryByText('Overall change')).not.toBeInTheDocument();
   expect(within(summary).queryByText('Achieved')).not.toBeInTheDocument();
   expect(screen.queryByRole('table', { name: 'Half-hour readings (kWh)' })).not.toBeInTheDocument();
@@ -79,7 +81,9 @@ it('uses rewarded half-hours rather than the net session reduction in the screen
 
   expect(summary).toHaveTextContent('Change-0.002Counts for rewards0.000 kWh');
   expect(summary).toHaveTextContent('Counts for rewards0.077 kWh');
-  expect(summary).toHaveTextContent('Total shifted for rewards0.077 kWh');
+  expect(screen.getByRole('group', { name: 'Session energy total' })).toHaveTextContent(
+    'Total shifted for rewards0.077 kWh',
+  );
   expect(summary).not.toHaveTextContent('0.075');
 });
 
@@ -90,7 +94,9 @@ it('retains earned shifts when usage rises over the session as a whole', () => {
 
   expect(summary).toHaveTextContent('Counts for rewards0.500 kWh');
   expect(summary).toHaveTextContent('Change-0.600Counts for rewards0.000 kWh');
-  expect(summary).toHaveTextContent('Total shifted for rewards0.500 kWh');
+  expect(screen.getByRole('group', { name: 'Session energy total' })).toHaveTextContent(
+    'Total shifted for rewards0.500 kWh',
+  );
 });
 
 it('reverses the formula for Power up and counts only usage above baseline', () => {
@@ -111,7 +117,9 @@ it('reverses the formula for Power up and counts only usage above baseline', () 
       .getAllByRole('definition')
       .map((value) => value.textContent),
   ).toEqual(['0.500', '0.600', '-0.100', '0.000 kWh']);
-  expect(summary).toHaveTextContent('Total shifted for rewards0.500 kWh');
+  expect(screen.getByRole('group', { name: 'Session energy total' })).toHaveTextContent(
+    'Total shifted for rewards0.500 kWh',
+  );
 });
 
 it.each([false, true])('shows zero when no half-hour qualifies (Power up: %s)', (up) => {
@@ -124,7 +132,9 @@ it.each([false, true])('shows zero when no half-hour qualifies (Power up: %s)', 
       .getAllByText('Counts for rewards')
       .map((term) => term.parentElement?.textContent),
   ).toEqual(['Counts for rewards0.000 kWh', 'Counts for rewards0.000 kWh']);
-  expect(summary).toHaveTextContent('Total shifted for rewards0.000 kWh');
+  expect(screen.getByRole('group', { name: 'Session energy total' })).toHaveTextContent(
+    'Total shifted for rewards0.000 kWh',
+  );
 });
 
 it('shows missing readings as placeholders without producing a complete total', () => {
@@ -134,7 +144,9 @@ it('shows missing readings as placeholders without producing a complete total', 
 
   expect(summary).toHaveTextContent('This estimate is incomplete.');
   expect(within(summary).getByText('Awaiting readings')).toBeVisible();
-  expect(summary).toHaveTextContent('Total shifted for rewards•••');
+  expect(screen.getByRole('group', { name: 'Session energy total' })).toHaveTextContent(
+    'Total shifted for rewards•••',
+  );
   expect(screen.getByRole('heading', { name: 'What’s missing' })).toBeVisible();
 });
 
@@ -150,14 +162,14 @@ it('adds Happy Hour import readings without baseline equations or a promise of c
 
   expect(readings).toHaveLength(2);
   expect(readings[0]).toHaveTextContent('Imported0.150');
-  expect(summary).toHaveTextContent('Total imported0.300 kWh');
+  expect(screen.getByRole('group', { name: 'Session energy total' })).toHaveTextContent(
+    'Total imported0.300 kWh',
+  );
   expect(summary).toHaveTextContent('No baseline comparison is needed.');
   expect(within(summary).queryByText('−')).not.toBeInTheDocument();
   expect(screen.queryByText(/Days used for baseline/)).not.toBeInTheDocument();
-  await userEvent.click(screen.getByText('Compare with Octopus'));
-  expect(
-    screen.queryByRole('complementary', { name: 'Why the kWh figures can differ' }),
-  ).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('tab', { name: 'Compare' }));
+  expect(screen.queryByText(/Octopus appears to round the reward/)).not.toBeInTheDocument();
 });
 
 it('shows the actual reference dates and lets the user inspect each half-hour separately', async () => {
@@ -169,9 +181,10 @@ it('shows the actual reference dates and lets the user inspect each half-hour se
 
   const user = userEvent.setup();
 
-  await user.click(screen.getByText(/Days used for baseline/));
+  await user.click(screen.getByRole('tab', { name: 'Baseline' }));
 
   const table = screen.getByRole('table', { name: 'Readings used for baseline' });
+  expect(screen.getByText(/The same half-hour on earlier similar days is averaged/)).toBeVisible();
 
   expect(within(table).getByText('0.123')).toBeInTheDocument();
   expect(within(table).getAllByRole('row')).toHaveLength(
@@ -198,9 +211,11 @@ it('shows the average of known reference readings and missing count while keepin
 
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
   expect(summary).toHaveTextContent('This estimate is incomplete.');
-  expect(summary).toHaveTextContent('Total shifted for rewards•••');
+  expect(screen.getByRole('group', { name: 'Session energy total' })).toHaveTextContent(
+    'Total shifted for rewards•••',
+  );
 
-  await userEvent.click(screen.getByText(/Days used for baseline/));
+  await userEvent.click(screen.getByRole('tab', { name: 'Baseline' }));
 
   const table = screen.getByRole('table', { name: 'Readings used for baseline' });
 
@@ -223,7 +238,7 @@ it('shows plural missing counts and falls back to the placeholder when all refer
       !reading.interval_start.startsWith(before.days[1]),
   );
   const view = render(<SessionDetails result={calculateAll(data)[1]} />);
-  await userEvent.click(screen.getByText(/Days used for baseline/));
+  await userEvent.click(screen.getByRole('tab', { name: 'Baseline' }));
 
   const table = screen.getByRole('table', { name: 'Readings used for baseline' });
 
@@ -259,7 +274,7 @@ it('marks baseline days supplied by Home Mini with the provisional indicator and
   baselineReading.consumption = 0.5;
 
   render(<SessionDetails result={calculateAll(data)[1]} />);
-  await userEvent.click(screen.getByText(/Days used for baseline/));
+  await userEvent.click(screen.getByRole('tab', { name: 'Baseline' }));
 
   const table = screen.getByRole('table', { name: 'Readings used for baseline' });
   const rows = within(table).getAllByRole('row');
@@ -297,8 +312,9 @@ it('shows the average of available eligible days when fewer than required exist 
   ).filter((date) => !kept.has(date));
 
   render(<SessionDetails result={calculateAll(data)[1]} />);
-  await userEvent.click(screen.getByText('Days used for baseline (2)'));
+  await userEvent.click(screen.getByRole('tab', { name: 'Baseline' }));
 
+  expect(screen.getByRole('heading', { name: 'Days used for baseline (2)' })).toBeVisible();
   const table = screen.getByRole('table', { name: 'Readings used for baseline' });
 
   expect(table).toHaveTextContent('Average of known readings2 eligible days available0.600');
@@ -309,19 +325,19 @@ it('shows the average of available eligible days when fewer than required exist 
   ).toBeVisible();
 });
 
-it('keeps Octopus figures and neutral differences inside their own disclosure', async () => {
+it('keeps Octopus figures and neutral differences in the Compare tab', async () => {
   render(<SessionDetails result={calculateAll(demoDataset())[1]} />);
 
   expect(screen.queryByRole('table', { name: 'Usage comparison' })).not.toBeInTheDocument();
 
-  await userEvent.click(screen.getByText('Compare with Octopus'));
+  await userEvent.click(screen.getByRole('tab', { name: 'Compare' }));
 
   expect(screen.getByRole('table', { name: 'Usage comparison' })).toHaveTextContent(
     'Shifted for rewards0.9000.640',
   );
   expect(screen.getByText(/Difference in shifted energy: \+0.260 kWh/)).toBeVisible();
 
-  const explanation = screen.getByRole('complementary', { name: 'Why the kWh figures can differ' });
+  const explanation = screen.getByText(/Octopus appears to round the reward/);
 
   expect(explanation).toHaveTextContent(
     'Octopus appears to round the reward before converting it back into kWh',
@@ -347,7 +363,7 @@ it('explains an empty reference history without displaying a made-up average', a
     'This estimate is incomplete.',
   );
 
-  await userEvent.click(screen.getByText('Days used for baseline (0)'));
+  await userEvent.click(screen.getByRole('tab', { name: 'Baseline' }));
 
   expect(screen.getByText('No eligible reference days are available.')).toBeVisible();
   expect(
@@ -359,7 +375,7 @@ it('uses the same numeric placeholder for pending supplier figures and missing r
   const results = calculateAll(demoDataset());
   const view = render(<SessionDetails result={results[0]} />);
 
-  await userEvent.click(screen.getByText('Compare with Octopus'));
+  await userEvent.click(screen.getByRole('tab', { name: 'Compare' }));
 
   expect(
     within(screen.getByRole('table', { name: 'Usage comparison' })).getAllByText('•••'),
@@ -390,7 +406,10 @@ it('explains provisional Mini inputs without suggesting a missed reward', async 
       }}
     />,
   );
-  await userEvent.click(screen.getByRole('button', { name: 'Provisional reading' }));
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('tab', { name: 'Compare' }));
+  const total = screen.getByRole('group', { name: 'Session energy total' });
+  await user.click(within(total).getByRole('button', { name: 'Provisional reading' }));
   expect(screen.getByRole('tooltip')).toHaveTextContent('Home Mini');
   expect(screen.queryByText(/Possible missed reward/)).not.toBeInTheDocument();
 });
@@ -441,16 +460,32 @@ it('explains Octopus missing data and average credits even when our readings are
   expect(screen.getByRole('region', { name: 'Calculation summary' })).toBeInTheDocument();
 });
 
-it('keeps the full calculation explanation available in a disclosure', async () => {
+it('shows the full calculation explanation without an extra interaction', () => {
   render(<SessionDetails result={mixed(1.1, 0.5, true)} />);
   const summary = screen.getByRole('region', { name: 'Calculation summary' });
   const explanation =
     'Power down and Power up use electricity imported minus electricity exported.';
 
-  expect(within(summary).queryByText(explanation)).not.toBeInTheDocument();
-  await userEvent.click(within(summary).getByText('How this is calculated'));
   expect(within(summary).getByText(explanation)).toBeVisible();
   expect(within(summary).getByText(/Each half-hour is counted separately/)).toHaveTextContent(
     'Each half-hour is counted separately. Only usage above baseline counts towards rewards; other half-hours count as zero.',
   );
+});
+
+it('switches detail tabs with the arrow keys and keeps the energy total visible', async () => {
+  render(<SessionDetails result={mixed(0.1, 0.7)} />);
+  const energy = screen.getByRole('tab', { name: 'Energy' });
+  const user = userEvent.setup();
+
+  expect(energy).toHaveAttribute('aria-selected', 'true');
+  energy.focus();
+  await user.keyboard('{ArrowLeft}');
+  expect(screen.getByRole('tab', { name: 'Compare' })).toHaveFocus();
+  expect(screen.getByRole('tabpanel', { name: 'Compare' })).toBeVisible();
+  expect(screen.getByRole('group', { name: 'Session energy total' })).toHaveTextContent(
+    'Total shifted for rewards0.500 kWh',
+  );
+  await user.keyboard('{Home}{ArrowRight}');
+  expect(screen.getByRole('tab', { name: 'Octopoints' })).toHaveFocus();
+  expect(screen.getByRole('tabpanel', { name: 'Octopoints' })).toBeVisible();
 });

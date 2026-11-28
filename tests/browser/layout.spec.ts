@@ -1,7 +1,7 @@
 import { decimal } from '../../src/domain/decimal';
 import { Temporal } from '../../src/domain/time';
 import { expect, test, vi } from 'vitest';
-import { userEvent, type Locator } from 'vitest/browser';
+import type { Locator } from 'vitest/browser';
 import { page, openApp, connectedAccount } from './fixtures';
 
 function box(locator: Locator) {
@@ -32,6 +32,7 @@ function fitsViewport() {
       energy.classList.contains('mobile-energy-main') ? '14px' : '12px',
     );
   for (const value of page.getBySelector('.octopoints-value').elements()) {
+    if (value.getClientRects().length === 0) continue;
     const range = document.createRange();
     range.selectNode(value.firstChild!);
     const number = range.getBoundingClientRect();
@@ -42,8 +43,10 @@ function fitsViewport() {
     const energy = value.closest('.mobile-source')?.querySelector('.mobile-energy');
     const reward = value.closest('.mobile-source-reward');
     const expectedStyle = reward ? getComputedStyle(reward) : amountStyle;
-    expect(number.bottom).toBeGreaterThan(unitBounds.top);
-    expect(unitBounds.bottom).toBeGreaterThan(number.top);
+    if (!value.closest('.points-comparison')) {
+      expect(number.bottom).toBeGreaterThan(unitBounds.top);
+      expect(unitBounds.bottom).toBeGreaterThan(number.top);
+    }
     expect(unitStyle.fontSize).toBe(expectedStyle.fontSize);
     if (energy) {
       expect(unitStyle.color).toBe(expectedStyle.color);
@@ -55,7 +58,7 @@ function fitsViewport() {
       expect(unitStyle.fontWeight).toBe('400');
     } else {
       expect(amountStyle.fontWeight).toBe(
-        value.closest('.overview-ledger, .history-row') ? '400' : '700',
+        value.closest('.overview-ledger, .history-row, .points-comparison') ? '400' : '700',
       );
     }
   }
@@ -220,12 +223,42 @@ for (const width of [320, 600, 800, 1280]) {
       const contribution = box(halfHour.getBySelector('.calculation-contribution'));
       if (width <= 600) expect(contribution.top).toBeGreaterThanOrEqual(first.bottom);
     }
-    const explanation = calculation.getByText('How this is calculated');
-    explanation.element().focus();
-    await userEvent.keyboard('{Enter}');
-    await expect.element(calculation.getBySelector('.reading-disclosure-body')).toBeVisible();
-    expect(box(explanation).height).toBeGreaterThanOrEqual(44);
     fitsViewport();
+    if (width === 320 || width === 1280) {
+      await page.getByRole('tab', { name: 'Octopoints', exact: true }).click();
+      const points = page.getByRole('region', { name: 'Octopoints estimate' });
+      const steps = points.getByRole('table', { name: 'Octopoints calculation steps' });
+      await expect.element(steps).toBeVisible();
+      if (width === 320) {
+        const bounds = box(points);
+        for (const locator of points.getBySelector('.points-comparison dd, th, td').all()) {
+          const cell = locator.element();
+          const text = document.createRange();
+          text.selectNodeContents(cell);
+          const content = text.getBoundingClientRect();
+          expect(content.left).toBeGreaterThanOrEqual(bounds.left);
+          expect(content.right).toBeLessThanOrEqual(bounds.right);
+          expect(cell.scrollWidth).toBeLessThanOrEqual(cell.clientWidth);
+        }
+      } else {
+        const calculationHeading = box(steps.getByRole('columnheader', { name: 'Calculation' }));
+        const resultHeading = box(steps.getByRole('columnheader', { name: 'Result' }));
+        for (const row of steps.getBySelector('tbody tr').all()) {
+          const cells = row.getByRole('cell').all();
+          expect(box(cells[0]).left).toBe(calculationHeading.left);
+          expect(box(cells[1]).right).toBe(resultHeading.right);
+          expect(getComputedStyle(cells[1].element()).textAlign).toBe('right');
+        }
+      }
+      fitsViewport();
+    }
+    if (width === 1280) {
+      await page.getByRole('tab', { name: 'Baseline', exact: true }).click();
+      const baseline = page.getByRole('region', { name: 'Baseline readings' });
+      const picker = baseline.getByRole('combobox', { name: 'Half-hour to inspect' });
+      await expect.element(picker).toBeVisible();
+      expect(box(picker).left).toBe(box(baseline).left);
+    }
     await page.getByRole('tab', { name: 'Happy Hours' }).click();
 
     await expect
@@ -257,6 +290,32 @@ test('provisional tooltip opens within the mobile viewport after scrolling', asy
   await provisional.click();
   await expect.element(page.getByRole('tooltip')).toBeInViewport();
   fitsViewport();
+});
+
+test('overview clocks preserve metric row heights and touch targets', async () => {
+  await page.viewport(393, 900);
+  await connectedAccount({ homeMini: true });
+  await openApp();
+  const overview = page.getByRole('region', { name: 'Session overview' });
+  const calculated = overview.getByRole('group', { name: 'Calculated' });
+  const octopus = overview.getByRole('group', { name: 'Octopus' });
+  const clocks = calculated.getByRole('button', { name: 'Provisional reading' });
+  await expect.element(clocks).toHaveLength(3);
+  await document.fonts.ready;
+
+  for (const width of [393, 1280]) {
+    await page.viewport(width, 900);
+    const calculatedRows = calculated.getBySelector('.overview-ledger-row').all();
+    const octopusRows = octopus.getBySelector('.overview-ledger-row').all();
+    expect(calculatedRows.map((row) => box(row).height)).toEqual(
+      octopusRows.map((row) => box(row).height),
+    );
+    for (const clock of clocks.all()) {
+      const bounds = box(clock);
+      expect(bounds.width).toBe(44);
+      expect(bounds.height).toBe(44);
+    }
+  }
 });
 
 test('appearance switch fits a phone and changes the rendered palette', async () => {

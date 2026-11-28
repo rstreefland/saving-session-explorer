@@ -641,3 +641,61 @@ it('clears token balances when changing accounts and forgetting', async () => {
   await act(async () => finish(demoDataset()));
   expect(screen.queryByRole('tab', { name: 'Happy Hours' })).not.toBeInTheDocument();
 });
+
+it('hides the introduction copy behind a spoiler only when account details are present', async () => {
+  loadDataset.mockResolvedValueOnce(demoDataset());
+  render(app());
+
+  const introCopy = /Octopus take a few days to calculate Saving Session results/;
+  expect(screen.getByText(introCopy)).toBeVisible();
+  expect(screen.queryByText('About this tool')).not.toBeInTheDocument();
+
+  const u = user();
+  await u.click(screen.getByRole('button', { name: 'Try demo' }));
+  expect(screen.getByText(introCopy)).toBeVisible();
+  expect(screen.queryByText('About this tool')).not.toBeInTheDocument();
+
+  await u.type(screen.getByLabelText('Octopus API key'), 'test-key');
+  await u.type(screen.getByLabelText('Account number'), 'A-123');
+  await u.click(screen.getByRole('button', { name: 'Connect & compare' }));
+  await screen.findByRole('button', { name: 'Refresh results' });
+
+  const spoiler = screen.getByText('About this tool').closest('details')!;
+  expect(spoiler).not.toHaveAttribute('open');
+  expect(within(spoiler).getByText(introCopy)).toBeInTheDocument();
+  expect(within(spoiler).getByRole('link', { name: 'code on GitHub' })).toHaveAttribute(
+    'href',
+    'https://github.com/rstreefland/saving-session-explorer',
+  );
+
+  await u.click(screen.getByText('About this tool'));
+  expect(spoiler).toHaveAttribute('open');
+
+  await u.click(screen.getByRole('button', { name: 'Forget account' }));
+  expect(screen.queryByText('About this tool')).not.toBeInTheDocument();
+  expect(screen.getByText(introCopy)).toBeVisible();
+});
+
+it('expands the introduction copy again if loading saved account details fails', async () => {
+  localStorage.setItem('session-lens.api-key', 'test-key');
+  localStorage.setItem('session-lens.account-number', 'A-123');
+  let fail: (error: Error) => void = () => {
+    throw new Error('Expected pending account request');
+  };
+  loadDataset.mockImplementationOnce(
+    () =>
+      new Promise((_resolve, reject) => {
+        fail = reject;
+      }),
+  );
+  render(app());
+
+  const introCopy = /Octopus take a few days to calculate Saving Session results/;
+  expect(screen.getByText('About this tool').closest('details')).not.toHaveAttribute('open');
+
+  await act(async () => fail(new Error('Network error')));
+  await screen.findByRole('alert');
+
+  expect(screen.queryByText('About this tool')).not.toBeInTheDocument();
+  expect(screen.getByText(introCopy)).toBeVisible();
+});

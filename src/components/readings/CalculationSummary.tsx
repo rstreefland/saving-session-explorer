@@ -4,7 +4,6 @@ import { PLACEHOLDER } from '../placeholder';
 import type { Calculation } from '../../domain/types';
 import { isHappyHour } from '../../domain/session';
 import { halfHourRange, number } from './format';
-import { ReadingDisclosure } from './ReadingDisclosure';
 
 function EnergyValue({
   label,
@@ -35,10 +34,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
   return (
     <section className="calculation-summary" aria-label="Calculation summary">
       <div className="calculation-heading">
-        <h3>
-          {happy ? 'Imported energy' : 'How your energy was shifted'}
-          {result.provisional && <ProvisionalIndicator />}
-        </h3>
+        <h3>{happy ? 'Imported energy' : 'How your energy was shifted'}</h3>
         <span>All values in kWh</span>
       </div>
       <p className="calculation-explanation">
@@ -125,14 +121,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
           </section>
         );
       })}
-      <dl className="calculation-total">
-        <dt>{happy ? 'Total imported' : 'Total shifted for rewards'}</dt>
-        <dd>
-          {number(result.rewarded)}
-          {result.rewarded !== null && <span className="energy-unit"> kWh</span>}
-        </dd>
-      </dl>
-      <ReadingDisclosure title="How this is calculated">
+      <div className="reading-explanation">
         <p>
           {happy
             ? 'Imported electricity is added up half-hour by half-hour. No baseline comparison is needed.'
@@ -141,7 +130,7 @@ export function CalculationSummary({ result }: { result: Calculation }) {
         {!happy && (
           <p>Power down and Power up use electricity imported minus electricity exported.</p>
         )}
-      </ReadingDisclosure>
+      </div>
       {happy && (
         <p className="reading-note">
           Octopus calculates the bill credit using your tariff and the session rules.
